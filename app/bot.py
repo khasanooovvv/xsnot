@@ -14,6 +14,7 @@ from app.services.matching import active_match, end_match, find_or_queue, leave_
 from app.services.users import age_on, apply_referral_reward, consume_share, days_left, get_or_create, referral_count
 from app.services.visuals import vs_card
 from app.i18n import tr
+from app.services.referral_notifications import send_referral_started
 
 router = Router(); cfg = settings()
 
@@ -52,7 +53,11 @@ async def start(message: Message, state: FSMContext):
         except ValueError: pass
     async with SessionLocal() as session:
         user = await get_or_create(session, message.from_user.id, message.from_user.username, message.from_user.full_name, ref)
-        registered = user.is_registered; await session.commit()
+        registered = user.is_registered
+        referrer = await session.get(User, user.referred_by_id) if getattr(user, '_new_referral', False) else None
+        await session.commit()
+    if referrer is not None:
+        await send_referral_started(message.bot, referrer.telegram_id, user.display_name, referrer.language)
     if cfg.webapp_url:
         await state.clear()
         await message.answer("🌐 Tilni tanlang / Выберите язык / Choose your language", reply_markup=language_menu())

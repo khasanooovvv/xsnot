@@ -8,13 +8,14 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qsl
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image
 from sqlalchemy import select, func, delete, text as sql
 from app.config import settings
 from app.services.badges import badge_status
+from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
 from app.models import User, MatchQueue, MiniAvatar, MiniMessage, Report
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
@@ -183,9 +184,12 @@ async def leaders(uid=Depends(registered)):
         return [{'name':u.display_name, 'count':count, **badge_status(u)} for u, count in rows]
 
 @router.post('/api/invite')
-async def invite(uid=Depends(registered)):
+async def invite(request: Request, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
         if not await consume_share(s, uid): raise HTTPException(429, 'Bugungi 15 ta havola olish limiti tugadi.')
+        language = (await s.get(User, uid)).language
         await s.commit()
-    return {'url': f'https://t.me/{settings().public_bot_username.lstrip("@")}'+f'?start=ref_{uid}'}
+    link = f'https://t.me/{settings().public_bot_username.lstrip("@")}?start=ref_{uid}'
+    sent = await send_invite_link(getattr(request.app.state, 'bot', None), uid, link, language)
+    return {'url': link, 'bot_sent': sent}

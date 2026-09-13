@@ -38,6 +38,7 @@ async def startup():
     from aiogram import Bot, Dispatcher
 
     _bot = Bot(cfg.bot_token)
+    app.state.bot = _bot
     if cfg.webapp_url:
         from aiogram.types import MenuButtonWebApp, WebAppInfo
         try:

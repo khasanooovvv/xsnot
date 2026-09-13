@@ -1,5 +1,5 @@
 from datetime import UTC, date, datetime, timedelta
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models import ReferralShare, User
@@ -10,12 +10,16 @@ def age_on(born: date) -> int:
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 async def get_or_create(session: AsyncSession, user_id: int, username: str | None, name: str, referrer: int | None):
+    if session.bind.dialect.name == "postgresql":
+        await session.execute(text("SELECT pg_advisory_xact_lock(:user_id)"), {"user_id": user_id})
     user = await session.get(User, user_id)
     if user:
+        user._new_referral = False
         user.username, user.display_name = username, name
         return user
-    valid = referrer if referrer and referrer != user_id and await session.get(User, referrer) else None
+    valid = referrer if referrer and 0 < referrer < 2**63 and referrer != user_id and await session.get(User, referrer) else None
     user = User(telegram_id=user_id, username=username, display_name=name, referred_by_id=valid)
+    user._new_referral = bool(valid)
     session.add(user); await session.flush()
     return user
 
