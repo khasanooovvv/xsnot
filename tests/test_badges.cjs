@@ -14,6 +14,7 @@ assert.ok(!page.includes('Premium'));
 assert.ok(!page.includes('/verify'));
 assert.ok(!page.includes('Ko‘k galochka'));
 const admin=fs.readFileSync('app/web/admin.html','utf8');
-assert.ok(admin.includes('value="silver"'));
+assert.ok(!admin.includes('value="silver"'));
+assert.ok(admin.includes('/gold/revoke'));
 assert.ok(admin.includes('Ko‘k galochka berish'));
 console.log('PASS: Silver/Gold/blue rendering, tier precedence, anonymous hiding, admin-only controls');

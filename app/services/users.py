@@ -33,8 +33,6 @@ async def apply_referral_reward(session: AsyncSession, user: User):
     user.referral_rewarded = True
     count = await referral_count(session, referrer.telegram_id)
     now, cfg = datetime.now(UTC), settings()
-    if count == cfg.premium_referrals:
-        referrer.premium_until = max(referrer.premium_until or now, now) + timedelta(days=cfg.reward_days)
     if count == cfg.gold_referrals:
         referrer.gold_until = max(referrer.gold_until or now, now) + timedelta(days=cfg.reward_days)
 
@@ -43,6 +41,8 @@ async def consume_share(session: AsyncSession, user_id: int) -> bool:
     item = await session.scalar(select(ReferralShare).where(ReferralShare.user_id == user_id, ReferralShare.share_day == today))
     if not item:
         item = ReferralShare(user_id=user_id, share_day=today); session.add(item); await session.flush()
-    if item.count >= settings().referral_daily_share_limit: return False
+    user = await session.get(User, user_id)
+    limit = settings().silver_referral_daily_share_limit if user.silver_verified else settings().referral_daily_share_limit
+    if item.count >= limit: return False
     item.count += 1
     return True

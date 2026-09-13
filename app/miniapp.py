@@ -67,7 +67,8 @@ async def registered(uid=Depends(identity)):
 async def profile(s, u):
     avatar = await s.get(MiniAvatar, u.telegram_id)
     return dict(name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
-        registered=u.is_registered, **badge_status(u), premium=days_left(u.premium_until),
+        registered=u.is_registered, **badge_status(u),
+        invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
 
 @router.get('/api/me')
@@ -187,7 +188,7 @@ async def leaders(uid=Depends(registered)):
 async def invite(request: Request, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
-        if not await consume_share(s, uid): raise HTTPException(429, 'Bugungi 15 ta havola olish limiti tugadi.')
+        if not await consume_share(s, uid): raise HTTPException(429, 'Bugungi havola olish limiti tugadi.')
         language = (await s.get(User, uid)).language
         await s.commit()
     link = f'https://t.me/{settings().public_bot_username.lstrip("@")}?start=ref_{uid}'

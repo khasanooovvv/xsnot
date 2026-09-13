@@ -25,7 +25,11 @@ def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
     if not ok: raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
 
-class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(silver|premium|gold)$")
+from app.verification import router as verification_router, admin_router as verification_admin_router
+app.include_router(verification_router)
+app.include_router(verification_admin_router, dependencies=[Depends(admin)])
+
+class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(gold)$")
 class Moderation(BaseModel): banned: bool
 class Verification(BaseModel): verified: bool = True
 
@@ -104,7 +108,7 @@ async def user_detail(user_id: int):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,**badge_status(u),"silver_until":u.premium_until,"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
 
 @app.post("/users/{user_id}/verify", dependencies=[Depends(admin)])
 async def verify(user_id: int, body: Verification):
@@ -119,9 +123,19 @@ async def grant(user_id: int, body: Grant):
     async with SessionLocal() as s:
         u = await s.get(User, user_id, with_for_update=True)
         if not u: raise HTTPException(404, "User not found")
-        now = datetime.now(UTC); field = "premium_until" if body.kind in {"silver", "premium"} else "gold_until"
+        now = datetime.now(UTC); field = "gold_until"
         setattr(u, field, max(getattr(u, field) or now, now) + timedelta(days=body.days)); await s.commit()
     return {"ok": True, "kind": body.kind, "days": body.days}
+
+@app.post("/users/{user_id}/gold/revoke", dependencies=[Depends(admin)])
+async def revoke_gold(user_id: int):
+    async with SessionLocal() as s:
+        u = await s.get(User, user_id, with_for_update=True)
+        if not u:
+            raise HTTPException(404, "User not found")
+        u.gold_until = None
+        await s.commit()
+    return {"ok": True, "gold": 0}
 
 @app.post("/users/{user_id}/moderate", dependencies=[Depends(admin)])
 async def moderate(user_id: int, body: Moderation):

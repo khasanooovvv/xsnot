@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     terms_version: str = "2026-09-13"
     min_age: int = 18
     referral_daily_share_limit: int = 15
+    silver_referral_daily_share_limit: int = 30
     premium_referrals: int = 5
     gold_referrals: int = 50
     reward_days: int = 30

@@ -1,4 +1,4 @@
-"""Public badge state; Silver reuses existing Premium subscription dates."""
+"""Silver is permanent and only follows administrator video approval."""
 from datetime import UTC, datetime
 from math import ceil
 
@@ -13,7 +13,7 @@ def days_left(until: datetime | None) -> int:
 
 def badge_status(user) -> dict:
     return {
-        'silver': days_left(user.premium_until),
+        'silver': bool(getattr(user, 'silver_verified', False)),
         'gold': days_left(user.gold_until),
         'verified': bool(user.is_verified),
     }

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import date, datetime
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import LargeBinary, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase): pass
@@ -19,6 +19,7 @@ class User(Base):
     terms_version: Mapped[str | None] = mapped_column(String(32))
     is_registered: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    silver_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -74,3 +75,16 @@ class MiniMessage(Base):
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     text: Mapped[str] = mapped_column(Text)
+
+class VideoVerification(Base):
+    __tablename__ = "video_verifications"
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), default="draft")
+    challenge: Mapped[str] = mapped_column(String(6))
+    challenge_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    video: Mapped[bytes | None] = mapped_column(LargeBinary)
+    media_type: Mapped[str | None] = mapped_column(String(32))
+    consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reason: Mapped[str | None] = mapped_column(String(500))

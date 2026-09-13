@@ -6,7 +6,7 @@ const script = html.split('<script>').pop().split('</script>')[0];
 new vm.Script(script);
 const apiSource = script.slice(script.indexOf('async function api('), script.indexOf('\nfunction show('));
 async function test(status, raw, expected) {
-  const context = vm.createContext({tg:{initData:'test'}, fetch:async()=>({status,ok:status===200,text:async()=>raw})});
+  const context = vm.createContext({FormData, tg:{initData:'test'}, fetch:async()=>({status,ok:status===200,text:async()=>raw})});
   vm.runInContext(apiSource, context);
   if (expected) await assert.rejects(context.api('me'), e => e.message.includes(expected));
   else assert.equal((await context.api('me')).registered, true);

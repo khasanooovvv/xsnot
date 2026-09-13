@@ -148,17 +148,17 @@ async def rules(q: CallbackQuery):
 async def profile(q: CallbackQuery):
     async with SessionLocal() as s:
         u = await s.get(User, q.from_user.id); refs = await referral_count(s, u.telegram_id)
-    badges = (" 🔵✓" if u.is_verified else "") + (" 🟡✓" if days_left(u.gold_until) else " ⚪✓" if days_left(u.premium_until) else "")
-    text = f"👤 <b>{u.display_name}</b>{badges}\n🏙 {u.city}\n🎂 {age_on(u.birth_date)} yosh\n💎 Silver: {days_left(u.premium_until)} kun\n🥇 Gold: {days_left(u.gold_until)} kun\n🎁 Referral: {refs}"
+    badges = (" 🔵✓" if u.is_verified else "") + (" 🟡✓" if days_left(u.gold_until) else " ⚪✓" if u.silver_verified else "")
+    text = f"👤 <b>{u.display_name}</b>{badges}\n🏙 {u.city}\n🎂 {age_on(u.birth_date)} yosh\n💎 Silver: {'Abadiy' if u.silver_verified else 'Tasdiqlanmagan'}\n🥇 Gold: {days_left(u.gold_until)} kun\n🎁 Referral: {refs}"
     await q.message.edit_text(text, parse_mode="HTML", reply_markup=main_menu(u.language))
 
 @router.callback_query(F.data == "invite")
 async def invite(q: CallbackQuery):
     async with SessionLocal() as s:
-        if not await consume_share(s, q.from_user.id): await q.answer("Bugungi 15 ta ulashish limiti tugadi.", show_alert=True); return
+        if not await consume_share(s, q.from_user.id): await q.answer("Bugungi ulashish limiti tugadi.", show_alert=True); return
         refs = await referral_count(s, q.from_user.id); await s.commit()
     link = f"https://t.me/{cfg.public_bot_username}?start=ref_{q.from_user.id}"
-    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. 5 ta = 30 kun Silver, 50 ta = 30 kun Gold. Kuniga havolani 15 marta ulashish mumkin.", parse_mode="HTML", reply_markup=main_menu())
+    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. Video tasdiqlansa = abadiy Silver, 50 ta = 30 kun Gold. Silver bilan kunlik havola olish limiti oshadi.", parse_mode="HTML", reply_markup=main_menu())
 
 @router.callback_query(F.data == "leaders")
 async def leaders(q: CallbackQuery):

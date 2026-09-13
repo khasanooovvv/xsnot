@@ -51,3 +51,11 @@ Telegram identity columns use BIGINT. On startup, PostgreSQL deployments upgrade
 Silver replaces the public Premium name. Existing `premium_until` data and referral thresholds are retained, so current subscriptions keep their expiry dates. Admin grants accept `silver` (the old `premium` API value remains compatible). Gold takes precedence over Silver beside a name; the administrator's blue verification seal is independent. Badges appear beside names in profiles, open chats, the leaderboard and admin users. Anonymous partners expose no badges. Public screens contain no blue-verification application or instructions; only the protected admin verification endpoint can change it.
 
 Checks: `python -m unittest discover -s tests -v`, `node tests/test_badges.cjs`, `node tests/test_admin_frontend.cjs`, `node tests/test_mini_frontend.cjs`.
+
+## Human video verification (current Silver policy)
+
+Silver now requires administrator video approval and has no expiry. Registration or the old 5-referral reward does not grant Silver. Legacy subscription dates remain stored but no longer award a Silver badge. Gold referral rewards and admin-only blue verification remain separate. Approved Silver users can request 30 referral links daily; others get 15 (configurable).
+
+Users consent and directly upload a short MP4/WebM video (15 MB maximum); administrators compare the visible face and profile photo where available. This is human review, not automated inference of sex or gender. The pending video is stored in PostgreSQL and served only behind admin authentication, with no-store caching. Approval grants Silver, rejection allows resubmission; both delete the video bytes while retaining the decision and consent timestamps. Pending submissions remain until reviewed. The video container signature is checked; administrators must reject unplayable or unsuitable content.
+
+Startup creates the submissions table and adds `users.silver_verified` if absent. Deploy before using the new screens. Gold can be revoked independently from the protected admin panel. Full PostgreSQL and Telegram end-to-end tests are still required in the deployment environment.

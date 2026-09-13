@@ -20,10 +20,14 @@ class BadgeStateTests(unittest.TestCase):
         self.assertEqual(days_left(self.now+timedelta(days=30)),30)
         self.assertEqual(days_left((self.now+timedelta(days=1)).replace(tzinfo=None)),1)
 
-    def test_existing_premium_is_silver_and_does_not_verify(self):
+    def test_legacy_premium_does_not_grant_video_silver(self):
         user=SimpleNamespace(premium_until=self.now+timedelta(days=20),gold_until=None,is_verified=False)
-        self.assertEqual(badge_status(user),dict(silver=20,gold=0,verified=False))
+        self.assertEqual(badge_status(user),dict(silver=False,gold=0,verified=False))
 
     def test_admin_verification_survives_subscription_expiry(self):
         user=SimpleNamespace(premium_until=self.now,gold_until=self.now,is_verified=True)
         self.assertEqual(badge_status(user),dict(silver=0,gold=0,verified=True))
+
+    def test_video_approval_grants_permanent_silver_without_blue(self):
+        user=SimpleNamespace(premium_until=None,gold_until=None,is_verified=False,silver_verified=True)
+        self.assertEqual(badge_status(user),dict(silver=True,gold=0,verified=False))
