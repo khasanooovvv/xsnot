@@ -1,0 +1,46 @@
+from datetime import UTC, date, datetime, timedelta
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.config import settings
+from app.models import ReferralShare, User
+
+def age_on(born: date) -> int:
+    today = date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+def days_left(until: datetime | None) -> int:
+    return max(0, (until - datetime.now(UTC)).days + 1) if until else 0
+
+async def get_or_create(session: AsyncSession, user_id: int, username: str | None, name: str, referrer: int | None):
+    user = await session.get(User, user_id)
+    if user:
+        user.username, user.display_name = username, name
+        return user
+    valid = referrer if referrer and referrer != user_id and await session.get(User, referrer) else None
+    user = User(telegram_id=user_id, username=username, display_name=name, referred_by_id=valid)
+    session.add(user); await session.flush()
+    return user
+
+async def referral_count(session: AsyncSession, user_id: int) -> int:
+    return int(await session.scalar(select(func.count(User.telegram_id)).where(User.referred_by_id == user_id, User.referral_rewarded.is_(True))) or 0)
+
+async def apply_referral_reward(session: AsyncSession, user: User):
+    if user.referral_rewarded or not user.referred_by_id: return
+    referrer = await session.get(User, user.referred_by_id)
+    if not referrer: return
+    user.referral_rewarded = True
+    count = await referral_count(session, referrer.telegram_id)
+    now, cfg = datetime.now(UTC), settings()
+    if count == cfg.premium_referrals:
+        referrer.premium_until = max(referrer.premium_until or now, now) + timedelta(days=cfg.reward_days)
+    if count == cfg.gold_referrals:
+        referrer.gold_until = max(referrer.gold_until or now, now) + timedelta(days=cfg.reward_days)
+
+async def consume_share(session: AsyncSession, user_id: int) -> bool:
+    today = date.today()
+    item = await session.scalar(select(ReferralShare).where(ReferralShare.user_id == user_id, ReferralShare.share_day == today))
+    if not item:
+        item = ReferralShare(user_id=user_id, share_day=today); session.add(item); await session.flush()
+    if item.count >= settings().referral_daily_share_limit: return False
+    item.count += 1
+    return True

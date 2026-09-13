@@ -1,0 +1,1 @@
+"""PVP Chat Telegram bot."""
