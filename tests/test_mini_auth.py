@@ -30,13 +30,13 @@ class AuthTests(unittest.IsolatedAsyncioTestCase):
         self.identity = scope['identity']
 
     def signed(self, age=0):
-        data = {'auth_date':str(int(time.time())-age), 'user':json.dumps({'id':123, 'first_name':'Tester'})}
+        data = {'auth_date':str(int(time.time())-age), 'user':json.dumps({'id':6322372175, 'first_name':'Tester'})}
         secret = hmac.new(b'WebAppData', b'test-token', hashlib.sha256).digest()
         data['hash'] = hmac.new(secret, '\n'.join(f'{k}={v}' for k,v in sorted(data.items())).encode(), hashlib.sha256).hexdigest()
         return urlencode(data)
 
     async def test_valid_signed_identity(self):
-        self.assertEqual(await self.identity(self.signed()), 123)
+        self.assertEqual(await self.identity(self.signed()), 6322372175)
 
     async def test_reject_unsigned_tampered_expired_and_duplicate(self):
         for value in ['', self.signed().replace('Tester','Attacker'), self.signed(90000), self.signed()+'&auth_date=1']:

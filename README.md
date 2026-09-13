@@ -41,3 +41,7 @@ Set `MINI_APP_URL` to the deployed HTTPS origin (or use Railway's `RAILWAY_PUBLI
 The app validates Telegram initData on every API request. It includes registration with optional photo, age/city filters, anonymous/open matching, VS reveal, text messaging, reports, profile reward countdowns, referrals, and leaderboard. New avatar/message tables are created at startup; existing User table migrations still apply. Mini App queues are separate from legacy bot queues. PostgreSQL advisory locks serialize Mini App matching and referral awards. Waiting clients expire after 30 seconds without polling. Anonymous responses omit partner identity and photo.
 
 Deploy before testing in Telegram: local source changes do not update Railway automatically. Test with two separate Telegram accounts, including anonymous identity hiding, stop/next, and report handling. The current Mini App supports text messages; media messaging remains in the legacy bot. The existing admin dashboard uses its protected API for moderation and grants.
+
+### Telegram ID overflow fix
+
+Telegram identity columns use BIGINT. On startup, PostgreSQL deployments upgrade existing INTEGER identity columns and all application references in one transaction, preserving rows and constraints. An advisory lock serializes concurrent startup upgrades; already upgraded columns are skipped. Deploy this version to apply the upgrade before bot polling starts. Table locks may briefly delay requests during the first upgrade.
