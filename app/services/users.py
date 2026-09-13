@@ -3,13 +3,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models import ReferralShare, User
+from app.services.badges import days_left
 
 def age_on(born: date) -> int:
     today = date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-def days_left(until: datetime | None) -> int:
-    return max(0, (until - datetime.now(UTC)).days + 1) if until else 0
 
 async def get_or_create(session: AsyncSession, user_id: int, username: str | None, name: str, referrer: int | None):
     user = await session.get(User, user_id)

@@ -1,6 +1,6 @@
 # PVP Chat — Telegram random chat bot
 
-18+ Telegram random-chat bot with Uzbek, Russian, and English language selection; anonymous/open modes, match filters, profile onboarding, referral rewards, Premium/Gold countdowns, moderation reports, and a protected admin dashboard.
+18+ Telegram random-chat bot with Uzbek, Russian, and English language selection; anonymous/open modes, match filters, profile onboarding, referral rewards, Silver/Gold countdowns, moderation reports, and a protected admin dashboard.
 
 ## Launch
 
@@ -23,9 +23,9 @@ failure page.
 
 - A user accepts safety/privacy terms, provides date of birth (18+), city, and optional photo before accessing chat. A default avatar is used when the photo is skipped.
 - Random matching supports anonymous and visible-profile modes, city and age filters, reciprocal filter checking, a VS reveal, leave/next/report controls, and media-safe `copy_message` relay (the partner does not receive the sender identity in anonymous mode).
-- A referral only counts after the invited person completes registration; it cannot be replayed. At exactly 5 completed referrals, 30 days Premium is granted; at 50, 30 days Gold is granted. Referral-link sharing is limited to 15 requests per user per day while lifetime referral rewards still remain attainable.
-- Profile displays Premium and Gold days remaining. The leaderboard reports Top 10 referrers. `POST /leaderboard/reward` gives all current Top 10 the monthly 30-day Gold award.
-- Admin capabilities: verify checkmark, grant Premium/Gold, ban/unban, inspect users and reports. Protect the dashboard in production behind HTTPS and a stronger identity provider.
+- A referral only counts after the invited person completes registration; it cannot be replayed. At exactly 5 completed referrals, 30 days Silver is granted; at 50, 30 days Gold is granted. Referral-link sharing is limited to 15 requests per user per day while lifetime referral rewards still remain attainable.
+- Profile displays Silver and Gold days remaining. The leaderboard reports Top 10 referrers. `POST /leaderboard/reward` gives all current Top 10 the monthly 30-day Gold award.
+- Admin capabilities: verify checkmark, grant Silver/Gold, ban/unban, inspect users and reports. Protect the dashboard in production behind HTTPS and a stronger identity provider.
 
 ## Important production checklist
 
@@ -45,3 +45,9 @@ Deploy before testing in Telegram: local source changes do not update Railway au
 ### Telegram ID overflow fix
 
 Telegram identity columns use BIGINT. On startup, PostgreSQL deployments upgrade existing INTEGER identity columns and all application references in one transaction, preserving rows and constraints. An advisory lock serializes concurrent startup upgrades; already upgraded columns are skipped. Deploy this version to apply the upgrade before bot polling starts. Table locks may briefly delay requests during the first upgrade.
+
+## Silver, Gold and verification
+
+Silver replaces the public Premium name. Existing `premium_until` data and referral thresholds are retained, so current subscriptions keep their expiry dates. Admin grants accept `silver` (the old `premium` API value remains compatible). Gold takes precedence over Silver beside a name; the administrator's blue verification seal is independent. Badges appear beside names in profiles, open chats, the leaderboard and admin users. Anonymous partners expose no badges. Public screens contain no blue-verification application or instructions; only the protected admin verification endpoint can change it.
+
+Checks: `python -m unittest discover -s tests -v`, `node tests/test_badges.cjs`, `node tests/test_admin_frontend.cjs`, `node tests/test_mini_frontend.cjs`.

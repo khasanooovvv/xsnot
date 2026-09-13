@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import SessionLocal, init_db
 from app.models import Report, User
 from app.services.users import referral_count
+from app.services.badges import badge_status
 from app.bot import router as bot_router
 from app.miniapp import router as mini_router
 
@@ -24,7 +25,7 @@ def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
     if not ok: raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
 
-class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(premium|gold)$")
+class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(silver|premium|gold)$")
 class Moderation(BaseModel): banned: bool
 class Verification(BaseModel): verified: bool = True
 
@@ -95,14 +96,14 @@ async def admin_users(q: str = Query(default="", max_length=128), offset: int = 
                 filters.append(User.telegram_id == int(term))
             query = query.where(or_(*filters))
         rows = (await s.scalars(query.order_by(User.created_at.desc(), User.telegram_id).offset(offset).limit(26))).all()
-        return {"more":len(rows)>25, "users":[{"id":u.telegram_id,"name":u.display_name,"username":u.username,"city":u.city,"verified":u.is_verified,"banned":u.is_banned} for u in rows[:25]]}
+        return {"more":len(rows)>25, "users":[{"id":u.telegram_id,"name":u.display_name,"username":u.username,"city":u.city,**badge_status(u),"banned":u.is_banned} for u in rows[:25]]}
 
 @app.get("/users/{user_id}", dependencies=[Depends(admin)])
 async def user_detail(user_id: int):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"verified":u.is_verified,"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,**badge_status(u),"silver_until":u.premium_until,"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
 
 @app.post("/users/{user_id}/verify", dependencies=[Depends(admin)])
 async def verify(user_id: int, body: Verification):
@@ -117,7 +118,7 @@ async def grant(user_id: int, body: Grant):
     async with SessionLocal() as s:
         u = await s.get(User, user_id, with_for_update=True)
         if not u: raise HTTPException(404, "User not found")
-        now = datetime.now(UTC); field = "premium_until" if body.kind == "premium" else "gold_until"
+        now = datetime.now(UTC); field = "premium_until" if body.kind in {"silver", "premium"} else "gold_until"
         setattr(u, field, max(getattr(u, field) or now, now) + timedelta(days=body.days)); await s.commit()
     return {"ok": True, "kind": body.kind, "days": body.days}
 

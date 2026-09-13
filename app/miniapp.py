@@ -14,12 +14,21 @@ from pydantic import BaseModel, Field
 from PIL import Image
 from sqlalchemy import select, func, delete, text as sql
 from app.config import settings
+from app.services.badges import badge_status
 from app.database import SessionLocal
 from app.models import User, MatchQueue, MiniAvatar, MiniMessage, Report
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue
 
 router = APIRouter()
+
+@router.get('/assets/badges.js')
+async def badge_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'badges.js', media_type='application/javascript')
+
+@router.get('/assets/badges.css')
+async def badge_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'badges.css', media_type='text/css')
 
 @router.get('/')
 async def index():
@@ -57,8 +66,8 @@ async def registered(uid=Depends(identity)):
 async def profile(s, u):
     avatar = await s.get(MiniAvatar, u.telegram_id)
     return dict(name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
-        registered=u.is_registered, verified=u.is_verified, premium=days_left(u.premium_until),
-        gold=days_left(u.gold_until), referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
+        registered=u.is_registered, **badge_status(u), premium=days_left(u.premium_until),
+        referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
 
 @router.get('/api/me')
 async def me(uid=Depends(identity)):
@@ -131,7 +140,7 @@ async def chat(after: int = 0, uid=Depends(registered)):
         partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
         if m.mode == 'mini_open':
             p = await profile(s, await s.get(User, partner_id))
-            partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'gold')}
+            partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'silver', 'gold')}
         rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
         return {'status': 'active', 'match': m.id, 'partner': partner, 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
 
@@ -170,8 +179,8 @@ async def stop(body: StopBody, uid=Depends(registered)):
 async def leaders(uid=Depends(registered)):
     async with SessionLocal() as s:
         refs = User.__table__.alias('refs')
-        rows = (await s.execute(select(User.display_name, func.count(refs.c.telegram_id)).join(refs, refs.c.referred_by_id == User.telegram_id).where(refs.c.referral_rewarded.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(refs.c.telegram_id).desc(), User.telegram_id).limit(10))).all()
-        return [{'name':r[0], 'count':r[1]} for r in rows]
+        rows = (await s.execute(select(User, func.count(refs.c.telegram_id)).join(refs, refs.c.referred_by_id == User.telegram_id).where(refs.c.referral_rewarded.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(refs.c.telegram_id).desc(), User.telegram_id).limit(10))).all()
+        return [{'name':u.display_name, 'count':count, **badge_status(u)} for u, count in rows]
 
 @router.post('/api/invite')
 async def invite(uid=Depends(registered)):
