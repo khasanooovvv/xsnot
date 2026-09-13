@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 import secrets
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -9,8 +10,12 @@ from app.config import settings
 from app.database import SessionLocal, init_db
 from app.models import Report, User
 from app.services.users import referral_count
+from app.bot import router as bot_router
 
 app = FastAPI(title="PVP Chat Admin", docs_url=None); security = HTTPBasic(); cfg = settings()
+_bot = None
+_dispatcher = None
+_polling_task = None
 
 def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
@@ -20,7 +25,33 @@ class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(patte
 class Moderation(BaseModel): banned: bool
 
 @app.on_event("startup")
-async def startup(): await init_db()
+async def startup():
+    """Start the HTTP dashboard and Telegram polling in the same Railway service."""
+    global _bot, _dispatcher, _polling_task
+
+    await init_db()
+    from aiogram import Bot, Dispatcher
+
+    _bot = Bot(cfg.bot_token)
+    _dispatcher = Dispatcher()
+    _dispatcher.include_router(bot_router)
+    _polling_task = asyncio.create_task(
+        _dispatcher.start_polling(_bot, handle_signals=False),
+        name="telegram-polling",
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global _polling_task
+
+    if _dispatcher is not None:
+        await _dispatcher.stop_polling()
+    if _polling_task is not None:
+        _polling_task.cancel()
+        await asyncio.gather(_polling_task, return_exceptions=True)
+    if _bot is not None:
+        await _bot.session.close()
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(admin)])
 async def dashboard():

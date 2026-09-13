@@ -10,6 +10,15 @@
 
 If you previously started the bot with an older database, add the `language` column through a database migration before deploying this update. A brand-new database gets it automatically.
 
+## Railway
+
+The Docker image starts the FastAPI dashboard on Railway's `PORT` and launches
+Telegram polling from the dashboard startup hook. Deploy this repository as one
+service, set the environment variables from `.env.example`, and use the
+Postgres service's values for `DATABASE_URL`. The public Railway domain now
+responds with the password-protected admin dashboard instead of an application
+failure page.
+
 ## Product rules implemented
 
 - A user accepts safety/privacy terms, provides date of birth (18+), city, and optional photo before accessing chat. A default avatar is used when the photo is skipped.
