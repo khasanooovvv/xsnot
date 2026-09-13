@@ -19,7 +19,8 @@ async def verification_status(uid=Depends(registered)):
     async with SessionLocal() as s:
         row = await s.scalar(select(VideoVerification).options(defer(VideoVerification.video)).where(VideoVerification.user_id == uid))
         u = await s.get(User, uid)
-        return {'status':'approved' if u.silver_verified else ('rejected' if row and row.status == 'approved' else row.status if row else 'none'), 'reason':row.reason if row else None}
+        silver_verified = bool(getattr(u, 'silver_verified', False))
+        return {'status':'approved' if silver_verified else ('rejected' if row and row.status == 'approved' else row.status if row else 'none'), 'reason':row.reason if row else None}
 
 @router.post('/submit')
 async def submit(video: UploadFile = File(...), consent: bool = Form(...), uid=Depends(registered)):
