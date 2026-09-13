@@ -56,7 +56,7 @@ async def registered(uid=Depends(identity)):
 
 async def profile(s, u):
     avatar = await s.get(MiniAvatar, u.telegram_id)
-    return dict(name=u.display_name, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
+    return dict(name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         registered=u.is_registered, verified=u.is_verified, premium=days_left(u.premium_until),
         gold=days_left(u.gold_until), referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
 
@@ -128,7 +128,7 @@ async def chat(after: int = 0, uid=Depends(registered)):
                 return {'status': 'searching'}
             return {'status': 'idle'}
         partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
-        partner = {'name': 'Anonim', 'avatar': None}
+        partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
         if m.mode == 'mini_open':
             p = await profile(s, await s.get(User, partner_id))
             partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'gold')}

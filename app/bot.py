@@ -55,7 +55,7 @@ async def start(message: Message, state: FSMContext):
         registered = user.is_registered; await session.commit()
     if cfg.webapp_url:
         await state.clear()
-        await message.answer("⚔️ PVP Chat — Mini App’ni oching", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⚔️ Mini App’ni ochish", web_app=WebAppInfo(url=cfg.webapp_url))]]))
+        await message.answer("🌐 Tilni tanlang / Выберите язык / Choose your language", reply_markup=language_menu())
         return
     if registered: await message.answer(tr(user.language,"welcome"), reply_markup=main_menu(user.language)); return
     await state.set_state(Register.terms)
@@ -68,8 +68,22 @@ async def language(q: CallbackQuery):
 @router.callback_query(F.data.startswith("lang:"))
 async def set_language(q: CallbackQuery, state: FSMContext):
     lang = q.data.split(":", 1)[1]
+    if lang not in {"uz", "ru", "en"}:
+        await q.answer("Unknown language", show_alert=True)
+        return
     async with SessionLocal() as s:
-        u = await s.get(User, q.from_user.id); u.language = lang; await s.commit()
+        u = await get_or_create(s, q.from_user.id, q.from_user.username, q.from_user.full_name, None)
+        u.language = lang
+        await s.commit()
+    await q.answer()
+    if cfg.webapp_url:
+        await state.clear()
+        label = {"uz": "⚔️ Mini App’ni ochish", "ru": "⚔️ Открыть Mini App", "en": "⚔️ Open Mini App"}[lang]
+        await q.message.edit_text(tr(lang, "welcome"), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=label, web_app=WebAppInfo(url=cfg.webapp_url))],
+            [InlineKeyboardButton(text=tr(lang, "language"), callback_data="language")],
+        ]))
+        return
     if await state.get_state() == Register.terms.state:
         await q.message.edit_text(tr(lang,"terms"), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(lang,"agree"), callback_data="terms_yes"), InlineKeyboardButton(text=tr(lang,"decline"), callback_data="terms_no")]]))
     else: await q.message.edit_text(tr(lang,"changed"), reply_markup=main_menu(lang))
