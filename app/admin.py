@@ -137,6 +137,16 @@ async def revoke_gold(user_id: int):
         await s.commit()
     return {"ok": True, "gold": 0}
 
+@app.post("/users/{user_id}/silver/revoke", dependencies=[Depends(admin)])
+async def revoke_silver(user_id: int):
+    async with SessionLocal() as s:
+        u = await s.get(User, user_id, with_for_update=True)
+        if not u:
+            raise HTTPException(404, "User not found")
+        u.silver_verified = False
+        await s.commit()
+    return {"ok": True, "silver": False}
+
 @app.post("/users/{user_id}/moderate", dependencies=[Depends(admin)])
 async def moderate(user_id: int, body: Moderation):
     async with SessionLocal() as s:
