@@ -1,6 +1,6 @@
 """Private video submissions and human review, with no automated sex inference."""
 from datetime import UTC, datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -8,6 +8,7 @@ from sqlalchemy.orm import defer
 from app.database import SessionLocal
 from app.models import User, MiniAvatar, VideoVerification
 from app.miniapp import registered
+from app.services.referral_notifications import send_verification_result
 
 router = APIRouter(prefix='/api/verification')
 admin_router = APIRouter(prefix='/admin/verifications')
@@ -89,7 +90,7 @@ class Decision(BaseModel):
     reason: str = Field(default='',max_length=500)
 
 @admin_router.post('/{uid}/review')
-async def review(uid: int, body: Decision):
+async def review(request: Request, uid: int, body: Decision):
     if not body.approved and not body.reason.strip(): raise HTTPException(422, 'Rad etish sababini yozing.')
     async with SessionLocal() as s:
         u = await s.get(User, uid, with_for_update=True)
@@ -100,5 +101,7 @@ async def review(uid: int, body: Decision):
         row.reviewed_at = datetime.now(UTC)
         row.video, row.media_type = None, None
         u.silver_verified = body.approved
+        language = u.language
         await s.commit()
+    await send_verification_result(getattr(request.app.state, 'bot', None), uid, body.approved, body.reason.strip(), language)
     return {'status':row.status}

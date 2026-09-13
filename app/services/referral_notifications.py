@@ -31,3 +31,15 @@ async def send_invite_link(bot, user_id, link, language):
 async def send_referral_started(bot, referrer_id, name, language):
     words = TEXT.get(language, TEXT['uz'])
     return await deliver(bot, referrer_id, words['joined'].format(name=name))
+
+async def send_verification_result(bot, user_id, approved, reason=None, language='uz'):
+    messages = {
+        'uz': ("✅ Verifikatsiyadan muvaffaqiyatli o‘tdingiz!\n\nSilver galochka profilingiz yonida ko‘rinadi.",
+               "⚠️ Verifikatsiya rad etildi.\n\nSabab: {reason}\n\nVideoni qayta yuborib, yana urinib ko‘rishingiz mumkin."),
+        'ru': ("✅ Вы успешно прошли проверку!\n\nSilver-галочка появится рядом с вашим профилем.",
+               "⚠️ Проверка отклонена.\n\nПричина: {reason}\n\nВы можете отправить видео повторно."),
+        'en': ("✅ Verification approved!\n\nYour Silver badge now appears beside your profile.",
+               "⚠️ Verification rejected.\n\nReason: {reason}\n\nYou can submit a new video and try again."),
+    }
+    approved_text, rejected_text = messages.get(language, messages['uz'])
+    return await deliver(bot, user_id, approved_text if approved else rejected_text.format(reason=reason or 'Ko‘rsatilmagan'))
