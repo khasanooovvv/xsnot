@@ -51,4 +51,19 @@ $('videoForm').onsubmit=e=>{e.preventDefault();const file=verificationCamera.get
 run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me');applyLanguage(me.language);$('nav').hidden=!me.registered;show(me.registered?'home':'registration');if(me.registered){await poll();setInterval(poll,2000)}else{setInterval(()=>{if(me?.registered)poll()},2000)}}).then(()=>{if(!$('loading').hidden){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;background:#a83e55;color:#fff;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);
 document.addEventListener('click',e=>{if(e.target.id!=='deleteAccount')return;if(!confirm('Account butunlay o‘chiriladi. Barcha ma’lumotlar qaytarib bo‘lmaydigan tarzda o‘chadi. Davom etilsinmi?'))return;run(async()=>{await api('delete-account',{});verificationCamera?.cancel();me=null;match=null;$('nav').hidden=true;show('outside');notice('Account o‘chirildi. Botda /start bosib yangi profil yarating.')})});
+function setupRegistrationPicker(){
+ const birthday=$('birthday'); if(!birthday)return;
+ birthday.type='hidden'; birthday.required=true;
+ const wrap=document.createElement('div');wrap.className='row';wrap.setAttribute('aria-label','Tug‘ilgan sana tanlagichi');
+ const day=document.createElement('select'),month=document.createElement('select'),year=document.createElement('select');
+ day.setAttribute('aria-label','Kun');month.setAttribute('aria-label','Oy');year.setAttribute('aria-label','Yil');
+ for(let i=1;i<=31;i++)day.add(new Option(String(i).padStart(2,'0'),String(i).padStart(2,'0')));
+ ['Oy','Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'].forEach((x,i)=>{if(i)month.add(new Option(x,String(i).padStart(2,'0')))});
+ for(let y=new Date().getFullYear()-18;y>=new Date().getFullYear()-100;y--)year.add(new Option(String(y),String(y)));
+ wrap.append(day,month,year);birthday.after(wrap);const sync=()=>{if(day.value&&month.value&&year.value)birthday.value=`${year.value}-${month.value}-${day.value}`};[day,month,year].forEach(x=>x.addEventListener('change',sync));
+ const label=document.querySelector('label[for="photo"]');if(label)label.textContent='Profil rasmi — majburiy';const photo=$('photo');photo.required=true;photo.removeAttribute('capture');
+ const terms=document.querySelector('#terms');if(terms?.parentElement)terms.parentElement.lastChild.textContent='Tasdiqlangan va ma’muriyat qoidalariga roziman.';
+}
+setupRegistrationPicker();
+photo=async function(){const f=$('photo').files[0];if(!f)throw Error('Profil rasmi majburiy.');if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);if('FaceDetector' in window){const faces=await new FaceDetector({fastMode:true,maxDetectedFaces:1}).detect(bitmap);if(!faces.length){bitmap.close();throw Error('Yuz aniq ko‘rinadigan rasm tanlang.')}}const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)};
 </script></body></html>
