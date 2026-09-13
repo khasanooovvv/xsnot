@@ -1,11 +1,12 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 import secrets
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, HTTPException, status, Query
+from fastapi.responses import HTMLResponse, FileResponse
+from pathlib import Path
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_, text
 from app.config import settings
 from app.database import SessionLocal, init_db
 from app.models import Report, User
@@ -25,6 +26,7 @@ def admin(credentials: HTTPBasicCredentials = Depends(security)):
 
 class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(premium|gold)$")
 class Moderation(BaseModel): banned: bool
+class Verification(BaseModel): verified: bool = True
 
 @app.on_event("startup")
 async def startup():
@@ -71,11 +73,29 @@ async def home():
 
 @app.get("/admin", response_class=HTMLResponse, dependencies=[Depends(admin)])
 async def dashboard():
+    return FileResponse(Path(__file__).parent / "web" / "admin.html")
+
+@app.get("/admin/stats", dependencies=[Depends(admin)])
+async def admin_stats():
     async with SessionLocal() as s:
-        users = await s.scalar(select(func.count(User.telegram_id))) or 0
-        registered = await s.scalar(select(func.count(User.telegram_id)).where(User.is_registered.is_(True))) or 0
-        reports = await s.scalar(select(func.count(Report.id))) or 0
-    return f'''<!doctype html><html><head><meta charset="utf-8"><title>PVP Chat Admin</title><style>body{{font:16px Inter,Arial;background:#09111f;color:#eef2ff;margin:0;padding:48px}}.card{{display:inline-block;background:#111d35;border:1px solid #26385d;border-radius:18px;padding:24px;margin:8px;min-width:180px}}b{{font-size:32px;color:#a78bfa}}code{{color:#7dd3fc}}</style></head><body><h1>⚔️ PVP Chat <span style="color:#a78bfa">Admin</span></h1><div class="card">Jami foydalanuvchi<br><b>{users}</b></div><div class="card">Ro‘yxatdan o‘tgan<br><b>{registered}</b></div><div class="card">Shikoyatlar<br><b>{reports}</b></div><p>API: <code>/users/{{telegram_id}}</code>, <code>/users/{{telegram_id}}/grant</code>, <code>/users/{{telegram_id}}/moderate</code>, <code>/reports</code>, <code>/leaderboard/reward</code></p></body></html>'''
+        return {
+            "users": await s.scalar(select(func.count(User.telegram_id))) or 0,
+            "registered": await s.scalar(select(func.count(User.telegram_id)).where(User.is_registered.is_(True))) or 0,
+            "reports": await s.scalar(select(func.count(Report.id))) or 0,
+        }
+
+@app.get("/admin/users", dependencies=[Depends(admin)])
+async def admin_users(q: str = Query(default="", max_length=128), offset: int = Query(default=0, ge=0)):
+    async with SessionLocal() as s:
+        query = select(User)
+        if q.strip():
+            term = q.strip().lstrip("@")
+            filters = [User.display_name.icontains(term, autoescape=True), User.username.icontains(term, autoescape=True)]
+            if term.isdecimal() and len(term) <= 16:
+                filters.append(User.telegram_id == int(term))
+            query = query.where(or_(*filters))
+        rows = (await s.scalars(query.order_by(User.created_at.desc(), User.telegram_id).offset(offset).limit(26))).all()
+        return {"more":len(rows)>25, "users":[{"id":u.telegram_id,"name":u.display_name,"username":u.username,"city":u.city,"verified":u.is_verified,"banned":u.is_banned} for u in rows[:25]]}
 
 @app.get("/users/{user_id}", dependencies=[Depends(admin)])
 async def user_detail(user_id: int):
@@ -85,17 +105,17 @@ async def user_detail(user_id: int):
         return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"verified":u.is_verified,"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
 
 @app.post("/users/{user_id}/verify", dependencies=[Depends(admin)])
-async def verify(user_id: int):
+async def verify(user_id: int, body: Verification):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        u.is_verified = True; await s.commit()
-    return {"ok": True, "verified": True}
+        u.is_verified = body.verified; await s.commit()
+    return {"ok": True, "verified": body.verified}
 
 @app.post("/users/{user_id}/grant", dependencies=[Depends(admin)])
 async def grant(user_id: int, body: Grant):
     async with SessionLocal() as s:
-        u = await s.get(User, user_id)
+        u = await s.get(User, user_id, with_for_update=True)
         if not u: raise HTTPException(404, "User not found")
         now = datetime.now(UTC); field = "premium_until" if body.kind == "premium" else "gold_until"
         setattr(u, field, max(getattr(u, field) or now, now) + timedelta(days=body.days)); await s.commit()
@@ -106,7 +126,15 @@ async def moderate(user_id: int, body: Moderation):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        u.is_banned = body.banned; await s.commit()
+        u.is_banned = body.banned
+        if body.banned:
+            from app.services.matching import leave_queue, active_match, end_match
+            await s.execute(text("SELECT pg_advisory_xact_lock(730020)"))
+            await leave_queue(s, user_id)
+            match = await active_match(s, user_id)
+            if match:
+                await end_match(s, match)
+        await s.commit()
     return {"ok": True, "banned": body.banned}
 
 @app.get("/reports", dependencies=[Depends(admin)])
