@@ -12,12 +12,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image
-from sqlalchemy import select, func, delete, text as sql
+from sqlalchemy import select, func, delete, text as sql, or_
 from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, MatchQueue, MiniAvatar, MiniMessage, Report
+from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, VideoVerification
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue
 
@@ -78,6 +78,29 @@ async def profile(s, u):
 @router.get('/api/me')
 async def me(uid=Depends(identity)):
     async with SessionLocal() as s: return await profile(s, await s.get(User, uid))
+
+@router.post('/api/delete-account')
+async def delete_account(uid=Depends(identity)):
+    """Permanently erase every record owned by the authenticated account."""
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730022)'))
+        user = await s.get(User, uid, with_for_update=True)
+        if not user:
+            return {'ok': True, 'deleted': False}
+        match_ids = list((await s.scalars(select(Match.id).where(or_(Match.user_one_id == uid, Match.user_two_id == uid)))).all())
+        if match_ids:
+            await s.execute(delete(MiniMessage).where(MiniMessage.match_id.in_(match_ids)))
+            await s.execute(delete(Report).where(Report.match_id.in_(match_ids)))
+            await s.execute(delete(Match).where(Match.id.in_(match_ids)))
+        await s.execute(delete(Report).where(or_(Report.reporter_id == uid, Report.reported_id == uid)))
+        await s.execute(delete(MatchQueue).where(MatchQueue.user_id == uid))
+        await s.execute(delete(MiniAvatar).where(MiniAvatar.user_id == uid))
+        await s.execute(delete(MiniMessage).where(MiniMessage.sender_id == uid))
+        await s.execute(delete(ReferralShare).where(ReferralShare.user_id == uid))
+        await s.execute(delete(VideoVerification).where(VideoVerification.user_id == uid))
+        await s.delete(user)
+        await s.commit()
+    return {'ok': True, 'deleted': True}
 
 class Registration(BaseModel):
     birthday: date
