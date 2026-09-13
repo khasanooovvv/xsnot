@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, or_, text
 from app.config import settings
 from app.database import SessionLocal, init_db
-from app.models import Report, User
+from app.models import Report, User, VideoVerification
 from app.services.users import referral_count
 from app.services.badges import badge_status
 from app.bot import router as bot_router
@@ -144,6 +144,10 @@ async def revoke_silver(user_id: int):
         if not u:
             raise HTTPException(404, "User not found")
         u.silver_verified = False
+        verification = await s.get(VideoVerification, user_id, with_for_update=True)
+        if verification and verification.status == "approved":
+            verification.status = "rejected"
+            verification.reason = "Admin verifikatsiyani olib tashladi."
         await s.commit()
     return {"ok": True, "silver": False}
 
