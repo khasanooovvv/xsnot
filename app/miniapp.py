@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image
-from sqlalchemy import select, func, delete, text as sql, or_
+from sqlalchemy import select, func, delete, update, text as sql, or_
 from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
@@ -98,6 +98,9 @@ async def delete_account(uid=Depends(identity)):
         await s.execute(delete(MiniMessage).where(MiniMessage.sender_id == uid))
         await s.execute(delete(ReferralShare).where(ReferralShare.user_id == uid))
         await s.execute(delete(VideoVerification).where(VideoVerification.user_id == uid))
+        # Other accounts may have used this account as their referrer.
+        # Break that self-reference before deleting the parent row.
+        await s.execute(update(User).where(User.referred_by_id == uid).values(referred_by_id=None))
         await s.delete(user)
         await s.commit()
     return {'ok': True, 'deleted': True}
