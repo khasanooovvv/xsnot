@@ -53,7 +53,14 @@ async def shutdown():
     if _bot is not None:
         await _bot.session.close()
 
-@app.get("/", response_class=HTMLResponse, dependencies=[Depends(admin)])
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    """Public page for the Railway domain; the chat itself lives in Telegram."""
+    bot_username = cfg.public_bot_username.lstrip("@")
+    return f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PVP Chat</title><style>body{{font:16px Inter,Arial;background:#09111f;color:#eef2ff;margin:0;min-height:100vh;display:grid;place-items:center}}main{{max-width:520px;text-align:center;padding:36px}}h1{{font-size:42px;margin:0 0 14px}}p{{color:#cbd5e1;line-height:1.6}}a{{display:inline-block;margin-top:18px;padding:14px 22px;border-radius:12px;background:#7c3aed;color:white;text-decoration:none;font-weight:700}}</style></head><body><main><h1>⚔️ PVP Chat</h1><p>Random chat bot Telegram ichida ishlaydi. Suhbatni boshlash uchun botni oching.</p><a href="https://t.me/{bot_username}">Telegram botni ochish</a></main></body></html>'''
+
+
+@app.get("/admin", response_class=HTMLResponse, dependencies=[Depends(admin)])
 async def dashboard():
     async with SessionLocal() as s:
         users = await s.scalar(select(func.count(User.telegram_id))) or 0
