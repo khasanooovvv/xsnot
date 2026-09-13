@@ -64,6 +64,15 @@ class ReferralShare(Base):
     share_day: Mapped[date] = mapped_column(Date)
     count: Mapped[int] = mapped_column(Integer, default=0)
 
+class ReferralHistory(Base):
+    __tablename__ = "referral_history"
+    __table_args__ = (UniqueConstraint("referrer_id", "referred_id", name="unique_referral_history"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    referrer_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    referred_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    referred_name: Mapped[str | None] = mapped_column(String(128))
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
 class MiniAvatar(Base):
     __tablename__ = "mini_avatars"
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)

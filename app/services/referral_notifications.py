@@ -28,8 +28,11 @@ async def send_invite_link(bot, user_id, link, language):
     ]])
     return await deliver(bot, user_id, words['link']+'\n'+link, reply_markup=keyboard)
 
-async def send_referral_started(bot, referrer_id, name, language):
+async def send_referral_started(bot, referrer_id, name, language, repeat=False):
     words = TEXT.get(language, TEXT['uz'])
+    if repeat:
+        messages = {'uz': f'ℹ️ {name} sizning havolangiz orqali avval ham kirgan. Bu taklif referral sifatida qayta hisoblanmaydi.', 'ru': f'ℹ️ {name} уже переходил по вашей ссылке. Повторно реферал не засчитывается.', 'en': f'ℹ️ {name} has used your invite before. This repeat is not counted as a new referral.'}
+        return await deliver(bot, referrer_id, messages.get(language, messages['uz']))
     return await deliver(bot, referrer_id, words['joined'].format(name=name))
 
 async def send_verification_result(bot, user_id, approved, reason=None, language='uz'):

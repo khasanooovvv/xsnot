@@ -17,7 +17,7 @@ from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, VideoVerification
+from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue
 
@@ -98,6 +98,10 @@ async def delete_account(uid=Depends(identity)):
         await s.execute(delete(MiniMessage).where(MiniMessage.sender_id == uid))
         await s.execute(delete(ReferralShare).where(ReferralShare.user_id == uid))
         await s.execute(delete(VideoVerification).where(VideoVerification.user_id == uid))
+        if user.referral_rewarded and user.referred_by_id:
+            history = await s.scalar(select(ReferralHistory).where(ReferralHistory.referrer_id == user.referred_by_id, ReferralHistory.referred_id == uid))
+            if not history:
+                s.add(ReferralHistory(referrer_id=user.referred_by_id, referred_id=uid, referred_name=user.display_name))
         # Other accounts may have used this account as their referrer.
         # Break that self-reference before deleting the parent row.
         await s.execute(update(User).where(User.referred_by_id == uid).values(referred_by_id=None))

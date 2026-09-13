@@ -55,9 +55,10 @@ async def start(message: Message, state: FSMContext):
         user = await get_or_create(session, message.from_user.id, message.from_user.username, message.from_user.full_name, ref)
         registered = user.is_registered
         referrer = await session.get(User, user.referred_by_id) if getattr(user, '_new_referral', False) else None
+        repeat_referral = getattr(user, '_repeat_referral', False)
         await session.commit()
     if referrer is not None:
-        await send_referral_started(message.bot, referrer.telegram_id, user.display_name, referrer.language)
+        await send_referral_started(message.bot, referrer.telegram_id, user.display_name, referrer.language, repeat=repeat_referral)
     if cfg.webapp_url:
         await state.clear()
         await message.answer("🌐 Tilni tanlang / Выберите язык / Choose your language", reply_markup=language_menu())
