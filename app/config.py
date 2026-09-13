@@ -4,6 +4,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     bot_token: str
+    mini_app_url: str = ""
+    railway_public_domain: str = ""
+
+    @property
+    def webapp_url(self) -> str:
+        return self.mini_app_url or (f"https://{self.railway_public_domain}" if self.railway_public_domain else "")
     database_url: str = "postgresql+asyncpg://pvp:pvp@localhost:5432/pvp_chat"
     redis_url: str = "redis://localhost:6379/0"
     admin_username: str = "admin"

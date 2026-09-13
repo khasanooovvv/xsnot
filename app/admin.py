@@ -11,8 +11,10 @@ from app.database import SessionLocal, init_db
 from app.models import Report, User
 from app.services.users import referral_count
 from app.bot import router as bot_router
+from app.miniapp import router as mini_router
 
 app = FastAPI(title="PVP Chat Admin", docs_url=None); security = HTTPBasic(); cfg = settings()
+app.include_router(mini_router)
 _bot = None
 _dispatcher = None
 _polling_task = None
@@ -33,6 +35,13 @@ async def startup():
     from aiogram import Bot, Dispatcher
 
     _bot = Bot(cfg.bot_token)
+    if cfg.webapp_url:
+        from aiogram.types import MenuButtonWebApp, WebAppInfo
+        try:
+            await _bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="PVP Chat", web_app=WebAppInfo(url=cfg.webapp_url)))
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Could not configure Mini App menu button")
     _dispatcher = Dispatcher()
     _dispatcher.include_router(bot_router)
     _polling_task = asyncio.create_task(
@@ -53,7 +62,7 @@ async def shutdown():
     if _bot is not None:
         await _bot.session.close()
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/bot", response_class=HTMLResponse)
 async def home():
     """Public page for the Railway domain; the chat itself lives in Telegram."""
     bot_username = cfg.public_bot_username.lstrip("@")

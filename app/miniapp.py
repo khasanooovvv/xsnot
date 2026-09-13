@@ -1,0 +1,182 @@
+import base64
+import hashlib
+import hmac
+import io
+import json
+import time
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from typing import Literal
+from urllib.parse import parse_qsl
+from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+from PIL import Image
+from sqlalchemy import select, func, delete, text as sql
+from app.config import settings
+from app.database import SessionLocal
+from app.models import User, MatchQueue, MiniAvatar, MiniMessage, Report
+from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
+from app.services.matching import active_match, find_or_queue, end_match, leave_queue
+
+router = APIRouter()
+
+@router.get('/')
+async def index():
+    return FileResponse(Path(__file__).parent / 'web' / 'index.html')
+
+async def identity(x_telegram_init_data: str = Header(default='')):
+    try:
+        pairs = parse_qsl(x_telegram_init_data, strict_parsing=True)
+        data = dict(pairs)
+        if len(pairs) != len(data): raise ValueError()
+        signature = data.pop('hash')
+        check = '\n'.join(f'{k}={v}' for k, v in sorted(data.items()))
+        secret = hmac.new(b'WebAppData', settings().bot_token.encode(), hashlib.sha256).digest()
+        expected = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected): raise ValueError()
+        if not -30 <= time.time() - int(data['auth_date']) <= 86400: raise ValueError()
+        account = json.loads(data['user'])
+        uid = int(account['id'])
+        ref = data.get('start_param', '')
+        ref = int(ref[4:]) if ref.startswith('ref_') else None
+    except (ValueError, KeyError, TypeError):
+        raise HTTPException(401, 'Mini App’ni Telegram bot ichidan qayta oching.')
+    async with SessionLocal() as s:
+        u = await get_or_create(s, uid, account.get('username'), account.get('first_name', 'Player')[:128], ref)
+        if u.is_banned: raise HTTPException(403, 'Profil bloklangan.')
+        await s.commit()
+    return uid
+
+async def registered(uid=Depends(identity)):
+    async with SessionLocal() as s:
+        u = await s.get(User, uid)
+        if not u.is_registered: raise HTTPException(403, 'Avval profilni to‘ldiring.')
+    return uid
+
+async def profile(s, u):
+    avatar = await s.get(MiniAvatar, u.telegram_id)
+    return dict(name=u.display_name, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
+        registered=u.is_registered, verified=u.is_verified, premium=days_left(u.premium_until),
+        gold=days_left(u.gold_until), referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
+
+@router.get('/api/me')
+async def me(uid=Depends(identity)):
+    async with SessionLocal() as s: return await profile(s, await s.get(User, uid))
+
+class Registration(BaseModel):
+    birthday: date
+    city: str = Field(min_length=2, max_length=100)
+    accepted: Literal[True]
+    avatar: str | None = Field(default=None, max_length=400000)
+
+@router.post('/api/register')
+async def register(body: Registration, uid=Depends(identity)):
+    if not 18 <= age_on(body.birthday) <= 120 or not body.city.strip():
+        raise HTTPException(422, 'Tug‘ilgan sana yoki shahar noto‘g‘ri. Chat 18+ uchun.')
+    avatar = None
+    if body.avatar:
+        try:
+            raw = base64.b64decode(body.avatar.split(',', 1)[1], validate=True)
+            with Image.open(io.BytesIO(raw)) as im:
+                if im.width * im.height > 4000000: raise ValueError()
+                im = im.convert('RGB'); im.thumbnail((256, 256))
+                out = io.BytesIO(); im.save(out, format='JPEG', quality=85)
+                avatar = 'data:image/jpeg;base64,' + base64.b64encode(out.getvalue()).decode()
+        except Exception: raise HTTPException(422, 'Rasmni qayta tanlang.')
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
+        u = await s.get(User, uid)
+        u.birth_date, u.city = body.birthday, body.city.strip()
+        u.is_registered = True
+        u.terms_accepted_at, u.terms_version = datetime.now(UTC), settings().terms_version
+        if avatar:
+            a = await s.get(MiniAvatar, uid)
+            if a: a.data = avatar
+            else: s.add(MiniAvatar(user_id=uid, data=avatar))
+        await apply_referral_reward(s, u)
+        await s.commit()
+        return await profile(s, u)
+
+class Search(BaseModel):
+    mode: Literal['anonymous', 'open'] = 'anonymous'
+    city: str = Field(default='', max_length=100)
+    min_age: int = Field(default=18, ge=18, le=120)
+    max_age: int = Field(default=99, ge=18, le=120)
+    accepted: Literal[True]
+
+@router.post('/api/search')
+async def search(body: Search, uid=Depends(registered)):
+    if body.min_age > body.max_age: raise HTTPException(422, 'Yosh oralig‘i noto‘g‘ri.')
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
+        if not await active_match(s, uid):
+            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, body.city.strip() or None, body.min_age, body.max_age)
+        await s.commit()
+    return {'ok': True}
+
+@router.get('/api/chat')
+async def chat(after: int = 0, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        m = await active_match(s, uid)
+        if not m or not m.mode.startswith('mini_'):
+            queued = await s.get(MatchQueue, uid)
+            if queued and queued.mode.startswith('mini_'):
+                queued.queued_at = datetime.now(UTC)
+                await s.commit()
+                return {'status': 'searching'}
+            return {'status': 'idle'}
+        partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
+        partner = {'name': 'Anonim', 'avatar': None}
+        if m.mode == 'mini_open':
+            p = await profile(s, await s.get(User, partner_id))
+            partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'gold')}
+        rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
+        return {'status': 'active', 'match': m.id, 'partner': partner, 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
+
+class MessageBody(BaseModel):
+    match: int
+    text: str = Field(min_length=1, max_length=2000)
+
+@router.post('/api/message')
+async def message(body: MessageBody, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        m = await active_match(s, uid)
+        if not m or m.id != body.match or not m.mode.startswith('mini_'): raise HTTPException(409, 'Suhbat tugagan.')
+        if not body.text.strip(): raise HTTPException(422, 'Xabar bo‘sh.')
+        s.add(MiniMessage(match_id=m.id, sender_id=uid, text=body.text.strip()))
+        await s.commit()
+    return {'ok': True}
+
+class StopBody(BaseModel):
+    reason: str = Field(default='', max_length=1000)
+
+@router.post('/api/stop')
+async def stop(body: StopBody, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        await leave_queue(s, uid)
+        m = await active_match(s, uid)
+        if m:
+            if body.reason.strip():
+                s.add(Report(reporter_id=uid, reported_id=m.user_two_id if m.user_one_id == uid else m.user_one_id, match_id=m.id, reason=body.reason.strip()))
+            await end_match(s, m)
+        await s.commit()
+    return {'ok': True}
+
+@router.get('/api/leaders')
+async def leaders(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        refs = User.__table__.alias('refs')
+        rows = (await s.execute(select(User.display_name, func.count(refs.c.telegram_id)).join(refs, refs.c.referred_by_id == User.telegram_id).where(refs.c.referral_rewarded.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(refs.c.telegram_id).desc(), User.telegram_id).limit(10))).all()
+        return [{'name':r[0], 'count':r[1]} for r in rows]
+
+@router.post('/api/invite')
+async def invite(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
+        if not await consume_share(s, uid): raise HTTPException(429, 'Bugungi 15 ta havola olish limiti tugadi.')
+        await s.commit()
+    return {'url': f'https://t.me/{settings().public_bot_username.lstrip("@")}'+f'?start=ref_{uid}'}

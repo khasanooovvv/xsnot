@@ -5,6 +5,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import WebAppInfo
 from sqlalchemy import func, select
 from app.config import settings
 from app.database import SessionLocal, init_db
@@ -52,6 +53,10 @@ async def start(message: Message, state: FSMContext):
     async with SessionLocal() as session:
         user = await get_or_create(session, message.from_user.id, message.from_user.username, message.from_user.full_name, ref)
         registered = user.is_registered; await session.commit()
+    if cfg.webapp_url:
+        await state.clear()
+        await message.answer("⚔️ PVP Chat — Mini App’ni oching", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="⚔️ Mini App’ni ochish", web_app=WebAppInfo(url=cfg.webapp_url))]]))
+        return
     if registered: await message.answer(tr(user.language,"welcome"), reply_markup=main_menu(user.language)); return
     await state.set_state(Register.terms)
     await message.answer(tr("uz","choose"), reply_markup=language_menu())

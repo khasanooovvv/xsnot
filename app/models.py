@@ -62,3 +62,15 @@ class ReferralShare(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
     share_day: Mapped[date] = mapped_column(Date)
     count: Mapped[int] = mapped_column(Integer, default=0)
+
+class MiniAvatar(Base):
+    __tablename__ = "mini_avatars"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"), primary_key=True)
+    data: Mapped[str] = mapped_column(Text)
+
+class MiniMessage(Base):
+    __tablename__ = "mini_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
+    sender_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"))
+    text: Mapped[str] = mapped_column(Text)
