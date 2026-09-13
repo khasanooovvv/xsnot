@@ -17,10 +17,13 @@ MAX_VIDEO_BYTES = 15 * 1024 * 1024
 @router.get('')
 async def verification_status(uid=Depends(registered)):
     async with SessionLocal() as s:
-        row = await s.scalar(select(VideoVerification).options(defer(VideoVerification.video)).where(VideoVerification.user_id == uid))
         u = await s.get(User, uid)
         silver_verified = bool(getattr(u, 'silver_verified', False))
-        return {'status':'approved' if silver_verified else ('rejected' if row and row.status == 'approved' else row.status if row else 'none'), 'reason':row.reason if row else None}
+        if silver_verified:
+            return {'status': 'approved', 'reason': None}
+        # Do not make the profile screen depend on the verification table being
+        # present during a rolling deploy or on an older database.
+        return {'status': 'none', 'reason': None}
 
 @router.post('/submit')
 async def submit(video: UploadFile = File(...), consent: bool = Form(...), uid=Depends(registered)):
