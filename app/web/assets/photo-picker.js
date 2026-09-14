@@ -15,66 +15,33 @@
   document.head.append(css);
   const pick = document.getElementById('pickPhoto'), input = document.getElementById('photo');
   if (!pick || !input) return;
-  let closeActive = null;
-  pick.onclick = async () => {
+  const camera = document.createElement('input');
+  camera.type='file';camera.accept='image/*';camera.setAttribute('capture','user');camera.hidden=true;
+  document.body.append(camera);
+  camera.onchange=()=>{
+    if(!camera.files.length)return;
+    input.files=camera.files;
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    camera.value='';
+  };
+  let closeActive=null;
+  pick.onclick=()=>{
     closeActive?.();
-    const overlay = document.createElement('div');
-    overlay.id='photoPicker';
-    overlay.innerHTML=`<section class="sheet" role="dialog" aria-modal="true" aria-labelledby="photoPickerTitle"><div class="handle"></div><div class="sheet-head"><h2 id="photoPickerTitle">Rasm tanlash</h2><button type="button" class="close" aria-label="Yopish">×</button></div><video autoplay muted playsinline aria-label="Old kamera"></video><p role="status">Kamera ochilmoqda…</p><button type="button" class="capture" disabled>Suratga olish</button><button type="button" class="gallery">Galereyadan tanlash</button></section>`;
+    const overlay=document.createElement('div');overlay.id='photoPicker';
+    overlay.innerHTML='<section class="sheet" role="dialog" aria-modal="true" aria-label="Rasm tanlash"><div class="handle"></div><button type="button" class="capture">📷 Suratga olish</button><button type="button" class="gallery">🖼 Galereyadan tanlash</button></section>';
     document.body.append(overlay);
-    const video=overlay.querySelector('video'), status=overlay.querySelector('[role=status]'), capture=overlay.querySelector('.capture');
-    const previousOverflow=document.body.style.overflow;
-    document.body.style.overflow='hidden';
-    let stream=null, closed=false;
-    function close(){
-      if(closed)return;
-      closed=true; stream?.getTracks().forEach(track=>track.stop()); video.srcObject=null;
-      overlay.remove();document.body.style.overflow=previousOverflow;
-      document.removeEventListener('keydown',keys);closeActive=null;pick.focus();
+    const previous=document.body.style.overflow;document.body.style.overflow='hidden';
+    const close=()=>{overlay.remove();document.body.style.overflow=previous;document.removeEventListener('keydown',keys);closeActive=null;pick.focus()};
+    const buttons=[...overlay.querySelectorAll('button')];
+    function keys(e){
+      if(e.key==='Escape')close();
+      if(e.key==='Tab'){e.preventDefault();buttons[document.activeElement===buttons[0]?1:0].focus()}
     }
-    function keys(event){
-      if(event.key==='Escape')close();
-      if(event.key==='Tab'){
-        const items=[...overlay.querySelectorAll('button:not(:disabled)')];
-        if(event.shiftKey&&document.activeElement===items[0]){event.preventDefault();items.at(-1).focus()}
-        else if(!event.shiftKey&&document.activeElement===items.at(-1)){event.preventDefault();items[0].focus()}
-      }
-    }
-    closeActive=close;
-    document.addEventListener('keydown',keys);
-    overlay.querySelector('.close').onclick=close;
-    overlay.onclick=event=>{if(event.target===overlay)close()};
-    overlay.querySelector('.gallery').onclick=()=>{close();input.click()};
-    overlay.querySelector('.close').focus();
-    capture.onclick=()=>{
-      if(!video.videoWidth||!video.videoHeight)return;
-      capture.disabled=true;
-      const canvas=document.createElement('canvas');
-      const scale=Math.min(1,2048/Math.max(video.videoWidth,video.videoHeight));
-      canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
-      const context=canvas.getContext('2d');
-      context.translate(canvas.width,0);context.scale(-1,1);context.drawImage(video,0,0,canvas.width,canvas.height);
-      canvas.toBlob(blob=>{
-        if(closed)return;
-        if(!blob){status.textContent='Surat olinmadi. Qayta urinib ko‘ring.';capture.disabled=false;return}
-        try{
-          const transfer=new DataTransfer();transfer.items.add(new File([blob],'camera.jpg',{type:'image/jpeg'}));input.files=transfer.files;
-          close();input.dispatchEvent(new Event('change',{bubbles:true}));
-        }catch{status.textContent='Suratni uzatib bo‘lmadi. Galereyadan tanlang.';capture.disabled=false}
-      },'image/jpeg',.92);
-    };
-    try{
-      if(!navigator.mediaDevices?.getUserMedia)throw Error('unsupported');
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:1280}},audio:false});
-      if(closed){stream.getTracks().forEach(track=>track.stop());return}
-      video.srcObject=stream;await video.play();
-      if(closed)return;
-      capture.disabled=false;status.textContent='Suratga oling yoki galereyadan rasm tanlang.';
-    }catch(error){
-      stream?.getTracks().forEach(track=>track.stop());
-      if(!closed){video.hidden=true;status.textContent=error.name==='NotAllowedError'?'Kameraga ruxsat berilmadi. Galereyadan rasm tanlashingiz mumkin.':'Kamera ochilmadi. Galereyadan rasm tanlang.'}
-    }
+    closeActive=close;document.addEventListener('keydown',keys);
+    overlay.onclick=e=>{if(e.target===overlay)close()};
+    buttons[0].onclick=()=>{close();camera.click()};
+    buttons[1].onclick=()=>{close();input.click()};
+    buttons[0].focus();
   };
   window.addEventListener('pagehide',()=>closeActive?.());
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)closeActive?.()});
 })();
