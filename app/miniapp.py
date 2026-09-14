@@ -27,6 +27,10 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/gold-status.js')
+async def gold_status_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'gold-status.js', media_type='application/javascript')
+
 @router.get('/assets/photo-picker.js')
 async def photo_picker_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'photo-picker.js', media_type='application/javascript')
@@ -118,6 +122,15 @@ async def my_avatar(version: str = '', uid=Depends(identity)):
         if version == current:
             return {'version': current, 'unchanged': True}
         return {'avatar': data, 'version': current, 'unchanged': False}
+
+@router.get('/api/me/gold')
+async def my_gold(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        user = await s.get(User, uid)
+        until = user.gold_until
+        if until and until.tzinfo is None:
+            until = until.replace(tzinfo=UTC)
+        return {'gold_until': until, 'server_now': datetime.now(UTC)}
 
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):

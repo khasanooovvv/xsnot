@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {goldRemaining,goldExpiryLabel}=require('../app/web/assets/gold-status.js');
+const now=Date.parse('2026-09-14T08:00:00Z');
+assert.deepEqual(goldRemaining(now+5*86400000,now),{seconds:432000,days:5,hours:0,minutes:0});
+assert.deepEqual(goldRemaining(now+5*86400000,now+23*3600000),{seconds:349200,days:4,hours:1,minutes:0});
+assert.equal(goldRemaining(now,now).seconds,0);
+assert.equal(goldRemaining(now,now+1000).seconds,0);
+assert.equal(goldRemaining(now+59000,now).minutes,0);
+assert.equal(goldExpiryLabel(Date.parse('2026-09-18T20:00:00Z')),'Gold 19-sentyabrgacha faol');
+assert.equal(goldRemaining(now+6*86400000,now).days,6);
+console.log('PASS: Gold duration, extension, expiry, and Tashkent date');
