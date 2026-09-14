@@ -110,6 +110,7 @@ async def delete_account(uid=Depends(identity)):
     return {'ok': True, 'deleted': True}
 
 class Registration(BaseModel):
+    name: str = Field(min_length=2, max_length=64)
     birthday: date
     city: str = Field(min_length=2, max_length=100)
     accepted: Literal[True]
@@ -132,7 +133,7 @@ async def register(body: Registration, uid=Depends(identity)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
         u = await s.get(User, uid)
-        u.birth_date, u.city = body.birthday, body.city.strip()
+        u.display_name, u.birth_date, u.city = body.name.strip(), body.birthday, body.city.strip()
         u.is_registered = True
         u.terms_accepted_at, u.terms_version = datetime.now(UTC), settings().terms_version
         if avatar:
