@@ -23,7 +23,7 @@ from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
 from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
-from app.services.matching import active_match, find_or_queue, end_match, leave_queue
+from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous
 
 router = APIRouter()
 
@@ -213,19 +213,15 @@ async def register(body: Registration, uid=Depends(identity)):
 
 class Search(BaseModel):
     mode: Literal['anonymous', 'open'] = 'anonymous'
-    city: str = Field(default='', max_length=100)
-    min_age: int = Field(default=18, ge=18, le=120)
-    max_age: int = Field(default=99, ge=18, le=120)
     accepted: Literal[True]
 
 @router.post('/api/search')
 async def search(body: Search, uid=Depends(registered)):
-    if body.min_age > body.max_age: raise HTTPException(422, 'Yosh oralig‘i noto‘g‘ri.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
         if not await active_match(s, uid):
-            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, body.city.strip() or None, body.min_age, body.max_age)
+            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, None, None, None)
         await s.commit()
     return {'ok': True}
 
@@ -242,11 +238,11 @@ async def chat(after: int = 0, uid=Depends(registered)):
             return {'status': 'idle'}
         partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
         partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
-        if m.mode == 'mini_open':
+        if not is_anonymous(m, partner_id):
             p = await profile(s, await s.get(User, partner_id))
             partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'silver', 'gold')}
         rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
-        return {'status': 'active', 'match': m.id, 'partner': partner, 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
+        return {'status': 'active', 'match': m.id, 'partner': partner, 'own_anonymous': is_anonymous(m, uid), 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
 
 class MessageBody(BaseModel):
     match: int
