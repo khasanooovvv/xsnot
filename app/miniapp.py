@@ -23,7 +23,7 @@ from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
 from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
-from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous
+from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
 router = APIRouter()
 
@@ -215,12 +215,31 @@ class Search(BaseModel):
     mode: Literal['anonymous', 'open'] = 'anonymous'
     accepted: Literal[True]
 
+class PrivacyChoice(BaseModel):
+    anonymous: bool
+
+@router.post('/api/chat/privacy')
+async def chat_privacy(body: PrivacyChoice, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        queued = await s.get(MatchQueue, uid)
+        if queued and queued.mode.startswith('mini_'):
+            queued.mode = 'mini_anonymous' if body.anonymous else 'mini_open'
+        m = await active_match(s, uid)
+        if m and m.mode.startswith('mini_'):
+            set_anonymous(m, uid, body.anonymous)
+        await s.commit()
+    return {'ok': True}
+
 @router.post('/api/search')
 async def search(body: Search, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
-        if not await active_match(s, uid):
+        existing = await active_match(s, uid)
+        if existing and existing.mode.startswith('mini_'):
+            set_anonymous(existing, uid, body.mode == 'anonymous')
+        elif not existing:
             await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, None, None, None)
         await s.commit()
     return {'ok': True}
@@ -241,6 +260,7 @@ async def chat(after: int = 0, uid=Depends(registered)):
         if not is_anonymous(m, partner_id):
             p = await profile(s, await s.get(User, partner_id))
             partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'silver', 'gold')}
+            partner['anonymous'] = False
         rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
         return {'status': 'active', 'match': m.id, 'partner': partner, 'own_anonymous': is_anonymous(m, uid), 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
 

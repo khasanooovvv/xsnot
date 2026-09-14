@@ -41,6 +41,11 @@ def is_anonymous(match: Match, user_id: int) -> bool:
         return match.mode[5 if user_id == match.user_one_id else 6] == 'a'
     return match.mode != 'mini_open'
 
+def set_anonymous(match: Match, user_id: int, anonymous: bool):
+    one = anonymous if user_id == match.user_one_id else is_anonymous(match, match.user_one_id)
+    two = anonymous if user_id == match.user_two_id else is_anonymous(match, match.user_two_id)
+    match.mode = 'mini_' + ('a' if one else 'o') + ('a' if two else 'o')
+
 async def active_match(session: AsyncSession, user_id: int):
     return await session.scalar(select(Match).where(Match.status == "active", or_(Match.user_one_id == user_id, Match.user_two_id == user_id)))
 

@@ -32,12 +32,71 @@ async function run(fn){try{notice('');await fn()}catch(e){notice(e.message)}}
 function renderProfile(){$('profileInfo').innerHTML=avatar(me)+'<h2>'+esc(me.name)+badgeMarkup(me)+'</h2><p class="muted">'+esc(me.city)+' • '+esc(me.age)+' '+t('yosh')+'</p><div class="row"><div>💎 Silver<div class="stat">'+t(me.silver?'Abadiy':'Tasdiqlanmagan')+'</div></div><div>🥇 Gold<div class="stat">'+me.gold+' '+t('kun')+'</div></div></div><p>'+t('Takliflar:')+' <b>'+me.referrals+'</b></p>'}
 async function photo(){const f=$('photo').files[0];if(!f)return null;if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)}
 $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$('photo');if(!f.files[0]){const msg=document.querySelector('#photoRequiredMessage');if(msg){msg.textContent='Iltimos, rasm tanlang.';msg.hidden=false}if(navigator.vibrate)navigator.vibrate(180);return}const msg=document.querySelector('#photoRequiredMessage');if(msg)msg.hidden=true;b.disabled=true;run(async()=>{me=await api('register',{name:$('displayName').value.trim(),birthday:$('birthday').value,city:$('city').value,accepted:$('terms').checked,avatar:await photo()});$('nav').hidden=false;show('home')}).finally(()=>b.disabled=false)};
-$('searchForm').onsubmit=e=>{e.preventDefault();run(async()=>{searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:$('chatTerms').checked};await api('search',searchOptions);show('chat');await poll()})};
-async function poll(){if(document.hidden||polling||!me?.registered)return;polling=true;try{const d=await api('chat?after='+after);if(d.status==='active'){if(match!==d.match){match=d.match;after=0;$('messages').textContent='';$('reveal').innerHTML='<div>'+avatar({...me,anonymous:d.own_anonymous})+'<p>'+t('Siz')+badgeMarkup({...me,anonymous:d.own_anonymous})+'</p></div><strong>VS</strong><div>'+avatar(d.partner)+'<p>'+esc(d.partner.anonymous?t('Anonim'):d.partner.name)+badgeMarkup(d.partner)+'</p></div>';$('reveal').hidden=false;show('chat');} $('chatTitle').textContent=t('Suhbat boshlandi');$('messageForm').hidden=false;$('report').hidden=false;for(const m of d.messages){const el=document.createElement('div');el.className='bubble'+(m.mine?' mine':'');el.textContent=m.text;$('messages').append(el);after=m.id;}if(d.messages.length)$('messages').scrollTop=$('messages').scrollHeight;}else{if(match){notice(t('Suhbat yakunlandi. Yangi sherik topishingiz mumkin.'));match=null;after=0;}$('chatTitle').textContent=d.status==='searching'?t('Sherik qidirilmoqda…'):t('Suhbat tugagan');$('messageForm').hidden=true;$('report').hidden=true;$('reveal').hidden=true;if(d.status==='searching')show('chat');}}catch(e){notice(e.message)}finally{polling=false}}
-$('messageForm').onsubmit=e=>{e.preventDefault();const value=$('message').value;run(async()=>{await api('message',{match,text:value});if($('message').value===value)$('message').value='';await poll()})};
-$('stop').onclick=()=>run(async()=>{await api('stop',{});match=null;after=0;show('home')});
-$('next').onclick=()=>run(async()=>{await api('stop',{});match=null;after=0;if(searchOptions){await api('search',searchOptions);await poll()}else show('home')});
-$('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(reason?.trim())run(async()=>{await api('stop',{reason});match=null;after=0;show('home');notice(t('Shikoyat administratorga yuborildi.'))})};
+let chatEpoch=0, chatBusy=false, revealMarkup='';
+function clearChatView(){
+  match=null;after=0;revealMarkup='';
+  $('messages').replaceChildren();$('message').value='';$('reveal').replaceChildren();
+  $('reveal').hidden=true;$('messageForm').hidden=true;$('report').hidden=true;
+}
+async function chatAction(action){
+  if(chatBusy)return;chatBusy=true;++chatEpoch;
+  try{await run(action)}finally{chatBusy=false;poll()}
+}
+$('anonymousMode').onchange=()=>{
+  const toggle=$('anonymousMode'),choice=toggle.checked;
+  if(chatBusy){toggle.checked=!choice;return}
+  toggle.disabled=true;
+  chatAction(async()=>{
+    try{await api('chat/privacy',{anonymous:choice});if(searchOptions)searchOptions.mode=choice?'anonymous':'open'}
+    catch(error){toggle.checked=!choice;throw error}
+    finally{toggle.disabled=false}
+  });
+};
+$('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
+  searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:$('chatTerms').checked};
+  clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');
+  await api('search',searchOptions);
+})};
+async function poll(){
+  if(document.hidden||polling||chatBusy||!me?.registered)return;
+  const epoch=chatEpoch;polling=true;
+  try{
+    const d=await api('chat?after='+after);
+    if(epoch!==chatEpoch)return;
+    if(d.status==='active'){
+      if(match!==d.match){clearChatView();match=d.match;show('chat')}
+      const own={...me,anonymous:d.own_anonymous};
+      const markup='<div>'+avatar(own)+'<p>'+t('Siz')+badgeMarkup(own)+'</p></div><strong>VS</strong><div>'+avatar(d.partner)+'<p>'+esc(d.partner.anonymous?t('Anonim'):d.partner.name)+badgeMarkup(d.partner)+'</p></div>';
+      if(markup!==revealMarkup){$('reveal').innerHTML=markup;revealMarkup=markup}
+      $('reveal').hidden=false;$('chatTitle').textContent=t('Suhbat boshlandi');
+      $('messageForm').hidden=false;$('report').hidden=false;
+      $('anonymousMode').checked=Boolean(d.own_anonymous);
+      for(const m of d.messages){
+        if(m.id<=after)continue;
+        const el=document.createElement('div');el.className='bubble'+(m.mine?' mine':'');el.textContent=m.text;
+        $('messages').append(el);after=m.id;
+      }
+      if(d.messages.length)$('messages').scrollTop=$('messages').scrollHeight;
+    }else{
+      const ended=Boolean(match);clearChatView();
+      if(ended)notice(t('Suhbat yakunlandi. Yangi sherik topishingiz mumkin.'));
+      $('chatTitle').textContent=t(d.status==='searching'?'Sherik qidirilmoqda…':'Suhbat tugagan');
+      if(d.status==='searching')show('chat');
+    }
+  }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false}
+}
+$('messageForm').onsubmit=e=>{e.preventDefault();if(chatBusy||!match)return;const value=$('message').value,id=match,epoch=chatEpoch;
+  run(async()=>{await api('message',{match:id,text:value});if(epoch===chatEpoch&&match===id){if($('message').value===value)$('message').value='';await poll()}})
+};
+$('stop').onclick=()=>chatAction(async()=>{clearChatView();show('home');await api('stop',{})});
+$('next').onclick=()=>chatAction(async()=>{
+  clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');
+  await api('stop',{});
+  if(searchOptions){searchOptions.mode=$('anonymousMode').checked?'anonymous':'open';await api('search',searchOptions);show('chat')}else show('home');
+});
+$('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(reason?.trim())chatAction(async()=>{
+  clearChatView();show('home');await api('stop',{reason});notice(t('Shikoyat administratorga yuborildi.'));
+})};
 $('invite').onclick=()=>run(async()=>{const d=await api('invite',{});$('inviteLink').href=d.url;$('inviteLink').textContent=d.url;$('inviteLink').hidden=false;$('copyInvite').hidden=false;notice(t(d.bot_sent?'Havola bot chatiga ham yuborildi.':'Havola tayyor. Botga yuborilmadi; botni ochib /start bosing.'))});
 $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inviteLink').href);notice(t('Havola nusxalandi.'))}catch{notice(t('Nusxalash ishlamadi. Havolani bosib ushlab nusxalang.'))}};
 let navVersion=0, profileRefresh=null, leadersRefresh=null;

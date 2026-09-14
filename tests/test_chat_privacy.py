@@ -34,6 +34,21 @@ class Session:
 
 
 class PrivacyTests(unittest.IsolatedAsyncioTestCase):
+    def test_toggle_preserves_partners_choice(self):
+        ns = {}
+        anonymous = load_function('app/services/matching.py', 'is_anonymous', ns)
+        change = load_function('app/services/matching.py', 'set_anonymous', ns)
+        match = SimpleNamespace(mode='mini_aa',user_one_id=1,user_two_id=2)
+        change(match,1,False)
+        self.assertFalse(anonymous(match,1))
+        self.assertTrue(anonymous(match,2))
+        change(match,2,False)
+        self.assertFalse(anonymous(match,1))
+        self.assertFalse(anonymous(match,2))
+        change(match,1,True)
+        self.assertTrue(anonymous(match,1))
+        self.assertFalse(anonymous(match,2))
+
     async def test_each_participants_choice_is_enforced(self):
         anonymous = load_function('app/services/matching.py', 'is_anonymous', {})
         for mode, flags in [('mini_aa',(True,True)), ('mini_ao',(True,False)), ('mini_oa',(False,True)), ('mini_oo',(False,False)), ('mini_anonymous',(True,True)), ('mini_open',(False,False))]:
