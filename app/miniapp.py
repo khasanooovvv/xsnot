@@ -83,7 +83,7 @@ def normalize_photo(content):
                 raise ValueError()
             image = ImageOps.exif_transpose(source).convert('RGB')
             output = io.BytesIO()
-            image.save(output, format='PNG')
+            image.save(output, format='PNG', compress_level=1)
             return {'image': 'data:image/png;base64,' + base64.b64encode(output.getvalue()).decode()}
     except Exception:
         raise HTTPException(422, 'Rasm ochilmadi. JPEG, PNG, WebP yoki HEIC rasm tanlang.')
@@ -157,7 +157,7 @@ async def register(body: Registration, uid=Depends(identity)):
             with Image.open(io.BytesIO(raw)) as im:
                 if im.width * im.height > 40000000: raise ValueError()
                 im = im.convert('RGB')
-                out = io.BytesIO(); im.save(out, format='PNG')
+                out = io.BytesIO(); im.save(out, format='PNG', compress_level=1)
                 avatar = 'data:image/png;base64,' + base64.b64encode(out.getvalue()).decode()
         except Exception: raise HTTPException(422, 'Rasmni qayta tanlang.')
     async with SessionLocal() as s:
