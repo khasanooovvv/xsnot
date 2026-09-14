@@ -98,16 +98,16 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
         raise HTTPException(422, '20 MB dan kichik rasm tanlang.')
     return await run_in_threadpool(normalize_photo, content)
 
-async def profile(s, u):
-    avatar = await s.get(MiniAvatar, u.telegram_id)
+async def profile(s, u, include_avatar=True):
+    avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
     return dict(name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
 
 @router.get('/api/me')
-async def me(uid=Depends(identity)):
-    async with SessionLocal() as s: return await profile(s, await s.get(User, uid))
+async def me(include_avatar: bool = True, uid=Depends(identity)):
+    async with SessionLocal() as s: return await profile(s, await s.get(User, uid), include_avatar)
 
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):

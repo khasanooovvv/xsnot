@@ -40,7 +40,20 @@ $('next').onclick=()=>run(async()=>{await api('stop',{});match=null;after=0;if(s
 $('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(reason?.trim())run(async()=>{await api('stop',{reason});match=null;after=0;show('home');notice(t('Shikoyat administratorga yuborildi.'))})};
 $('invite').onclick=()=>run(async()=>{const d=await api('invite',{});$('inviteLink').href=d.url;$('inviteLink').textContent=d.url;$('inviteLink').hidden=false;$('copyInvite').hidden=false;notice(t(d.bot_sent?'Havola bot chatiga ham yuborildi.':'Havola tayyor. Botga yuborilmadi; botni ochib /start bosing.'))});
 $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inviteLink').href);notice(t('Havola nusxalandi.'))}catch{notice(t('Nusxalash ishlamadi. Havolani bosib ushlab nusxalang.'))}};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>run(async()=>{if(b.dataset.page==='profile'){me=await api('me');renderProfile();await loadVerification()}if(b.dataset.page==='leaders'){const rows=await api('leaders');$('leaderList').innerHTML=rows.length?rows.map((r,i)=>'<div class="rank"><span>'+ (i+1)+'. '+esc(r.name)+badgeMarkup(r)+'</span><b>'+r.count+'</b></div>').join(''):t('Hali natijalar yo‘q. Do‘stlaringizni birinchi bo‘lib taklif qiling!')}show(b.dataset.page==='home'&&match?'chat':b.dataset.page)}));
+let navVersion=0, profileRefresh=null, leadersRefresh=null;
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  const version=++navVersion, page=b.dataset.page;
+  if(page==='profile'&&me)renderProfile();
+  show(page==='home'&&match?'chat':page);
+  if(page==='profile'){
+    if(!profileRefresh)profileRefresh=Promise.all([api('me?include_avatar=false'),loadVerification()]).then(([fresh])=>{me={...fresh,avatar:me?.avatar};}).finally(()=>profileRefresh=null);
+    profileRefresh.then(()=>{if(version===navVersion)renderProfile()}).catch(e=>{if(version===navVersion)notice(e.message)});
+  }
+  if(page==='leaders'){
+    if(!leadersRefresh)leadersRefresh=api('leaders').finally(()=>leadersRefresh=null);
+    leadersRefresh.then(rows=>{if(version!==navVersion)return;$('leaderList').innerHTML=rows.length?rows.map((r,i)=>'<div class="rank"><span>'+(i+1)+'. '+esc(r.name)+badgeMarkup(r)+'</span><b>'+r.count+'</b></div>').join(''):t('Hali natijalar yo‘q. Do‘stlaringizni birinchi bo‘lib taklif qiling!')}).catch(e=>{if(version===navVersion)notice(e.message)});
+  }
+});
 async function loadVerification(){const d=await api('verification');$('verificationStatus').textContent=t(d.status==='approved'?'Silver tasdiqlangan — abadiy.':d.status==='pending'?'Video admin tekshiruvida.':d.status==='rejected'?'Video rad etildi.':'Video yuborilmagan.')+(d.reason?' '+d.reason:'');$('videoForm').hidden=['approved','pending'].includes(d.status);}
 const verificationCamera=createVerificationCamera({preview:$('cameraPreview'),playback:$('cameraPlayback'),onError:message=>notice(t(message)),onState:(state,seconds)=>{
 $('cameraPanel').hidden=state==='idle';$('openCamera').hidden=state!=='idle';$('cameraPreview').hidden=state==='review';$('cameraPlayback').hidden=state!=='review';$('recordCamera').hidden=state!=='ready';$('stopCamera').hidden=state!=='recording';$('stopCamera').disabled=seconds<5;$('retakeCamera').hidden=state!=='review';$('submitVideo').disabled=state!=='review';$('cameraStatus').textContent=state==='opening'?t('Kamera ochilmoqda…'):state==='recording'?seconds+' / 15 '+t('soniya'):state==='review'?t('Videoni ko‘rib chiqing va yuboring.'):t('Yuzingizni kameraga qarating.');
