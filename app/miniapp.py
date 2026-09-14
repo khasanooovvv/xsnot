@@ -139,6 +139,20 @@ async def delete_account(uid=Depends(identity)):
         await s.commit()
     return {'ok': True, 'deleted': True}
 
+class ProfileName(BaseModel):
+    name: str = Field(min_length=2, max_length=64)
+
+@router.post('/api/profile/name')
+async def update_profile_name(body: ProfileName, uid=Depends(registered)):
+    name = body.name.strip()
+    if len(name) < 2:
+        raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
+    async with SessionLocal() as s:
+        user = await s.get(User, uid, with_for_update=True)
+        user.display_name = name
+        await s.commit()
+    return {'name': name}
+
 class Registration(BaseModel):
     name: str = Field(min_length=2, max_length=64)
     birthday: date
