@@ -15,7 +15,9 @@ async def get_or_create(session: AsyncSession, user_id: int, username: str | Non
     user = await session.get(User, user_id)
     if user:
         user._new_referral = False
-        user.username, user.display_name = username, name
+        user.username = username
+        if not user.is_registered:
+            user.display_name = name
         return user
     valid = referrer if referrer and 0 < referrer < 2**63 and referrer != user_id and await session.get(User, referrer) else None
     repeat_referral = bool(valid and await session.scalar(select(ReferralHistory.id).where(ReferralHistory.referrer_id == valid, ReferralHistory.referred_id == user_id)))
