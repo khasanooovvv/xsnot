@@ -109,6 +109,12 @@ async def profile(s, u, include_avatar=True):
 async def me(include_avatar: bool = True, uid=Depends(identity)):
     async with SessionLocal() as s: return await profile(s, await s.get(User, uid), include_avatar)
 
+@router.get('/api/me/avatar')
+async def my_avatar(uid=Depends(identity)):
+    async with SessionLocal() as s:
+        avatar = await s.get(MiniAvatar, uid)
+        return {'avatar': avatar.data if avatar else None}
+
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):
     """Permanently erase every record owned by the authenticated account."""
