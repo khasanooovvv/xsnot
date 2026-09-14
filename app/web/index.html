@@ -29,7 +29,7 @@ async function api(path,body){const r=await fetch('/api/'+path,{method:body===un
 function show(id){if(id!=='profile'&&typeof verificationCamera!=='undefined')verificationCamera.cancel();for(const el of document.querySelectorAll('main>section'))el.hidden=el.id!==id;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('selected',b.dataset.page===id))}
 function avatar(p){return '<div class="avatar">'+(p.avatar?'<img alt="Profil rasmi" src="'+esc(p.avatar)+'">':esc((p.name||'?').slice(0,1)))+'</div>'}
 async function run(fn){try{notice('');await fn()}catch(e){notice(e.message)}}
-function renderProfile(){$('profileInfo').innerHTML=avatar(me)+'<h2><button type="button" id="changeProfileName" aria-label="Ismni o‘zgartirish" style="width:auto;background:transparent;border:0;padding:0;margin:0;font:inherit">'+esc(me.name)+' ✎</button>'+badgeMarkup(me)+'</h2><p class="muted">'+esc(me.city)+' • '+esc(me.age)+' '+t('yosh')+'</p><div class="row"><div>💎 Silver<div class="stat">'+t(me.silver?'Abadiy':'Tasdiqlanmagan')+'</div></div><div>🥇 Gold<div class="stat">'+me.gold+' '+t('kun')+'</div></div></div><p>'+t('Takliflar:')+' <b>'+me.referrals+'</b></p>'}
+function renderProfile(){$('profileInfo').innerHTML=avatar(me)+'<h2>'+esc(me.name)+badgeMarkup(me)+'</h2><p class="muted">'+esc(me.city)+' • '+esc(me.age)+' '+t('yosh')+'</p><div class="row"><div>💎 Silver<div class="stat">'+t(me.silver?'Abadiy':'Tasdiqlanmagan')+'</div></div><div>🥇 Gold<div class="stat">'+me.gold+' '+t('kun')+'</div></div></div><p>'+t('Takliflar:')+' <b>'+me.referrals+'</b></p>'}
 async function photo(){const f=$('photo').files[0];if(!f)return null;if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)}
 $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$('photo');if(!f.files[0]){const msg=document.querySelector('#photoRequiredMessage');if(msg){msg.textContent='Iltimos, rasm tanlang.';msg.hidden=false}if(navigator.vibrate)navigator.vibrate(180);return}const msg=document.querySelector('#photoRequiredMessage');if(msg)msg.hidden=true;b.disabled=true;run(async()=>{me=await api('register',{name:$('displayName').value.trim(),birthday:$('birthday').value,city:$('city').value,accepted:$('terms').checked,avatar:await photo()});$('nav').hidden=false;show('home')}).finally(()=>b.disabled=false)};
 $('searchForm').onsubmit=e=>{e.preventDefault();run(async()=>{searchOptions={mode:$('mode').value,city:$('filterCity').value,min_age:Number($('minAge').value),max_age:Number($('maxAge').value),accepted:$('chatTerms').checked};await api('search',searchOptions);show('chat');await poll()})};
@@ -41,13 +41,7 @@ $('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(
 $('invite').onclick=()=>run(async()=>{const d=await api('invite',{});$('inviteLink').href=d.url;$('inviteLink').textContent=d.url;$('inviteLink').hidden=false;$('copyInvite').hidden=false;notice(t(d.bot_sent?'Havola bot chatiga ham yuborildi.':'Havola tayyor. Botga yuborilmadi; botni ochib /start bosing.'))});
 $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inviteLink').href);notice(t('Havola nusxalandi.'))}catch{notice(t('Nusxalash ishlamadi. Havolani bosib ushlab nusxalang.'))}};
 let navVersion=0, profileRefresh=null, leadersRefresh=null;
-document.addEventListener('click',event=>{
-  if(!event.target.closest('#changeProfileName'))return;
-  const name=prompt('Profilingizda ko‘rinadigan ismingizni yozing:',me?.name||'');
-  if(name===null)return;
-  if(name.trim().length<2||name.trim().length>64){notice('Ism 2–64 ta belgidan iborat bo‘lsin.');return;}
-  run(async()=>{if(profileRefresh)await profileRefresh.catch(()=>{});const result=await api('profile/name',{name:name.trim()});me.name=result.name;renderProfile();});
-});
+
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   const version=++navVersion, page=b.dataset.page;
