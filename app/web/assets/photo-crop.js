@@ -17,9 +17,9 @@ input.addEventListener('change', async () => {
   if (!file) return;
   const modal = document.createElement('div');
   modal.id = 'cropModal'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
-  modal.innerHTML = '<p id="cropHelp">Rasm yuklanmoqda…</p><div id="cropStage"><canvas id="cropCanvas" width="512" height="512"></canvas><div id="cropMask"></div></div><div class="crop-controls"><input id="cropZoom" aria-label="Kattalashtirish" type="range" min="1" max="5" step="0.01" value="1"><button id="cropConfirm" type="button" disabled>Tasdiqlash ✓</button><button id="cropCancel" type="button" class="secondary">Bekor qilish</button></div>';
+  modal.innerHTML = '<p id="cropHelp">Rasm yuklanmoqda…</p><div id="cropStage"><canvas id="cropCanvas" width="512" height="512"></canvas><div id="cropMask"></div></div><div class="crop-controls"><button id="cropConfirm" type="button" disabled>Tasdiqlash ✓</button><button id="cropCancel" type="button" class="secondary">Bekor qilish</button></div>';
   document.body.append(modal);
-  const canvas = modal.querySelector('canvas'), ctx = canvas.getContext('2d'), stage = modal.querySelector('#cropStage'), zoom = modal.querySelector('#cropZoom'), confirm = modal.querySelector('#cropConfirm');
+  const canvas = modal.querySelector('canvas'), ctx = canvas.getContext('2d'), stage = modal.querySelector('#cropStage'), confirm = modal.querySelector('#cropConfirm');
   const cancel = () => { ++generation; input.value=''; confirmed=null; selected=null; $('pickPhoto').textContent='Rasm tanlash'; modal.remove(); };
   modal.querySelector('#cropCancel').onclick=cancel;
   let bitmap;
@@ -32,8 +32,8 @@ input.addEventListener('change', async () => {
   } catch(error) { if(token===generation){cancel();notice(error.message)} return; }
   let base=Math.max(512/bitmap.width,512/bitmap.height), scale=base, x=(512-bitmap.width*base)/2, y=(512-bitmap.height*base)/2;
   function draw(){x=Math.min(0,Math.max(512-bitmap.width*scale,x));y=Math.min(0,Math.max(512-bitmap.height*scale,y));ctx.clearRect(0,0,512,512);ctx.drawImage(bitmap,x,y,bitmap.width*scale,bitmap.height*scale)}
-  function resize(next,cx=256,cy=256){next=Math.max(base,Math.min(base*5,next));const ratio=next/scale;x=cx-(cx-x)*ratio;y=cy-(cy-y)*ratio;scale=next;zoom.value=scale/base;draw()}
-  zoom.oninput=()=>resize(base*Number(zoom.value));
+  function resize(next,cx=256,cy=256){next=Math.max(base,Math.min(base*5,next));const ratio=next/scale;x=cx-(cx-x)*ratio;y=cy-(cy-y)*ratio;scale=next;draw()}
+
   const pointers=new Map();
   const point=e=>{const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)*512/r.width,y:(e.clientY-r.top)*512/r.height}};
   stage.onpointerdown=e=>{stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,point(e));};
@@ -48,6 +48,6 @@ input.addEventListener('change', async () => {
   stage.addEventListener('wheel',e=>{e.preventDefault();resize(scale*Math.exp(-e.deltaY*.001))},{passive:false});
   modal.querySelector('#cropHelp').textContent='Rasmni suring. Ikki barmoq bilan kattalashtiring.';
   draw();confirm.disabled=false;
-  confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=256;output.getContext('2d').drawImage(canvas,0,0,256,256);confirmed=output.toDataURL('image/jpeg',.9);selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
+  confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=Math.max(1,Math.round(512/scale));output.getContext('2d').drawImage(bitmap,-x/scale,-y/scale,512/scale,512/scale,0,0,output.width,output.height);confirmed=output.toDataURL('image/png');selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
 });
 })();

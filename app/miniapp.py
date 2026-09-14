@@ -82,10 +82,9 @@ def normalize_photo(content):
             if source.width * source.height > 40000000:
                 raise ValueError()
             image = ImageOps.exif_transpose(source).convert('RGB')
-            image.thumbnail((2048, 2048))
             output = io.BytesIO()
-            image.save(output, format='JPEG', quality=92)
-            return {'image': 'data:image/jpeg;base64,' + base64.b64encode(output.getvalue()).decode()}
+            image.save(output, format='PNG')
+            return {'image': 'data:image/png;base64,' + base64.b64encode(output.getvalue()).decode()}
     except Exception:
         raise HTTPException(422, 'Rasm ochilmadi. JPEG, PNG, WebP yoki HEIC rasm tanlang.')
 
@@ -145,7 +144,7 @@ class Registration(BaseModel):
     birthday: date
     city: str = Field(min_length=2, max_length=100)
     accepted: Literal[True]
-    avatar: str | None = Field(default=None, max_length=400000)
+    avatar: str | None = Field(default=None, max_length=160000000)
 
 @router.post('/api/register')
 async def register(body: Registration, uid=Depends(identity)):
@@ -156,10 +155,10 @@ async def register(body: Registration, uid=Depends(identity)):
         try:
             raw = base64.b64decode(body.avatar.split(',', 1)[1], validate=True)
             with Image.open(io.BytesIO(raw)) as im:
-                if im.width * im.height > 4000000: raise ValueError()
-                im = im.convert('RGB'); im.thumbnail((256, 256))
-                out = io.BytesIO(); im.save(out, format='JPEG', quality=85)
-                avatar = 'data:image/jpeg;base64,' + base64.b64encode(out.getvalue()).decode()
+                if im.width * im.height > 40000000: raise ValueError()
+                im = im.convert('RGB')
+                out = io.BytesIO(); im.save(out, format='PNG')
+                avatar = 'data:image/png;base64,' + base64.b64encode(out.getvalue()).decode()
         except Exception: raise HTTPException(422, 'Rasmni qayta tanlang.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
