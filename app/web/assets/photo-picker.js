@@ -6,6 +6,6 @@
   input.removeAttribute('capture');
   pick.onclick = () => input.click();
   const style = document.createElement('style');
-  style.textContent = '#registration #pickPhoto{background:#248ddd;color:#fff;border:1px solid #248ddd}#registration #pickPhoto:focus-visible{outline:2px solid #fff;outline-offset:3px}';
+  style.textContent = '#registration #pickPhoto{background:#151b2b;color:#fff;border:1px solid #5b1f2a}#registration #pickPhoto:focus-visible{outline:2px solid #fff;outline-offset:3px}';
   document.head.append(style);
 })();
