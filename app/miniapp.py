@@ -100,7 +100,7 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
 
 async def profile(s, u, include_avatar=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
-    return dict(name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
+    return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
@@ -110,10 +110,14 @@ async def me(include_avatar: bool = True, uid=Depends(identity)):
     async with SessionLocal() as s: return await profile(s, await s.get(User, uid), include_avatar)
 
 @router.get('/api/me/avatar')
-async def my_avatar(uid=Depends(identity)):
+async def my_avatar(version: str = '', uid=Depends(identity)):
     async with SessionLocal() as s:
         avatar = await s.get(MiniAvatar, uid)
-        return {'avatar': avatar.data if avatar else None}
+        data = avatar.data if avatar else None
+        current = hashlib.sha256(data.encode()).hexdigest() if data else 'none'
+        if version == current:
+            return {'version': current, 'unchanged': True}
+        return {'avatar': data, 'version': current, 'unchanged': False}
 
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):
