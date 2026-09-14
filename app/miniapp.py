@@ -27,6 +27,10 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/photo-picker.js')
+async def photo_picker_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'photo-picker.js', media_type='application/javascript')
+
 @router.get('/assets/verification-camera.js')
 async def camera_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'verification-camera.js', media_type='application/javascript')

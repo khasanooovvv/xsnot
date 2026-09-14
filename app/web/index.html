@@ -130,4 +130,4 @@ input.addEventListener('change', async () => {
   confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=256;output.getContext('2d').drawImage(canvas,0,0,256,256);confirmed=output.toDataURL('image/jpeg',.9);selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
 });
 })();
-</script></body></html>
+</script><script src="/assets/photo-picker.js"></script></body></html>
