@@ -7,7 +7,7 @@ from app.services.users import age_on
 async def leave_queue(session: AsyncSession, user_id: int):
     await session.execute(delete(MatchQueue).where(MatchQueue.user_id == user_id))
 
-async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str | None, min_age: int | None, max_age: int | None):
+async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str | None, min_age: int | None, max_age: int | None, archive_consent: bool = False):
     await leave_queue(session, user.telegram_id)
     mini = mode in ('mini_anonymous', 'mini_open')
     query = select(MatchQueue).where(MatchQueue.user_id != user.telegram_id)
@@ -18,6 +18,8 @@ async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str 
         query = query.where(MatchQueue.mode == mode)
     candidates = (await session.scalars(query.order_by(MatchQueue.queued_at))).all()
     for candidate in candidates:
+        if mini and archive_consent and not candidate.archive_consent:
+            continue
         partner = await session.get(User, candidate.user_id)
         if not partner or not partner.is_registered or partner.is_banned: continue
         partner_age = age_on(partner.birth_date) if partner.birth_date else 0
@@ -29,10 +31,11 @@ async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str 
             if candidate.min_age and own_age < candidate.min_age or candidate.max_age and own_age > candidate.max_age: continue
         await leave_queue(session, partner.telegram_id)
         match_mode = ('mini_' + ('a' if mode == 'mini_anonymous' else 'o') + ('a' if candidate.mode == 'mini_anonymous' else 'o')) if mini else mode
-        match = Match(user_one_id=user.telegram_id, user_two_id=partner.telegram_id, mode=match_mode)
+        match = Match(user_one_id=user.telegram_id, user_two_id=partner.telegram_id, mode=match_mode,
+                      archive_consent=bool(mini and archive_consent and candidate.archive_consent))
         session.add(match); await session.flush()
         return match, partner
-    session.add(MatchQueue(user_id=user.telegram_id, mode=mode, city_filter=city, min_age=min_age, max_age=max_age))
+    session.add(MatchQueue(user_id=user.telegram_id, mode=mode, city_filter=city, min_age=min_age, max_age=max_age, archive_consent=archive_consent))
     return None, None
 
 def is_anonymous(match: Match, user_id: int) -> bool:
@@ -51,3 +54,5 @@ async def active_match(session: AsyncSession, user_id: int):
 
 async def end_match(session: AsyncSession, match: Match):
     match.status, match.ended_at = "ended", datetime.now(UTC)
+    from app.services.archive import enqueue_chat
+    await enqueue_chat(session, match)

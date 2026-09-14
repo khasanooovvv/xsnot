@@ -59,3 +59,15 @@ Silver now requires administrator video approval and has no expiry. Registration
 Users consent and directly upload a short MP4/WebM video (15 MB maximum); administrators compare the visible face and profile photo where available. This is human review, not automated inference of sex or gender. The pending video is stored in PostgreSQL and served only behind admin authentication, with no-store caching. Approval grants Silver, rejection allows resubmission; both delete the video bytes while retaining the decision and consent timestamps. Pending submissions remain until reviewed. The video container signature is checked; administrators must reject unplayable or unsuitable content.
 
 Startup creates the submissions table and adds `users.silver_verified` if absent. Deploy before using the new screens. Gold can be revoked independently from the protected admin panel. Full PostgreSQL and Telegram end-to-end tests are still required in the deployment environment.
+
+## Private archive channel
+
+`ARCHIVE_CHANNEL_ID=-1004388937618` selects the archive channel. Give this bot channel administrator permission to post messages and files. An explicitly empty value disables new archive jobs. No old conversations or verification videos are backfilled: updated chat and video consent must be accepted before a new item is archived. Anonymous chat identity is hidden from the partner, but disclosed to archive administrators; the updated consent explicitly explains this.
+
+When a Mini App chat ends (Stop, Next, report, or account deletion), a ZIP contains `chat.txt` and `messages.jsonl`, both participant display names, their @username or Telegram ID, and ordered messages. Very long chats are split into numbered ZIP parts. Message IDs preserve order; historical messages have no individual timestamps, so the archive only gives session start/end timestamps. MP4 verification recordings are sent as videos with the submitter's identity in the caption. WebM recordings are sent as original document attachments, which Telegram supports without lossy conversion.
+
+The transaction saves an archive outbox job before completing the operation. A background worker uploads it and retries temporary failures with backoff. Successful jobs drop the local binary payload and retain delivery metadata. A crash after Telegram accepted a file but before the database commit can produce a duplicate; the event and part identifiers identify it. No exactly-once guarantee is claimed. Delivery failures log only event IDs and exception types, not private content or credentials.
+
+Review removes the verification bytes from the review table, while the channel archive remains until an administrator manually deletes it. Account deletion does not remove channel copies or already queued archive deliveries. This retention behavior is disclosed before chat, video submission, and account deletion. Only authorized admins should have access to the private channel.
+
+Run `python -m unittest tests.test_archive -v` in an environment with the project dependencies and `aiosqlite` installed. Tests use synthetic users and mock Telegram delivery; they never publish real data.

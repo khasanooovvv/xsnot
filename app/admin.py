@@ -20,6 +20,7 @@ app.include_router(mini_router)
 _bot = None
 _dispatcher = None
 _polling_task = None
+_archive_task = None
 
 def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
@@ -36,13 +37,15 @@ class Verification(BaseModel): verified: bool = True
 @app.on_event("startup")
 async def startup():
     """Start the HTTP dashboard and Telegram polling in the same Railway service."""
-    global _bot, _dispatcher, _polling_task
+    global _bot, _dispatcher, _polling_task, _archive_task
 
     await init_db()
     from aiogram import Bot, Dispatcher
 
     _bot = Bot(cfg.bot_token)
     app.state.bot = _bot
+    from app.services.archive import archive_worker
+    _archive_task = asyncio.create_task(archive_worker(_bot), name='archive-delivery')
     if cfg.webapp_url:
         from aiogram.types import MenuButtonWebApp, WebAppInfo
         try:
@@ -61,6 +64,10 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     global _polling_task
+
+    if _archive_task is not None:
+        _archive_task.cancel()
+        await asyncio.gather(_archive_task, return_exceptions=True)
 
     if _dispatcher is not None:
         await _dispatcher.stop_polling()

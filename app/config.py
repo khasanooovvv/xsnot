@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     bot_token: str
+    archive_channel_id: str = "-1004388937618"
     mini_app_url: str = ""
     railway_public_domain: str = ""
 

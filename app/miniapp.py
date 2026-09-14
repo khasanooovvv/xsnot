@@ -140,6 +140,9 @@ async def delete_account(uid=Depends(identity)):
         user = await s.get(User, uid, with_for_update=True)
         if not user:
             return {'ok': True, 'deleted': False}
+        current = await active_match(s, uid)
+        if current:
+            await end_match(s, current)
         match_ids = list((await s.scalars(select(Match.id).where(or_(Match.user_one_id == uid, Match.user_two_id == uid)))).all())
         if match_ids:
             await s.execute(delete(MiniMessage).where(MiniMessage.match_id.in_(match_ids)))
@@ -214,6 +217,7 @@ async def register(body: Registration, uid=Depends(identity)):
 class Search(BaseModel):
     mode: Literal['anonymous', 'open'] = 'anonymous'
     accepted: Literal[True]
+    archive_consent: bool = False
 
 class PrivacyChoice(BaseModel):
     anonymous: bool
@@ -233,6 +237,8 @@ async def chat_privacy(body: PrivacyChoice, uid=Depends(registered)):
 
 @router.post('/api/search')
 async def search(body: Search, uid=Depends(registered)):
+    if settings().archive_channel_id and not body.archive_consent:
+        raise HTTPException(422, 'Arxivlash haqidagi yangi qoidalarni o‘qish uchun Mini App’ni qayta oching.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
@@ -240,7 +246,7 @@ async def search(body: Search, uid=Depends(registered)):
         if existing and existing.mode.startswith('mini_'):
             set_anonymous(existing, uid, body.mode == 'anonymous')
         elif not existing:
-            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, None, None, None)
+            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, None, None, None, archive_consent=body.archive_consent)
         await s.commit()
     return {'ok': True}
 

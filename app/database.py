@@ -14,4 +14,6 @@ async def init_db() -> None:
         await connection.run_sync(Base.metadata.create_all)
         if connection.dialect.name == "postgresql":
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS silver_verified BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("ALTER TABLE matches ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("ALTER TABLE match_queue ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.run_sync(widen_telegram_ids)

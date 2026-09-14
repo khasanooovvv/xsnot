@@ -9,6 +9,8 @@ from app.database import SessionLocal
 from app.models import User, MiniAvatar, VideoVerification
 from app.miniapp import registered
 from app.services.referral_notifications import send_verification_result
+from app.services.archive import enqueue_video
+from app.config import settings
 
 router = APIRouter(prefix='/api/verification')
 admin_router = APIRouter(prefix='/admin/verifications')
@@ -26,8 +28,10 @@ async def verification_status(uid=Depends(registered)):
         return {'status': 'none', 'reason': None}
 
 @router.post('/submit')
-async def submit(video: UploadFile = File(...), consent: bool = Form(...), uid=Depends(registered)):
+async def submit(video: UploadFile = File(...), consent: bool = Form(...), archive_consent: bool = Form(False), uid=Depends(registered)):
     if not consent: raise HTTPException(422, 'Videoni admin ko‘rishiga rozilik kerak.')
+    if settings().archive_channel_id and not archive_consent:
+        raise HTTPException(422, 'Video arxivlanishi haqidagi yangi rozilik matnini o‘qish uchun Mini App’ni qayta oching.')
     try:
         content = await video.read(MAX_VIDEO_BYTES + 1)
     finally:
@@ -51,6 +55,8 @@ async def submit(video: UploadFile = File(...), consent: bool = Form(...), uid=D
         row.video, row.media_type, row.status = content, media, 'pending'
         row.submitted_at = row.consent_at = datetime.now(UTC)
         row.reviewed_at, row.reason = None, None
+        if archive_consent:
+            enqueue_video(s, u, content, media, row.submitted_at)
         await s.commit()
     return {'status':'pending'}
 
