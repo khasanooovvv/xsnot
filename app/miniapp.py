@@ -11,7 +11,11 @@ from urllib.parse import parse_qsl
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from PIL import Image
+from PIL import Image, ImageOps
+from pillow_heif import register_heif_opener
+from fastapi import UploadFile, File
+from starlette.concurrency import run_in_threadpool
+register_heif_opener()
 from sqlalchemy import select, func, delete, update, text as sql, or_
 from app.config import settings
 from app.services.badges import badge_status
@@ -67,6 +71,29 @@ async def registered(uid=Depends(identity)):
         u = await s.get(User, uid)
         if not u.is_registered: raise HTTPException(403, 'Avval profilni to‘ldiring.')
     return uid
+
+def normalize_photo(content):
+    try:
+        with Image.open(io.BytesIO(content)) as source:
+            if source.width * source.height > 40000000:
+                raise ValueError()
+            image = ImageOps.exif_transpose(source).convert('RGB')
+            image.thumbnail((2048, 2048))
+            output = io.BytesIO()
+            image.save(output, format='JPEG', quality=92)
+            return {'image': 'data:image/jpeg;base64,' + base64.b64encode(output.getvalue()).decode()}
+    except Exception:
+        raise HTTPException(422, 'Rasm ochilmadi. JPEG, PNG, WebP yoki HEIC rasm tanlang.')
+
+@router.post('/api/photo/prepare')
+async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
+    try:
+        content = await image.read(20 * 1024 * 1024 + 1)
+    finally:
+        await image.close()
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(422, '20 MB dan kichik rasm tanlang.')
+    return await run_in_threadpool(normalize_photo, content)
 
 async def profile(s, u):
     avatar = await s.get(MiniAvatar, u.telegram_id)

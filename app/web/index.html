@@ -77,4 +77,57 @@ document.querySelectorAll('#registration label').forEach(l=>{if(l.textContent.in
 photo=async function(){const f=$('photo').files[0];if(!f)throw Error('Profil rasmi majburiy.');if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);if('FaceDetector' in window){const faces=await new FaceDetector({fastMode:true,maxDetectedFaces:1}).detect(bitmap);if(!faces.length){bitmap.close();throw Error('Yuz aniq ko‘rinadigan rasm tanlang.')}}const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)};
 const oldPhoto=photo;photo=async()=>{const f=$('photo').files[0];if(!f)throw Error('Profil rasmi majburiy.');if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);const side=Math.min(bitmap.width,bitmap.height),sx=(bitmap.width-side)/2,sy=(bitmap.height-side)/2;const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;canvas.getContext('2d').drawImage(bitmap,sx,sy,side,side,0,0,256,256);bitmap.close();return canvas.toDataURL('image/jpeg',.88)};
 document.querySelectorAll('#registration .wheel-title').forEach(x=>{if(x.textContent==='Shahar')x.textContent='Yashayotgan shahar'});document.querySelectorAll('#registration label').forEach(x=>{if(x.textContent.includes('Tug‘ilgan sana')||x.textContent.includes('Yashayotgan shahar'))x.style.textAlign='center'});const regText=document.querySelector('#registration .muted');if(regText)regText.textContent=regText.textContent.replace('sherikka','sherikga');const brand=document.querySelector('header b');if(brand)brand.innerHTML='⚔ CHAT<span style="color:#ab8dff">RULETKA</span>';
-setInterval(()=>{document.querySelectorAll('#profile .stat').forEach(x=>x.parentElement.remove());document.querySelectorAll('#profile h2').forEach(x=>{if(x.textContent.includes('Silver video'))x.textContent='Verifikatsiyadan o‘tish'});const info=document.querySelector('#profileInfo');if(info&&!document.querySelector('#profileActions')){const c=document.createElement('div');c.id='profileActions';c.className='card profile-actions';c.innerHTML='<button type="button" id="editProfile">✎ Tahrirlash</button><label class="visibility-row"><span>👁 Anketa hammaga ko‘rinadi</span><input id="profileVisible" type="checkbox" checked></label><button type="button" id="verifyProfile">✓ Verifikatsiyadan o‘tish</button>';info.after(c);document.querySelector('#editProfile').onclick=()=>show('registration');document.querySelector('#verifyProfile').onclick=()=>document.querySelector('#openCamera')?.click();document.querySelector('#profileVisible').onchange=e=>{document.querySelector('.visibility-row span').textContent=e.target.checked?'👁 Anketa hammaga ko‘rinadi':'👁 Anonim'}}},300);const cropStyle=document.createElement('style');cropStyle.textContent='#cropModal{position:fixed;inset:0;background:#080910ee;z-index:20;display:grid;place-items:center;padding:20px}#cropBox{width:min(92vw,420px);background:#151b2b;border:1px solid #5b1f2a;border-radius:22px;padding:16px;text-align:center}#cropImage{width:100%;max-height:55vh;object-fit:contain;border-radius:16px;touch-action:none}#cropZoom{width:100%}';document.head.append(cropStyle);window.croppedPhotoData=null;document.addEventListener('change',async e=>{if(e.target.id!=='photo'||!e.target.files[0])return;const f=e.target.files[0],url=URL.createObjectURL(f);const m=document.createElement('div');m.id='cropModal';m.innerHTML='<div id="cropBox"><h3>Rasmni sozlang</h3><img id="cropImage" src="'+url+'"><input id="cropZoom" type="range" min="1" max="3" step=".05" value="1"><button id="cropConfirm" type="button">Tasdiqlash</button><button id="cropCancel" type="button" class="secondary">Bekor qilish</button></div>';document.body.append(m);const im=m.querySelector('#cropImage'),z=m.querySelector('#cropZoom');z.oninput=()=>im.style.transform='scale('+z.value+')';m.querySelector('#cropCancel').onclick=()=>{m.remove();e.target.value='';window.croppedPhotoData=null};m.querySelector('#cropConfirm').onclick=()=>{const c=document.createElement('canvas');c.width=256;c.height=256;const side=Math.min(im.naturalWidth,im.naturalHeight)/Number(z.value);const sx=(im.naturalWidth-side)/2,sy=(im.naturalHeight-side)/2;c.getContext('2d').drawImage(im,sx,sy,side,side,0,0,256,256);window.croppedPhotoData=c.toDataURL('image/jpeg',.88);m.remove()}});</script></body></html>
+setInterval(()=>{document.querySelectorAll('#profile .stat').forEach(x=>x.parentElement.remove());document.querySelectorAll('#profile h2').forEach(x=>{if(x.textContent.includes('Silver video'))x.textContent='Verifikatsiyadan o‘tish'});const info=document.querySelector('#profileInfo');if(info&&!document.querySelector('#profileActions')){const c=document.createElement('div');c.id='profileActions';c.className='card profile-actions';c.innerHTML='<button type="button" id="editProfile">✎ Tahrirlash</button><label class="visibility-row"><span>👁 Anketa hammaga ko‘rinadi</span><input id="profileVisible" type="checkbox" checked></label><button type="button" id="verifyProfile">✓ Verifikatsiyadan o‘tish</button>';info.after(c);document.querySelector('#editProfile').onclick=()=>show('registration');document.querySelector('#verifyProfile').onclick=()=>document.querySelector('#openCamera')?.click();document.querySelector('#profileVisible').onchange=e=>{document.querySelector('.visibility-row span').textContent=e.target.checked?'👁 Anketa hammaga ko‘rinadi':'👁 Anonim'}}},300);/* Manual avatar crop: the canvas and exported image use the same coordinates. */
+(() => {
+const style = document.createElement('style');
+style.textContent = '#cropModal{position:fixed;inset:0;z-index:100;background:#08080b;display:flex;flex-direction:column;justify-content:center;padding:20px;gap:20px;overflow:auto}#cropStage{position:relative;width:min(100%,380px);aspect-ratio:1;margin:auto;touch-action:none;overflow:hidden}#cropCanvas{width:100%;height:100%;display:block}#cropMask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 200px #0009;pointer-events:none}#cropModal .crop-controls{width:min(100%,380px);margin:0 auto}#cropModal button{background:#248ddd}#cropModal .secondary{background:#22232b}#cropModal p{text-align:center;color:#ccc}';
+document.head.append(style);
+let confirmed = null, selected = null, generation = 0;
+const input = $('photo');
+input.accept = 'image/*,.heic,.heif,.avif,.bmp,.tif,.tiff';
+photo = async () => {
+  if (!confirmed || selected !== input.files[0]) throw Error('Rasmni crop oynasida tasdiqlang.');
+  return confirmed;
+};
+input.addEventListener('change', async () => {
+  const token = ++generation, file = input.files[0];
+  confirmed = null; selected = null;
+  document.querySelector('#cropModal')?.remove();
+  if (!file) return;
+  const modal = document.createElement('div');
+  modal.id = 'cropModal'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  modal.innerHTML = '<p id="cropHelp">Rasm yuklanmoqda…</p><div id="cropStage"><canvas id="cropCanvas" width="512" height="512"></canvas><div id="cropMask"></div></div><div class="crop-controls"><input id="cropZoom" aria-label="Kattalashtirish" type="range" min="1" max="5" step="0.01" value="1"><button id="cropConfirm" type="button" disabled>Tasdiqlash ✓</button><button id="cropCancel" type="button" class="secondary">Bekor qilish</button></div>';
+  document.body.append(modal);
+  const canvas = modal.querySelector('canvas'), ctx = canvas.getContext('2d'), stage = modal.querySelector('#cropStage'), zoom = modal.querySelector('#cropZoom'), confirm = modal.querySelector('#cropConfirm');
+  const cancel = () => { ++generation; input.value=''; confirmed=null; selected=null; $('pickPhoto').textContent='Rasm tanlash'; modal.remove(); };
+  modal.querySelector('#cropCancel').onclick=cancel;
+  let bitmap;
+  try {
+    if(file.size>20*1024*1024) throw Error('20 MB dan kichik rasm tanlang.');
+    const body=new FormData(); body.append('image',file);
+    const result=await api('photo/prepare',body);
+    bitmap=new Image(); bitmap.src=result.image; await bitmap.decode();
+    if(token!==generation) return;
+  } catch(error) { if(token===generation){cancel();notice(error.message)} return; }
+  let base=Math.max(512/bitmap.width,512/bitmap.height), scale=base, x=(512-bitmap.width*base)/2, y=(512-bitmap.height*base)/2;
+  function draw(){x=Math.min(0,Math.max(512-bitmap.width*scale,x));y=Math.min(0,Math.max(512-bitmap.height*scale,y));ctx.clearRect(0,0,512,512);ctx.drawImage(bitmap,x,y,bitmap.width*scale,bitmap.height*scale)}
+  function resize(next,cx=256,cy=256){next=Math.max(base,Math.min(base*5,next));const ratio=next/scale;x=cx-(cx-x)*ratio;y=cy-(cy-y)*ratio;scale=next;zoom.value=scale/base;draw()}
+  zoom.oninput=()=>resize(base*Number(zoom.value));
+  const pointers=new Map();
+  const point=e=>{const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)*512/r.width,y:(e.clientY-r.top)*512/r.height}};
+  stage.onpointerdown=e=>{stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,point(e));};
+  stage.onpointermove=e=>{
+    if(!pointers.has(e.pointerId))return;
+    const before=[...pointers.values()], old=pointers.get(e.pointerId), now=point(e);
+    pointers.set(e.pointerId,now);
+    if(pointers.size===1){x+=now.x-old.x;y+=now.y-old.y;draw()}
+    else{const after=[...pointers.values()], distance=p=>Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);const d=distance(before);if(d>0)resize(scale*distance(after)/d,(after[0].x+after[1].x)/2,(after[0].y+after[1].y)/2)}
+  };
+  stage.onpointerup=stage.onpointercancel=e=>pointers.delete(e.pointerId);
+  stage.addEventListener('wheel',e=>{e.preventDefault();resize(scale*Math.exp(-e.deltaY*.001))},{passive:false});
+  modal.querySelector('#cropHelp').textContent='Rasmni suring. Ikki barmoq bilan kattalashtiring.';
+  draw();confirm.disabled=false;
+  confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=256;output.getContext('2d').drawImage(canvas,0,0,256,256);confirmed=output.toDataURL('image/jpeg',.9);selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
+});
+})();
+</script></body></html>
