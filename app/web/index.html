@@ -24,6 +24,7 @@ let language='uz';
 function t(value){return translations[value]?.[language]||value}
 function applyLanguage(value){language=['uz','ru','en'].includes(value)?value:'uz';document.documentElement.lang=language;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement.closest('script,style'))continue;const key=node.nodeValue.trim();if(translations[key])node.nodeValue=node.nodeValue.replace(key,t(key))}document.querySelectorAll('[placeholder]').forEach(el=>el.placeholder=t(el.placeholder));}
 const $=id=>document.getElementById(id),tg=window.Telegram?.WebApp;let me,match=null,after=0,polling=false,searchOptions=null;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function syncArchiveConsent(){const accepted=Boolean(me?.archive_consent);for(const id of ['chatTerms','videoConsent']){const el=$(id);if(el){el.checked=accepted;el.disabled=accepted;}}}
 function notice(s){$('notice').textContent=s;$('notice').hidden=!s}
 async function api(path,body){const r=await fetch('/api/'+path,{method:body===undefined?'GET':'POST',headers:{...(body instanceof FormData?{}:{'Content-Type':'application/json'}),'X-Telegram-Init-Data':tg?.initData||''},body:body===undefined?undefined:body instanceof FormData?body:JSON.stringify(body)});const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw Error(r.status>=500?'Serverda xato yuz berdi ('+r.status+'). Birozdan keyin qayta urinib ko‘ring.':'Serverdan kutilmagan javob olindi ('+r.status+'). Mini App’ni qayta oching.')}if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'Kiritilgan ma’lumotlarni tekshiring.');return d}
 function show(id){if(id!=='profile'&&typeof verificationCamera!=='undefined')verificationCamera.cancel();for(const el of document.querySelectorAll('main>section'))el.hidden=el.id!==id;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('selected',b.dataset.page===id))}
@@ -53,9 +54,9 @@ $('anonymousMode').onchange=()=>{
   });
 };
 $('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
-  searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:$('chatTerms').checked,archive_consent:$('chatTerms').checked};
+  searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:true,archive_consent:Boolean(me?.archive_consent||$('chatTerms').checked)};
   clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');
-  await api('search',searchOptions);
+  await api('search',searchOptions);if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
 })};
 async function poll(){
   if(document.hidden||polling||chatBusy||!me?.registered)return;
@@ -107,7 +108,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   if(page==='profile'&&me)renderProfile();
   show(page==='home'&&match?'chat':page);
   if(page==='profile'){
-    if(!profileRefresh)profileRefresh=Promise.all([api('me?include_avatar=false'),loadVerification()]).then(([fresh])=>{me={...fresh,avatar:me?.avatar};}).finally(()=>profileRefresh=null);
+    if(!profileRefresh)profileRefresh=Promise.all([api('me?include_avatar=false'),loadVerification()]).then(([fresh])=>{me={...fresh,avatar:me?.avatar};syncArchiveConsent();}).finally(()=>profileRefresh=null);
     profileRefresh.then(()=>{if(version===navVersion)renderProfile()}).catch(e=>{if(version===navVersion)notice(e.message)});
   }
   if(page==='leaders'){
@@ -121,7 +122,7 @@ $('cameraPanel').hidden=state==='idle';$('openCamera').hidden=state!=='idle';$('
 }});
 $('openCamera').onclick=()=>{notice('');verificationCamera.open()};$('recordCamera').onclick=()=>verificationCamera.record();$('stopCamera').onclick=()=>verificationCamera.stop();$('retakeCamera').onclick=()=>verificationCamera.open();$('cancelCamera').onclick=()=>verificationCamera.cancel();
 window.addEventListener('pagehide',()=>verificationCamera.cancel());document.addEventListener('visibilitychange',()=>{if(document.hidden)verificationCamera.cancel()});
-$('videoForm').onsubmit=e=>{e.preventDefault();const file=verificationCamera.getBlob();if(!file)return;const button=e.submitter;button.disabled=true;run(async()=>{const data=new FormData();data.append('video',file,file.type.includes('mp4')?'verification.mp4':'verification.webm');data.append('consent',String($('videoConsent').checked));data.append('archive_consent',String($('videoConsent').checked));await api('verification/submit',data);verificationCamera.cancel();$('videoForm').reset();await loadVerification();}).finally(()=>button.disabled=!verificationCamera.getBlob())};
+$('videoForm').onsubmit=e=>{e.preventDefault();const file=verificationCamera.getBlob();if(!file)return;const button=e.submitter;button.disabled=true;run(async()=>{const data=new FormData();data.append('video',file,file.type.includes('mp4')?'verification.mp4':'verification.webm');data.append('consent',String($('videoConsent').checked));data.append('archive_consent',String($('videoConsent').checked));await api('verification/submit',data);verificationCamera.cancel();$('videoForm').reset();me.archive_consent=true;syncArchiveConsent();await loadVerification();}).finally(()=>button.disabled=!verificationCamera.getBlob())};
 
 // IndexedDB keeps the original PNG; cache keys come from authenticated /me.
 let avatarCacheEpoch=0;
@@ -152,7 +153,7 @@ async function loadCachedAvatar(){
     await avatarCacheStore('put',id,{avatar:data.avatar,version:data.version});
   }catch{/* Keep the cached image when offline. */}
 }
-run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');applyLanguage(me.language);if(me.registered){loadCachedAvatar();}$('nav').hidden=!me.registered;show(me.registered?'home':'registration');if(me.registered){poll();setInterval(poll,2000)}else{setInterval(()=>{if(me?.registered)poll()},2000)}}).then(()=>{if(!$('loading').hidden){show('errorState')}});
+run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncArchiveConsent();applyLanguage(me.language);if(me.registered){loadCachedAvatar();}$('nav').hidden=!me.registered;show(me.registered?'home':'registration');if(me.registered){poll();setInterval(poll,2000)}else{setInterval(()=>{if(me?.registered)poll()},2000)}}).then(()=>{if(!$('loading').hidden){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);
 document.addEventListener('click',e=>{if(e.target.id!=='deleteAccount')return;if(!confirm('Account va botdagi profil ma’lumotlari o‘chiriladi. Oldin arxivlangan suhbat va videolarning kanal nusxalari admin qo‘lda o‘chirguncha qoladi. Davom etilsinmi?'))return;run(async()=>{await api('delete-account',{});++avatarCacheEpoch;await avatarCacheStore('delete',me.id);verificationCamera?.cancel();me=null;match=null;$('nav').hidden=true;show('outside');notice('Account o‘chirildi. Botda /start bosib yangi profil yarating.')})});
 function setupRegistrationPicker(){

@@ -105,6 +105,7 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
 async def profile(s, u, include_avatar=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
+        archive_consent=bool(u.archive_consent_at),
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
@@ -237,16 +238,20 @@ async def chat_privacy(body: PrivacyChoice, uid=Depends(registered)):
 
 @router.post('/api/search')
 async def search(body: Search, uid=Depends(registered)):
-    if settings().archive_channel_id and not body.archive_consent:
-        raise HTTPException(422, 'Arxivlash haqidagi yangi qoidalarni o‘qish uchun Mini App’ni qayta oching.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        user = await s.get(User, uid, with_for_update=True)
+        if settings().archive_channel_id and not user.archive_consent_at and not body.archive_consent:
+            raise HTTPException(422, 'Chat qoidalariga rozilik bering.')
+        if body.archive_consent and not user.archive_consent_at:
+            user.archive_consent_at = datetime.now(UTC)
+        archive_consent = bool(user.archive_consent_at)
         await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
         existing = await active_match(s, uid)
         if existing and existing.mode.startswith('mini_'):
             set_anonymous(existing, uid, body.mode == 'anonymous')
         elif not existing:
-            await find_or_queue(s, await s.get(User, uid), 'mini_' + body.mode, None, None, None, archive_consent=body.archive_consent)
+            await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
         await s.commit()
     return {'ok': True}
 

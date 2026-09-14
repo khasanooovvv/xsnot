@@ -17,6 +17,7 @@ class User(Base):
     avatar_is_default: Mapped[bool] = mapped_column(Boolean, default=True)
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     terms_version: Mapped[str | None] = mapped_column(String(32))
+    archive_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_registered: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
     silver_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

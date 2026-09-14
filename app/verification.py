@@ -30,8 +30,6 @@ async def verification_status(uid=Depends(registered)):
 @router.post('/submit')
 async def submit(video: UploadFile = File(...), consent: bool = Form(...), archive_consent: bool = Form(False), uid=Depends(registered)):
     if not consent: raise HTTPException(422, 'Videoni admin ko‘rishiga rozilik kerak.')
-    if settings().archive_channel_id and not archive_consent:
-        raise HTTPException(422, 'Video arxivlanishi haqidagi yangi rozilik matnini o‘qish uchun Mini App’ni qayta oching.')
     try:
         content = await video.read(MAX_VIDEO_BYTES + 1)
     finally:
@@ -43,6 +41,11 @@ async def submit(video: UploadFile = File(...), consent: bool = Form(...), archi
     else: raise HTTPException(422, 'MP4 yoki WebM video yuboring.')
     async with SessionLocal() as s:
         u = await s.get(User, uid, with_for_update=True)
+        if settings().archive_channel_id and not u.archive_consent_at and not archive_consent:
+            raise HTTPException(422, 'Arxivlash qoidalariga rozilik bering.')
+        if archive_consent and not u.archive_consent_at:
+            u.archive_consent_at = datetime.now(UTC)
+        archive_consent = bool(u.archive_consent_at)
         row = await s.get(VideoVerification, uid)
         if u.silver_verified:
             raise HTTPException(409, 'Silver allaqachon tasdiqlangan.')
