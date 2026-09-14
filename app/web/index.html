@@ -175,4 +175,34 @@ input.addEventListener('change', async () => {
   confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=Math.max(1,Math.round(512/scale));output.getContext('2d').drawImage(bitmap,-x/scale,-y/scale,512/scale,512/scale,0,0,output.width,output.height);confirmed=output.toDataURL('image/png');selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
 });
 })();
+
+// Verification is a separate modal; the existing recording controls remain wired.
+const verificationDialog=document.createElement('dialog');
+verificationDialog.id='verificationDialog';
+verificationDialog.setAttribute('aria-labelledby','verificationDialogTitle');
+verificationDialog.innerHTML='<button type="button" id="closeVerification" aria-label="Yopish">×</button><h2 id="verificationDialogTitle">Verifikatsiyadan o‘tish</h2>';
+document.body.append(verificationDialog);
+const verificationCard=$('videoForm').parentElement;
+const verificationEntry=document.createElement('button');
+verificationEntry.id='verificationEntry';verificationEntry.type='button';verificationEntry.textContent='Verifikatsiyadan o‘tish';
+verificationCard.before(verificationEntry);
+verificationDialog.append(verificationCard);
+verificationCard.querySelector('h2').remove();
+const verificationRules=verificationCard.querySelector('p:not(#verificationStatus)');
+$('videoForm').append(verificationRules);
+$('cameraPanel').after(verificationRules);
+const verificationHint=$('videoForm').querySelector(':scope > p');
+if(verificationHint&&verificationHint!==verificationRules)verificationRules.after(verificationHint);
+verificationEntry.onclick=()=>{verificationDialog.showModal();notice('');verificationCamera.open()};
+function closeVerification(){verificationCamera.cancel();verificationDialog.close();verificationEntry.focus()}
+$('closeVerification').onclick=closeVerification;
+verificationDialog.addEventListener('cancel',event=>{event.preventDefault();closeVerification()});
+verificationDialog.addEventListener('click',event=>{if(event.target===verificationDialog)closeVerification()});
+$('cancelCamera').onclick=closeVerification;
+const originalLoadVerification=loadVerification;
+loadVerification=async()=>{await originalLoadVerification();verificationEntry.hidden=$('videoForm').hidden;if(verificationEntry.hidden&&verificationDialog.open)closeVerification()};
+window.addEventListener('pagehide',()=>{if(verificationDialog.open)closeVerification()});
+const verificationStyles=document.createElement('style');
+verificationStyles.textContent='#profile #verificationEntry{background:#19352b;border:1px solid #4c9d7b;color:#8fe0b7;padding:18px;border-radius:18px}#verificationDialog{color:#f3f5ff;background:#14131a;border:1px solid #5b1f2a;border-radius:24px;width:min(94vw,480px);max-height:90dvh;overflow-y:auto;padding:22px;text-align:center}#verificationDialog::backdrop{background:#000b}#verificationDialog .card{background:transparent;border:0;padding:0;margin:0}#verificationDialog button{background:#231820;border:1px solid #6d2b3c;color:#fff}#verificationDialog #closeVerification{display:block;width:42px;margin:0 0 8px auto;padding:6px;font-size:25px}#verificationDialog h2{font-size:22px;margin:0 0 18px}#verificationDialog p,#verificationDialog label{text-align:center;line-height:1.6}#verificationDialog video{background:#08090d}#verificationDialog .row{flex-wrap:wrap}#verificationDialog .row button{flex:1 1 40%}#verificationDialog #submitVideo{background:#3b1b29}#verificationDialog button:focus-visible{outline:2px solid #b57186;outline-offset:3px}';
+document.head.append(verificationStyles);
 </script><script src="/assets/photo-picker.js"></script></body></html>
