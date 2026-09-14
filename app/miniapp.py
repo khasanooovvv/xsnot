@@ -49,7 +49,7 @@ async def badge_styles():
 
 @router.get('/')
 async def index():
-    return FileResponse(Path(__file__).parent / 'web' / 'index.html')
+    return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
 
 async def identity(x_telegram_init_data: str = Header(default='')):
     try:
