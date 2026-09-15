@@ -156,7 +156,6 @@ async def profile(q: CallbackQuery):
 @router.callback_query(F.data == "invite")
 async def invite(q: CallbackQuery):
     async with SessionLocal() as s:
-        if not await consume_share(s, q.from_user.id): await q.answer("Bugungi ulashish limiti tugadi.", show_alert=True); return
         refs = await referral_count(s, q.from_user.id); await s.commit()
     link = f"https://t.me/{cfg.public_bot_username}?start=ref_{q.from_user.id}"
     await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. 5 ta yangi do‘st = 5 kun Gold, 15 ta = 15 kun, 30 ta = 30 kun. Takroriy akkauntlar hisoblanmaydi.", parse_mode="HTML", reply_markup=main_menu())

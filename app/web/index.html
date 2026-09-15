@@ -162,6 +162,7 @@ $('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(
   clearChatView();show('home');await api('stop',{reason});notice(t('Shikoyat administratorga yuborildi.'));
 })};
 $('invite').onclick=()=>run(async()=>{const d=await api('invite',{});$('inviteLink').href=d.url;$('inviteLink').textContent=d.url;$('inviteLink').hidden=false;$('copyInvite').hidden=false;notice(t(d.bot_sent?'Havola bot chatiga ham yuborildi.':'Havola tayyor. Botga yuborilmadi; botni ochib /start bosing.'))});
+document.querySelector('#profile .card:last-child p.muted:last-of-type')?.remove();
 $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inviteLink').href);notice(t('Havola nusxalandi.'))}catch{notice(t('Nusxalash ishlamadi. Havolani bosib ushlab nusxalang.'))}};
 let navVersion=0, profileRefresh=null, leadersRefresh=null;
 

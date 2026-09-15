@@ -370,7 +370,6 @@ async def leaders(uid=Depends(registered)):
 async def invite(request: Request, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
-        if not await consume_share(s, uid): raise HTTPException(429, 'Bugungi havola olish limiti tugadi.')
         language = (await s.get(User, uid)).language
         await s.commit()
     link = f'https://t.me/{settings().public_bot_username.lstrip("@")}?start=ref_{uid}'
