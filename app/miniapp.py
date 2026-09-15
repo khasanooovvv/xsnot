@@ -105,6 +105,14 @@ async def direct_list_styles():
 async def direct_list_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-list.js', media_type='application/javascript')
 
+@router.get('/assets/direct-exact.css')
+async def direct_exact_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-exact.css', media_type='text/css')
+
+@router.get('/assets/direct-exact.js')
+async def direct_exact_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-exact.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
