@@ -97,6 +97,14 @@ async def direct_ui_script():
 async def direct_ui_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-ui.css', media_type='text/css')
 
+@router.get('/assets/direct-list.css')
+async def direct_list_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-list.css', media_type='text/css')
+
+@router.get('/assets/direct-list.js')
+async def direct_list_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-list.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
