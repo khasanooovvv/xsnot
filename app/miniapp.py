@@ -23,7 +23,7 @@ from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, DirectChat, DirectMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
+from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
@@ -68,22 +68,6 @@ async def theme_styles():
 @router.get('/assets/theme.js')
 async def theme_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.js', media_type='application/javascript')
-
-@router.get('/assets/chat-shared.css')
-async def chat_shared_styles():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-shared.css', media_type='text/css')
-
-@router.get('/assets/direct-chat-v2.js')
-async def direct_chat_v2_script():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-chat-v2.js', media_type='application/javascript')
-
-@router.get('/assets/chat-layout-match.css')
-async def chat_layout_match_styles():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-layout-match.css', media_type='text/css')
-
-@router.get('/assets/chat-viewport.css')
-async def chat_viewport_styles():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-viewport.css', media_type='text/css')
 
 @router.get('/assets/chat-media.css')
 async def chat_media_styles():
@@ -614,73 +598,6 @@ async def stop(body: StopBody, uid=Depends(registered)):
             await end_match(s, m)
         await s.commit()
     return {'ok': True}
-
-class DirectMessageBody(BaseModel):
-    chat: int
-    text: str = Field(min_length=1, max_length=2000)
-
-def _direct_pair(uid: int, other: int):
-    return (uid, other) if uid < other else (other, uid)
-
-@router.get('/api/users/search')
-async def search_users(q: str = '', uid=Depends(registered)):
-    term = q.strip().removeprefix('@').lower()
-    if len(term) < 2:
-        return []
-    async with SessionLocal() as s:
-        rows = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid, User.app_username.ilike(f'%{term}%')).order_by(User.app_username).limit(20))).all()
-        result = []
-        for u in rows:
-            avatar = await s.get(MiniAvatar, u.telegram_id)
-            result.append({'id': u.telegram_id, 'name': u.display_name, 'username': u.app_username, 'avatar': avatar.data if avatar else None})
-        return result
-
-@router.get('/api/direct/chats')
-async def direct_chats(uid=Depends(registered)):
-    async with SessionLocal() as s:
-        rows = (await s.scalars(select(DirectChat).where(or_(DirectChat.user_one_id == uid, DirectChat.user_two_id == uid)).order_by(DirectChat.updated_at.desc()))).all()
-        result = []
-        for chat in rows:
-            other = chat.user_two_id if chat.user_one_id == uid else chat.user_one_id
-            user = await s.get(User, other)
-            if user and user.is_registered and not user.is_banned:
-                avatar = await s.get(MiniAvatar, other)
-                result.append({'id': chat.id, 'user': {'id': other, 'name': user.display_name, 'username': user.app_username, 'avatar': avatar.data if avatar else None}})
-        return result
-
-@router.post('/api/direct/open')
-async def direct_open(body: dict, uid=Depends(registered)):
-    try: target = int(body.get('user_id'))
-    except (TypeError, ValueError): raise HTTPException(422, 'Username noto‘g‘ri.')
-    if target == uid: raise HTTPException(422, 'O‘zingizga yozib bo‘lmaydi.')
-    async with SessionLocal() as s:
-        user = await s.get(User, target)
-        if not user or not user.is_registered or user.is_banned: raise HTTPException(404, 'Foydalanuvchi topilmadi.')
-        one, two = _direct_pair(uid, target)
-        chat = await s.scalar(select(DirectChat).where(DirectChat.user_one_id == one, DirectChat.user_two_id == two))
-        if not chat:
-            chat = DirectChat(user_one_id=one, user_two_id=two)
-            s.add(chat)
-            await s.flush()
-        await s.commit()
-        avatar = await s.get(MiniAvatar, target)
-        return {'id': chat.id, 'user': {'id': target, 'name': user.display_name, 'username': user.app_username, 'avatar': avatar.data if avatar else None}}
-
-@router.get('/api/direct/messages')
-async def direct_messages(chat: int, after: int = 0, uid=Depends(registered)):
-    async with SessionLocal() as s:
-        item = await s.get(DirectChat, chat)
-        if not item or uid not in (item.user_one_id, item.user_two_id): raise HTTPException(403, 'Chatga kirish mumkin emas.')
-        rows = (await s.scalars(select(DirectMessage).where(DirectMessage.chat_id == chat, DirectMessage.id > after).order_by(DirectMessage.id).limit(100))).all()
-        return {'chat': chat, 'messages': [{'id': r.id, 'mine': r.sender_id == uid, 'text': r.text, 'created_at': r.created_at.isoformat() if r.created_at else None} for r in rows]}
-
-@router.post('/api/direct/message')
-async def direct_message(body: DirectMessageBody, uid=Depends(registered)):
-    async with SessionLocal() as s:
-        chat = await s.get(DirectChat, body.chat)
-        if not chat or uid not in (chat.user_one_id, chat.user_two_id): raise HTTPException(403, 'Chatga kirish mumkin emas.')
-        item = DirectMessage(chat_id=chat.id, sender_id=uid, text=body.text.strip()); s.add(item); chat.updated_at = datetime.now(UTC); await s.commit()
-        return {'ok': True, 'id': item.id}
 
 @router.get('/api/leaders')
 async def leaders(uid=Depends(registered)):

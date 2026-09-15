@@ -104,23 +104,6 @@ class MiniMessage(Base):
     image_type: Mapped[str | None] = mapped_column(String(64))
     image_name: Mapped[str | None] = mapped_column(String(255))
 
-class DirectChat(Base):
-    __tablename__ = "direct_chats"
-    __table_args__ = (UniqueConstraint("user_one_id", "user_two_id", name="uq_direct_chat_pair"),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_one_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True)
-    user_two_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
-
-class DirectMessage(Base):
-    __tablename__ = "direct_messages"
-    __table_args__ = (Index('ix_direct_messages_chat_id_id', 'chat_id', 'id'),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(ForeignKey("direct_chats.id", ondelete="CASCADE"), index=True)
-    sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"))
-    text: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
 class VideoVerification(Base):
     __tablename__ = "video_verifications"
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
