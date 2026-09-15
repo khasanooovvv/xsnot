@@ -141,6 +141,16 @@ async def warn_user(user_id: int, body: WarningNotice):
             delivered = False
     return {"ok": True, "delivered": delivered, "muted_until": muted_until}
 
+@app.post("/users/{user_id}/mute/revoke", dependencies=[Depends(admin)])
+async def revoke_mute(user_id: int):
+    async with SessionLocal() as s:
+        u = await s.get(User, user_id, with_for_update=True)
+        if not u:
+            raise HTTPException(404, "User not found")
+        u.muted_until = None
+        await s.commit()
+    return {"ok": True, "muted": False}
+
 @app.post("/users/{user_id}/verify", dependencies=[Depends(admin)])
 async def verify(user_id: int, body: Verification):
     async with SessionLocal() as s:
