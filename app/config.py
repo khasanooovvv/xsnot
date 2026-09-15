@@ -7,10 +7,15 @@ class Settings(BaseSettings):
     archive_channel_id: str = "-1004388937618"
     mini_app_url: str = ""
     railway_public_domain: str = ""
+    webapp_version: str = "20260915-2"
 
     @property
     def webapp_url(self) -> str:
-        return self.mini_app_url or (f"https://{self.railway_public_domain}" if self.railway_public_domain else "")
+        base = self.mini_app_url or (f"https://{self.railway_public_domain}" if self.railway_public_domain else "")
+        if not base:
+            return ""
+        separator = "&" if "?" in base else "?"
+        return f"{base}{separator}v={self.webapp_version}"
     database_url: str = "postgresql+asyncpg://pvp:pvp@localhost:5432/pvp_chat"
     redis_url: str = "redis://localhost:6379/0"
     admin_username: str = "admin"
