@@ -288,7 +288,6 @@ class MessageBody(BaseModel):
 @router.post('/api/message')
 async def message(body: MessageBody, uid=Depends(registered)):
     async with SessionLocal() as s:
-        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         user = await s.get(User, uid)
         if user.muted_until:
             until = user.muted_until.replace(tzinfo=UTC) if user.muted_until.tzinfo is None else user.muted_until
@@ -297,9 +296,10 @@ async def message(body: MessageBody, uid=Depends(registered)):
         m = await active_match(s, uid)
         if not m or m.id != body.match or not m.mode.startswith('mini_'): raise HTTPException(409, 'Suhbat tugagan.')
         if not body.text.strip(): raise HTTPException(422, 'Xabar bo‘sh.')
-        s.add(MiniMessage(match_id=m.id, sender_id=uid, text=body.text.strip()))
+        item = MiniMessage(match_id=m.id, sender_id=uid, text=body.text.strip())
+        s.add(item)
         await s.commit()
-    return {'ok': True}
+    return {'ok': True, 'id': item.id}
 
 class StopBody(BaseModel):
     reason: str = Field(default='', max_length=1000)

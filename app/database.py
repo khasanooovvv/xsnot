@@ -19,4 +19,5 @@ async def init_db() -> None:
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS archive_consent_at TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE matches ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE match_queue ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("CREATE INDEX IF NOT EXISTS ix_mini_messages_match_id_id ON mini_messages (match_id, id)"))
             await connection.run_sync(widen_telegram_ids)

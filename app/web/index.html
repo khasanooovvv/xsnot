@@ -42,11 +42,17 @@ async function run(fn){try{notice('');await fn()}catch(e){notice(e.message)}}
 function renderProfile(){$('profileInfo').innerHTML=avatar(me)+'<h2>'+esc(me.name)+badgeMarkup(me)+'</h2><p class="muted">'+esc(me.city)+' • '+esc(me.age)+' '+t('yosh')+'</p><div class="row"><div>💎 Silver<div class="stat">'+t(me.silver?'Abadiy':'Tasdiqlanmagan')+'</div></div><div>🥇 Gold<div class="stat">'+me.gold+' '+t('kun')+'</div></div></div><p>'+t('Takliflar:')+' <b>'+me.referrals+'</b></p>'}
 async function photo(){const f=$('photo').files[0];if(!f)return null;if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)}
 $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$('photo');if(!f.files[0]){const msg=document.querySelector('#photoRequiredMessage');if(msg){msg.textContent='Iltimos, rasm tanlang.';msg.hidden=false}if(navigator.vibrate)navigator.vibrate(180);return}const msg=document.querySelector('#photoRequiredMessage');if(msg)msg.hidden=true;b.disabled=true;run(async()=>{me=await api('register',{name:$('displayName').value.trim(),gender:$('gender').value,birthday:$('birthday').value,city:$('city').value,accepted:$('terms').checked,avatar:await photo()});$('nav').hidden=false;show('home')}).finally(()=>b.disabled=false)};
-let chatEpoch=0, chatBusy=false, revealMarkup='';
+let chatEpoch=0, chatBusy=false, revealMarkup='',messageSending=false,seenMessageIds=new Set(),pendingMessage=null;
 function clearChatView(){
-  match=null;after=0;revealMarkup='';
+  match=null;after=0;revealMarkup='';seenMessageIds=new Set();pendingMessage=null;
   $('messages').replaceChildren();$('message').value='';$('reveal').replaceChildren();
   $('reveal').hidden=true;$('messageForm').hidden=true;$('report').hidden=true;
+}
+function addChatMessage(m){
+  const key=String(m.id);
+  if(m.mine&&pendingMessage&&pendingMessage.text===m.text){pendingMessage.el.dataset.messageId=key;seenMessageIds.add(key);pendingMessage=null;return}
+  if(seenMessageIds.has(key))return;
+  const el=document.createElement('div');if(!el.dataset)el.dataset={};el.dataset.messageId=key;el.className='bubble'+(m.mine?' mine':'');el.textContent=m.text;$('messages').append(el);seenMessageIds.add(key);return el;
 }
 async function chatAction(action){
   if(chatBusy)return;chatBusy=true;++chatEpoch;
@@ -82,9 +88,9 @@ async function poll(){
       $('messageForm').hidden=false;$('report').hidden=false;
       $('anonymousMode').checked=Boolean(d.own_anonymous);
       for(const m of d.messages){
+        if(m.mine&&pendingMessage&&pendingMessage.text===m.text){addChatMessage(m);after=Math.max(after,m.id);continue}
         if(m.id<=after)continue;
-        const el=document.createElement('div');el.className='bubble'+(m.mine?' mine':'');el.textContent=m.text;
-        $('messages').append(el);after=m.id;
+        addChatMessage(m);after=Math.max(after,m.id);
       }
       if(d.messages.length)$('messages').scrollTop=$('messages').scrollHeight;
     }else{
@@ -95,8 +101,9 @@ async function poll(){
     }
   }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false}
 }
-$('messageForm').onsubmit=e=>{e.preventDefault();if(chatBusy||!match)return;const value=$('message').value,id=match,epoch=chatEpoch;
-  run(async()=>{await api('message',{match:id,text:value});if(epoch===chatEpoch&&match===id){if($('message').value===value)$('message').value='';await poll()}})
+$('messageForm').onsubmit=e=>{e.preventDefault();if(chatBusy||messageSending||!match)return;const input=$('message'),sendButton=$('messageForm').querySelector('button'),value=input.value.trim(),id=match,epoch=chatEpoch;if(!value)return;
+  messageSending=true;input.disabled=true;sendButton.disabled=true;input.value='';const pendingEl=addChatMessage({id:'pending-'+Date.now(),mine:true,text:value});pendingMessage={text:value,el:pendingEl};$('messages').scrollTop=$('messages').scrollHeight;
+  (async()=>{try{const data=await api('message',{match:id,text:value});if(epoch===chatEpoch&&match===id&&pendingMessage?.el===pendingEl){const pendingKey=String(pendingEl.dataset.messageId);pendingEl.dataset.messageId=String(data.id);seenMessageIds.delete(pendingKey);seenMessageIds.add(String(data.id));pendingMessage=null;after=Math.max(after,Number(data.id)||after)}await poll()}catch(error){pendingEl.remove();pendingMessage=null;notice(error.message)}finally{messageSending=false;input.disabled=false;sendButton.disabled=false;}})()
 };
 $('stop').onclick=()=>chatAction(async()=>{clearChatView();show('home');await api('stop',{})});
 $('next').onclick=()=>chatAction(async()=>{
@@ -164,7 +171,7 @@ async function loadCachedAvatar(){
     await avatarCacheStore('put',id,{avatar:data.avatar,version:data.version});
   }catch{/* Keep the cached image when offline. */}
 }
-run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered){poll();setInterval(poll,2000)}else{setInterval(()=>{if(me?.registered)poll()},2000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
+run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered){poll();setInterval(poll,1000)}else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);
 document.addEventListener('click',e=>{if(e.target.id!=='deleteAccount')return;if(!confirm('Account va botdagi profil ma’lumotlari o‘chiriladi. Oldin arxivlangan suhbat va videolarning kanal nusxalari admin qo‘lda o‘chirguncha qoladi. Davom etilsinmi?'))return;run(async()=>{await api('delete-account',{});++avatarCacheEpoch;await avatarCacheStore('delete',me.id);verificationCamera?.cancel();me=null;match=null;$('nav').hidden=true;show('outside');notice('Account o‘chirildi. Botda /start bosib yangi profil yarating.')})});
 function setupRegistrationPicker(){

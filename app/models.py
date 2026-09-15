@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import date, datetime
-from sqlalchemy import LargeBinary, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import LargeBinary, BigInteger, Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase): pass
@@ -85,6 +85,7 @@ class MiniAvatar(Base):
 
 class MiniMessage(Base):
     __tablename__ = "mini_messages"
+    __table_args__ = (Index('ix_mini_messages_match_id_id', 'match_id', 'id'),)
     id: Mapped[int] = mapped_column(primary_key=True)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
