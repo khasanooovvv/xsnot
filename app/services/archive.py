@@ -1,9 +1,6 @@
 """Consented Mini App archives, delivered from a durable transactional outbox."""
 import asyncio
-import io
-import json
 import logging
-import zipfile
 from datetime import UTC, datetime, timedelta
 from aiogram.types import BufferedInputFile
 from aiogram.exceptions import TelegramRetryAfter
@@ -19,22 +16,16 @@ def identity_label(user):
     handle = '@' + user.username.lstrip('@') if user.username else 'ID: ' + str(user.telegram_id)
     return f'{name} | {handle}'
 
-def chat_zip(match, people, messages, part):
+def chat_text(match, people, messages, part):
     header = (f'Suhbat #{match.id} — {part}-qism\n'
               f'1. {identity_label(people[0])}\n2. {identity_label(people[1])}\n'
               f'Boshlangan: {match.started_at}\nTugagan: {match.ended_at}\nVaqt zonasi: UTC\n\n')
     names = {u.telegram_id: identity_label(u) for u in people}
     lines = [header]
-    records = []
     for m in messages:
         who = names.get(m.sender_id, f'ID: {m.sender_id}')
         lines.append(f'[{m.id}] {who}\n    ' + m.text.replace('\n', '\n    ') + '\n\n')
-        records.append(json.dumps({'message_id': m.id, 'sender_id': m.sender_id, 'sender': who, 'text': m.text}, ensure_ascii=False))
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr('chat.txt', ''.join(lines))
-        archive.writestr('messages.jsonl', '\n'.join(records))
-    return buffer.getvalue()
+    return ''.join(lines).encode('utf-8')
 
 async def enqueue_chat(session, match):
     channel = settings().archive_channel_id.strip()
@@ -52,8 +43,8 @@ async def enqueue_chat(session, match):
         rows = (await session.scalars(select(MiniMessage).where(MiniMessage.match_id == match.id, MiniMessage.id > cursor).order_by(MiniMessage.id).limit(1000))).all()
         if not rows and part > 1:
             break
-        payload = await asyncio.to_thread(chat_zip, match, people, rows, part)
-        session.add(ArchiveDelivery(event_key=f'chat:{match.id}:{part}', channel_id=channel, media_type='application/zip', filename=f'chat_{match.id}_{part}.zip', caption=caption+f'\nQism: {part}', payload=payload))
+        payload = await asyncio.to_thread(chat_text, match, people, rows, part)
+        session.add(ArchiveDelivery(event_key=f'chat:{match.id}:{part}', channel_id=channel, media_type='text/plain', filename=f'chat_{match.id}_{part}.txt', caption=caption+f'\nQism: {part}', payload=payload))
         if len(rows) < 1000:
             break
         cursor, part = rows[-1].id, part + 1
