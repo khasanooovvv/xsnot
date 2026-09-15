@@ -4,6 +4,7 @@ import hmac
 import io
 import json
 import time
+import secrets
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal
@@ -30,6 +31,10 @@ router = APIRouter()
 @router.get('/assets/gold-status.js')
 async def gold_status_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'gold-status.js', media_type='application/javascript')
+
+@router.get('/assets/roulette.js')
+async def roulette_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette.js', media_type='application/javascript')
 
 @router.get('/assets/photo-picker.js')
 async def photo_picker_script():
@@ -230,6 +235,7 @@ class Search(BaseModel):
     mode: Literal['anonymous', 'open'] = 'anonymous'
     accepted: Literal[True]
     archive_consent: bool = False
+    roulette: bool = False
 
 class PrivacyChoice(BaseModel):
     anonymous: bool
@@ -240,7 +246,7 @@ async def chat_privacy(body: PrivacyChoice, uid=Depends(registered)):
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         queued = await s.get(MatchQueue, uid)
         if queued and queued.mode.startswith('mini_'):
-            queued.mode = 'mini_anonymous' if body.anonymous else 'mini_open'
+            queued.mode = ('mini_ra' if body.anonymous else 'mini_ro') if queued.mode in ('mini_ra', 'mini_ro') else ('mini_anonymous' if body.anonymous else 'mini_open')
         m = await active_match(s, uid)
         if m and m.mode.startswith('mini_'):
             set_anonymous(m, uid, body.anonymous)
@@ -257,12 +263,83 @@ async def search(body: Search, uid=Depends(registered)):
         if body.archive_consent and not user.archive_consent_at:
             user.archive_consent_at = datetime.now(UTC)
         archive_consent = bool(user.archive_consent_at)
-        await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
+        await s.execute(delete(MatchQueue).where(MatchQueue.mode.in_(['mini_anonymous', 'mini_open', 'mini_ra', 'mini_ro']), MatchQueue.queued_at < datetime.now(UTC) - timedelta(seconds=30)))
         existing = await active_match(s, uid)
         if existing and existing.mode.startswith('mini_'):
             set_anonymous(existing, uid, body.mode == 'anonymous')
         elif not existing:
-            await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
+            if body.roulette:
+                await leave_queue(s, uid)
+                s.add(MatchQueue(user_id=uid, mode='mini_ra' if body.mode == 'anonymous' else 'mini_ro', archive_consent=archive_consent))
+            else:
+                await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
+        await s.commit()
+    return {'ok': True}
+
+def roulette_ticket(uid, candidate, expires):
+    # Opaque, viewer-bound selection: no Telegram IDs are sent to the browser.
+    payload = f'roulette:{uid}:{candidate.user_id}:{candidate.mode}:{expires}'
+    signature = hmac.new(settings().bot_token.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f'{expires}.{signature}'
+
+async def roulette_candidates(s, uid):
+    busy = select(Match.user_one_id).where(Match.status == 'active').union(select(Match.user_two_id).where(Match.status == 'active'))
+    return (await s.scalars(select(MatchQueue).join(User, User.telegram_id == MatchQueue.user_id).where(
+        MatchQueue.user_id != uid, MatchQueue.mode.in_(['mini_ra', 'mini_ro']),
+        MatchQueue.queued_at >= datetime.now(UTC) - timedelta(seconds=30),
+        User.is_registered.is_(True), User.is_banned.is_(False),
+        MatchQueue.user_id.not_in(busy),
+    ))).all()
+
+@router.post('/api/roulette/spin')
+async def roulette_spin(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        own = await s.get(MatchQueue, uid)
+        if not own or own.mode not in ('mini_ra', 'mini_ro') or await active_match(s, uid):
+            raise HTTPException(409, 'Qidiruvni qayta boshlang.')
+        own.queued_at = datetime.now(UTC)
+        candidates = [c for c in await roulette_candidates(s, uid) if not settings().archive_channel_id or (own.archive_consent and c.archive_consent)]
+        secrets.SystemRandom().shuffle(candidates)
+        candidates = candidates[:12]
+        items = []
+        for candidate in candidates:
+            item = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
+            if candidate.mode == 'mini_ro':
+                p = await profile(s, await s.get(User, candidate.user_id), include_referrals=False)
+                item = {k: p[k] for k in ('name', 'avatar')}
+                item['anonymous'] = False
+            items.append(item)
+        await s.commit()
+        return {'items': items, 'selected': 0 if items else None,
+                'ticket': roulette_ticket(uid, candidates[0], int(time.time()) + 90) if items else None}
+
+class RouletteChoice(BaseModel):
+    ticket: str = Field(max_length=100)
+
+@router.post('/api/roulette/choose')
+async def roulette_choose(body: RouletteChoice, uid=Depends(registered)):
+    try:
+        expires = int(body.ticket.split('.', 1)[0])
+        if not time.time() < expires <= time.time() + 91:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(409, 'Tanlov eskirdi. Qayta aylantiring.')
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        own = await s.get(MatchQueue, uid)
+        if not own or own.mode not in ('mini_ra', 'mini_ro') or await active_match(s, uid):
+            raise HTTPException(409, 'Qidiruvni qayta boshlang.')
+        candidates = await roulette_candidates(s, uid)
+        partner = next((c for c in candidates if hmac.compare_digest(body.ticket, roulette_ticket(uid, c, expires))), None)
+        if not partner or (settings().archive_channel_id and not (own.archive_consent and partner.archive_consent)):
+            raise HTTPException(409, 'Bu suhbatdosh hozir band. Qayta aylantiring.')
+        match = Match(user_one_id=uid, user_two_id=partner.user_id,
+                      mode='mini_' + ('a' if own.mode == 'mini_ra' else 'o') + ('a' if partner.mode == 'mini_ra' else 'o'),
+                      archive_consent=bool(own.archive_consent and partner.archive_consent))
+        s.add(match)
+        await leave_queue(s, uid)
+        await leave_queue(s, partner.user_id)
         await s.commit()
     return {'ok': True}
 

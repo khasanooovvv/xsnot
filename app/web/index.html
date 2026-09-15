@@ -63,6 +63,7 @@ $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$(
 let chatEpoch=0, chatBusy=false, revealMarkup='',messageSending=false,seenMessageIds=new Set(),pendingMessage=null,idlePolls=0;
 function scrollChatToBottom(){const el=$('messages');if(!el)return;const move=()=>{el.scrollTop=el.scrollHeight};move();if(typeof requestAnimationFrame==='function')requestAnimationFrame(move)}
 function clearChatView(){
+  window.chatRoulette?.reset();
   match=null;after=0;revealMarkup='';seenMessageIds=new Set();pendingMessage=null;idlePolls=0;document.body?.classList?.remove('chat-fullscreen','chat-searching');
   $('messages').replaceChildren();$('message').value='';$('reveal').replaceChildren();$('chatTopBar').hidden=true;$('chatTitle').hidden=false;scrollChatToBottom();
   $('reveal').hidden=true;$('messageForm').hidden=true;$('chatMenuToggle').hidden=true;$('chatMenu').hidden=true;$('chatMenuToggle').setAttribute?.('aria-expanded','false');
@@ -90,7 +91,7 @@ $('anonymousMode').onchange=()=>{
   });
 };
 $('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
-  searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:true,archive_consent:Boolean(me?.archive_consent||$('chatTerms').checked)};
+  searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:true,roulette:true,archive_consent:Boolean(me?.archive_consent||$('chatTerms').checked)};
   clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');
   await api('search',searchOptions);document.body.classList.add('chat-searching');if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
 })};
@@ -120,10 +121,10 @@ async function poll(){
     }else{
       idlePolls+=1;
       if(match&&document.body?.classList?.contains('chat-fullscreen')&&idlePolls<2)return;
-      const ended=Boolean(match);clearChatView();
+      const ended=Boolean(match);if(ended||d.status!=='searching')clearChatView();
       if(ended)notice(t('Suhbat yakunlandi. Yangi sherik topishingiz mumkin.'));
       $('chatTitle').textContent=t(d.status==='searching'?'Sherik qidirilmoqda…':'Suhbat tugagan');
-      if(d.status==='searching'){document.body.classList.add('chat-searching');show('chat')}else document.body.classList.remove('chat-searching');
+      if(d.status==='searching'){document.body.classList.add('chat-searching');show('chat');window.chatRoulette?.start()}else document.body.classList.remove('chat-searching');
     }
   }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false;if(me?.registered&&!document.hidden)setTimeout(poll,250)}
 }
@@ -343,4 +344,4 @@ const chatBackStyle=document.createElement('style');chatBackStyle.textContent='#
 chatBack.onclick=()=>chatAction(async()=>{chatBack.disabled=true;try{await api('stop',{});clearChatView();show('home')}finally{chatBack.disabled=false}});
 const wordingObserver=()=>{if(!document.createTreeWalker||typeof NodeFilter==='undefined')return;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;const next=node.nodeValue.split('Sherik topish').join('Suhbatdosh topish').split('Sherik qidirilmoqda').join('Suhbatdosh qidirilmoqda');if(next!==node.nodeValue)node.nodeValue=next}};
 wordingObserver();if(typeof MutationObserver==='function')new MutationObserver(wordingObserver).observe(document.body,{subtree:true,childList:true,characterData:true});
-</script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js"></script></body></html>
+</script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js"></script><script src="/assets/roulette.js"></script></body></html>
