@@ -1,11 +1,11 @@
 :root{--page:#f4f6f8;--surface:#fff;--surface-2:#eef2f5;--text:#17212b;--muted:#70808f;--border:#dce3e8;--accent:#168acd;--nav:#ffffffed;color-scheme:light}
-body{background:linear-gradient(180deg,#eaf4fa 0,var(--page) 180px)!important;color:var(--text)!important}
-body.theme-dark{--page:#0e1621;--surface:#17212b;--surface-2:#202b36;--text:#f1f5f8;--muted:#9aa9b6;--border:#2b3946;--accent:#229ed9;--nav:#17212bf2;color-scheme:dark;background:radial-gradient(ellipse at top right,#20344a,transparent 55%),var(--page)}
+body{background:var(--page)!important;color:var(--text)!important}
+body.theme-dark{--page:#0e1621;--surface:#17212b;--surface-2:#202b36;--text:#f1f5f8;--muted:#9aa9b6;--border:#2b3946;--accent:#229ed9;--nav:#17212bf2;color-scheme:dark;background:var(--page)!important}
 .theme-card,.card{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}
 .theme-muted{color:var(--muted)}
 .muted,small{color:var(--muted)!important}h1,h2,h3,p,label,header b{color:var(--text)}
-button,input,select{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}button{background:var(--accent)!important;color:#fff!important}button.secondary{background:var(--surface-2)!important;color:var(--text)!important}
-nav{background:var(--nav)!important;border-color:var(--border)!important}nav button{background:transparent!important;color:var(--muted)!important}nav button.selected{background:#d9effb!important;color:#126b98!important}.theme-dark nav button.selected{background:#214d69!important;color:#fff!important}
+button,input,select{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}button{background:var(--accent)!important;background-image:none!important;color:#fff!important}button.secondary{background:var(--surface-2)!important;background-image:none!important;color:var(--text)!important}
+nav{background:var(--nav)!important;border-color:var(--border)!important}nav button{background:transparent!important;background-image:none!important;color:var(--muted)!important}nav button.selected{background:#d9effb!important;background-image:none!important;color:#126b98!important}.theme-dark nav button.selected{background:#214d69!important;background-image:none!important;color:#fff!important}
 .pill{background:#e1f3fc!important;border-color:#a9d9ef!important;color:#1675a3!important}.theme-dark .pill{background:#203a50!important;border-color:#2d6b8f!important;color:#8ed7fa!important}
 .theme-dark .card,.theme-dark .direct-box{background:#17212b!important}.theme-dark button{background:#2aabee!important}.theme-dark input,.theme-dark select{background:#101923!important}.theme-dark #notice{background:#452b37!important;color:#ffdbe1!important}
 .theme-toggle{width:42px;height:42px;margin:0;padding:0;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:20px;line-height:1;box-shadow:none}
