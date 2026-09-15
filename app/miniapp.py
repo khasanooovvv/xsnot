@@ -73,6 +73,10 @@ async def theme_script():
 async def direct_chat_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-chat.js', media_type='application/javascript')
 
+@router.get('/assets/direct-nav.js')
+async def direct_nav_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-nav.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
