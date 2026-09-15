@@ -1,7 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import Match, MatchQueue, User
+from app.config import settings
+from app.models import Match, MatchQueue, MiniMessage, User
 from app.services.users import age_on
 
 async def leave_queue(session: AsyncSession, user_id: int):
@@ -54,5 +55,9 @@ async def active_match(session: AsyncSession, user_id: int):
 
 async def end_match(session: AsyncSession, match: Match):
     match.status, match.ended_at = "ended", datetime.now(UTC)
-    from app.services.archive import enqueue_chat
-    await enqueue_chat(session, match)
+    if match.mode.startswith('mini_'):
+        if settings().archive_channel_id and match.archive_consent:
+            from app.services.archive import enqueue_chat
+            await enqueue_chat(session, match)
+        else:
+            await session.execute(delete(MiniMessage).where(MiniMessage.match_id == match.id))

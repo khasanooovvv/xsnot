@@ -7,7 +7,7 @@ import zipfile
 from datetime import UTC, datetime, timedelta
 from aiogram.types import BufferedInputFile
 from aiogram.exceptions import TelegramRetryAfter
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from app.config import settings
 from app.database import SessionLocal
 from app.models import ArchiveDelivery, MiniMessage, User
@@ -83,9 +83,20 @@ async def deliver_one(bot):
             return False
         try:
             result = await send_delivery(bot, row)
+            event_key = row.event_key
             row.message_id = result.message_id
             row.sent_at = datetime.now(UTC)
             row.payload = None
+            if event_key.startswith('chat:'):
+                match_id_text = event_key.split(':', 2)[1]
+                if match_id_text.isdigit():
+                    prefix = f'chat:{match_id_text}:'
+                    pending = await session.scalar(select(func.count(ArchiveDelivery.id)).where(ArchiveDelivery.event_key.like(prefix + '%'), ArchiveDelivery.sent_at.is_(None)))
+                    if not pending:
+                        await session.execute(delete(MiniMessage).where(MiniMessage.match_id == int(match_id_text)))
+                        await session.execute(delete(ArchiveDelivery).where(ArchiveDelivery.event_key.like(prefix + '%')))
+            elif event_key.startswith('verification:'):
+                await session.delete(row)
         except Exception as error:
             row.attempts += 1
             delay = error.retry_after if isinstance(error, TelegramRetryAfter) else min(3600, 10 * 2 ** min(row.attempts, 8))
