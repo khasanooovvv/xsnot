@@ -19,6 +19,8 @@ async def init_db() -> None:
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS archive_consent_at TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE matches ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE match_queue ADD COLUMN IF NOT EXISTS archive_consent BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("ALTER TABLE referral_history ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE"))
+            await connection.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_history_referrer_active ON referral_history (referrer_id, active)"))
             await connection.execute(text("ALTER TABLE mini_messages ADD COLUMN IF NOT EXISTS image_data BYTEA"))
             await connection.execute(text("ALTER TABLE mini_messages ADD COLUMN IF NOT EXISTS image_type VARCHAR(64)"))
             await connection.execute(text("ALTER TABLE mini_messages ADD COLUMN IF NOT EXISTS image_name VARCHAR(255)"))

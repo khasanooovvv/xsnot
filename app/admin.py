@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, or_, text, delete
 from app.config import settings
 from app.database import SessionLocal, init_db
-from app.models import MatchQueue, Report, User, VideoVerification
+from app.models import MatchQueue, ReferralHistory, Report, User, VideoVerification
 from app.services.users import referral_count
 from app.services.badges import badge_status
 from app.bot import router as bot_router
@@ -223,8 +223,9 @@ async def reports():
 async def reward_leaders():
     """Run once at the end of a referral campaign/month; each current top-10 gets 30 Gold days."""
     async with SessionLocal() as s:
-        referred, referrer = User.__table__.alias("referred"), User.__table__.alias("referrer")
-        ids = (await s.execute(select(referrer.c.telegram_id).join(referred, referred.c.referred_by_id == referrer.c.telegram_id).where(referred.c.referral_rewarded.is_(True)).group_by(referrer.c.telegram_id).order_by(func.count(referred.c.telegram_id).desc()).limit(10))).scalars().all()
+        referrer = User.__table__.alias("referrer")
+        history = ReferralHistory.__table__
+        ids = (await s.execute(select(referrer.c.telegram_id).join(history, history.c.referrer_id == referrer.c.telegram_id).where(history.c.active.is_(True)).group_by(referrer.c.telegram_id).order_by(func.count(history.c.id).desc()).limit(10))).scalars().all()
         now = datetime.now(UTC)
         for user_id in ids:
             u = await s.get(User, user_id); u.gold_until = max(u.gold_until or now, now) + timedelta(days=cfg.reward_days)

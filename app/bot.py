@@ -9,7 +9,7 @@ from aiogram.types import WebAppInfo
 from sqlalchemy import func, select
 from app.config import settings
 from app.database import SessionLocal, init_db
-from app.models import Report, User
+from app.models import ReferralHistory, Report, User
 from app.services.matching import active_match, end_match, find_or_queue, leave_queue
 from app.services.users import age_on, apply_referral_reward, consume_share, days_left, get_or_create, referral_count
 from app.services.visuals import vs_card
@@ -159,14 +159,14 @@ async def invite(q: CallbackQuery):
         if not await consume_share(s, q.from_user.id): await q.answer("Bugungi ulashish limiti tugadi.", show_alert=True); return
         refs = await referral_count(s, q.from_user.id); await s.commit()
     link = f"https://t.me/{cfg.public_bot_username}?start=ref_{q.from_user.id}"
-    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. Video tasdiqlansa = abadiy Silver, 50 ta = 30 kun Gold. Silver bilan kunlik havola olish limiti oshadi.", parse_mode="HTML", reply_markup=main_menu())
+    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. 5 ta yangi do‘st = 5 kun Gold, 15 ta = 15 kun, 30 ta = 30 kun. Takroriy akkauntlar hisoblanmaydi.", parse_mode="HTML", reply_markup=main_menu())
 
 @router.callback_query(F.data == "leaders")
 async def leaders(q: CallbackQuery):
     async with SessionLocal() as s:
-        referred = User.__table__.alias("referred")
         referrer = User.__table__.alias("referrer")
-        rows = (await s.execute(select(referrer.c.display_name, func.count(referred.c.telegram_id).label("n")).join(referrer, referred.c.referred_by_id == referrer.c.telegram_id).where(referred.c.referral_rewarded.is_(True)).group_by(referrer.c.telegram_id, referrer.c.display_name).order_by(func.count(referred.c.telegram_id).desc()).limit(10))).all()
+        history = ReferralHistory.__table__
+        rows = (await s.execute(select(referrer.c.display_name, func.count(history.c.id).label("n")).join(history, history.c.referrer_id == referrer.c.telegram_id).where(history.c.active.is_(True)).group_by(referrer.c.telegram_id, referrer.c.display_name).order_by(func.count(history.c.id).desc()).limit(10))).all()
     lines = [f"{i}. {name} — {count}" for i, (name, count) in enumerate(rows, 1)] or ["Hali natijalar yo‘q."]
     await q.message.edit_text("🏆 <b>Top 10 referralchilar</b>\n\n" + "\n".join(lines) + "\n\nTop-10’ga oyiga 30 kun Gold beriladi (admin tomonidan yakunlanadi).", parse_mode="HTML", reply_markup=main_menu())
 

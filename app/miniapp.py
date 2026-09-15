@@ -160,6 +160,11 @@ async def delete_account(uid=Depends(identity)):
         await s.execute(delete(MiniMessage).where(MiniMessage.sender_id == uid))
         await s.execute(delete(ReferralShare).where(ReferralShare.user_id == uid))
         await s.execute(delete(VideoVerification).where(VideoVerification.user_id == uid))
+        # Keep an inactive ledger so the same Telegram account cannot earn a
+        # referral again after deleting and recreating its profile.
+        await s.execute(update(ReferralHistory).where(ReferralHistory.referrer_id == uid).values(active=False))
+        user.gold_until = None
+        user.premium_until = None
         if user.referral_rewarded and user.referred_by_id:
             history = await s.scalar(select(ReferralHistory).where(ReferralHistory.referrer_id == user.referred_by_id, ReferralHistory.referred_id == uid))
             if not history:
@@ -358,8 +363,7 @@ async def stop(body: StopBody, uid=Depends(registered)):
 @router.get('/api/leaders')
 async def leaders(uid=Depends(registered)):
     async with SessionLocal() as s:
-        refs = User.__table__.alias('refs')
-        rows = (await s.execute(select(User, func.count(refs.c.telegram_id)).join(refs, refs.c.referred_by_id == User.telegram_id).where(refs.c.referral_rewarded.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(refs.c.telegram_id).desc(), User.telegram_id).limit(10))).all()
+        rows = (await s.execute(select(User, func.count(ReferralHistory.id)).join(ReferralHistory, ReferralHistory.referrer_id == User.telegram_id).where(ReferralHistory.active.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(ReferralHistory.id).desc(), User.telegram_id).limit(10))).all()
         return [{'name':u.display_name, 'count':count, **badge_status(u)} for u, count in rows]
 
 @router.post('/api/invite')
