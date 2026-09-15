@@ -37,8 +37,8 @@ async def submit(request: Request, video: UploadFile = File(...), consent: bool 
         await video.close()
     if len(content) > MAX_VIDEO_BYTES or len(content) < 16:
         raise HTTPException(422, 'Video 15 MB dan kichik bo‘lishi kerak.')
-    if content[4:8] == b'ftyp': media = 'video/mp4'
-    elif content[:4] == b'\x1a\x45\xdf\xa3': media = 'video/webm'
+    if content[4:8] == b'ftyp' or (video.content_type or '').lower().startswith('video/mp4'): media = 'video/mp4'
+    elif content[:4] == b'\x1a\x45\xdf\xa3' or (video.content_type or '').lower().startswith('video/webm'): media = 'video/webm'
     else: raise HTTPException(422, 'MP4 yoki WebM video yuboring.')
     async with SessionLocal() as s:
         u = await s.get(User, uid, with_for_update=True)

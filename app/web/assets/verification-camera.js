@@ -24,7 +24,7 @@ function createVerificationCamera({preview, playback, onState, onError}) {
     if(!mime){fail('Kamera bu qurilmada qo‘llanmaydi. Telegramni yangilab qayta urinib ko‘ring.');return}
     const current=version;chunks=[];let size=0;
     try{
-      recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:1000000});
+      recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:600000});
       recorder.ondataavailable=e=>{if(current!==version||!e.data.size)return;size+=e.data.size;if(size>15*1024*1024){fail('Video hajmi oshib ketdi. Qayta yozing.');return}chunks.push(e.data)};
       recorder.onerror=()=>{if(current===version)fail('Video yozilmadi. Qayta urinib ko‘ring.')};
       recorder.onstop=()=>{

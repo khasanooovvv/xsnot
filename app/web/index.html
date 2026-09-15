@@ -122,6 +122,7 @@ $('cameraPanel').hidden=state==='idle';$('openCamera').hidden=state!=='idle';$('
 }});
 $('openCamera').onclick=()=>{notice('');verificationCamera.open()};$('recordCamera').onclick=()=>verificationCamera.record();$('stopCamera').onclick=()=>verificationCamera.stop();$('retakeCamera').onclick=()=>verificationCamera.open();$('cancelCamera').onclick=()=>verificationCamera.cancel();
 $('videoConsent').onchange=()=>{$('submitVideo').disabled=!verificationCamera.getBlob()||!$('videoConsent').checked};
+$('videoForm').addEventListener('submit',()=>{$('cameraStatus').textContent='Video yuborilmoqda…';$('submitVideo').textContent='Yuborilmoqda…'});
 window.addEventListener('pagehide',()=>verificationCamera.cancel());document.addEventListener('visibilitychange',()=>{if(document.hidden)verificationCamera.cancel()});
 $('videoForm').onsubmit=e=>{e.preventDefault();const file=verificationCamera.getBlob();if(!file)return;const button=e.submitter;button.disabled=true;run(async()=>{const data=new FormData();data.append('video',file,file.type.includes('mp4')?'verification.mp4':'verification.webm');data.append('consent',String($('videoConsent').checked));data.append('archive_consent',String($('videoConsent').checked));await api('verification/submit',data);verificationCamera.cancel();$('videoForm').reset();me.archive_consent=true;syncArchiveConsent();await loadVerification();}).finally(()=>button.disabled=!verificationCamera.getBlob())};
 
