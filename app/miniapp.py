@@ -77,6 +77,14 @@ async def direct_chat_script():
 async def direct_nav_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-nav.js', media_type='application/javascript')
 
+@router.get('/assets/direct-fullscreen.css')
+async def direct_fullscreen_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-fullscreen.css', media_type='text/css')
+
+@router.get('/assets/direct-fullscreen.js')
+async def direct_fullscreen_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-fullscreen.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
