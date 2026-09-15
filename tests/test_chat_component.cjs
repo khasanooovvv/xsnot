@@ -1,0 +1,9 @@
+const fs=require('fs'),path=require('path');
+const html=fs.readFileSync(path.join(__dirname,'..','app','web','index.html'),'utf8');
+const shared=fs.readFileSync(path.join(__dirname,'..','app','web','assets','chat-shared.css'),'utf8');
+const direct=fs.readFileSync(path.join(__dirname,'..','app','web','assets','direct-chat-v2.js'),'utf8');
+for(const token of ['chat-shared-shell','chat-shared-messages','chat-shared-composer'])if(!html.includes(token)&&!direct.includes(token))throw Error('shared chat token missing: '+token);
+if(!html.includes('/assets/direct-chat-v2.js'))throw Error('new direct chat component is not loaded');
+if(/direct-(behavior|exact|final|fullscreen|list|match|nav|send|ui|chat\.js)/.test(html))throw Error('legacy direct assets still loaded');
+for(const token of ['chat-shared-topbar','chat-shared-messages','chat-shared-composer','chat-shared-bubble'])if(!shared.includes(token))throw Error('shared style missing: '+token);
+console.log('PASS: roulette and direct chat use the shared chat component; legacy DM assets are removed');

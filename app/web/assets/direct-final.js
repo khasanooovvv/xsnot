@@ -1,1 +1,0 @@
-(function(){document.addEventListener('DOMContentLoaded',function(){const main=document.querySelector('main');if(!main)return;new MutationObserver(function(){const input=document.getElementById('directInput');if(input)input.required=false}).observe(main,{childList:true,subtree:true})},{once:true})})();

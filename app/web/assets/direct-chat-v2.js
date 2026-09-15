@@ -1,5 +1,5 @@
 (function(){
-  document.addEventListener('DOMContentLoaded',()=>{
+  document.addEventListener('DOMContentLoaded',()=>{const shared=document.createElement('link');shared.rel='stylesheet';shared.href='/assets/chat-shared.css?v=2';document.head.append(shared);
     const $=id=>document.getElementById(id), home=$('home'), main=document.querySelector('main'), nav=document.querySelector('nav'); if(!home||!main||!nav)return;
     const api=async(path,body)=>{const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':window.Telegram?.WebApp?.initData||''},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(d.detail||'So‘rov bajarilmadi.');return d};
     const page=document.createElement('section');page.id='directSearch';page.hidden=true;page.innerHTML='<div class="card direct-box"><small>TELEGRAM CHATLAR</small><h2>Chatlar</h2><input id="directSearchInput" placeholder="Username bo‘yicha qidirish…"><div id="directResults"></div><div id="directChats"></div></div>';main.append(page);
