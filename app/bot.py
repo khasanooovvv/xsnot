@@ -245,6 +245,11 @@ async def relay(message: Message):
         user = await s.get(User, message.from_user.id)
         match = await active_match(s, message.from_user.id)
         if not user or user.is_banned or not match: return
+        if user.muted_until:
+            until = user.muted_until.replace(tzinfo=UTC) if user.muted_until.tzinfo is None else user.muted_until
+            if until > datetime.now(UTC):
+                await message.answer(f"🔇 Siz {until.astimezone(UTC).strftime('%Y-%m-%d %H:%M UTC')} gacha mute qilingansiz.")
+                return
         target = match.user_two_id if match.user_one_id == user.telegram_id else match.user_one_id
     try: await message.copy_to(target)
     except Exception: await message.answer("Xabar yuborilmadi. Suhbat yakunlangan bo‘lishi mumkin.")

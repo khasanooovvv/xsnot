@@ -283,6 +283,11 @@ class MessageBody(BaseModel):
 async def message(body: MessageBody, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        user = await s.get(User, uid)
+        if user.muted_until:
+            until = user.muted_until.replace(tzinfo=UTC) if user.muted_until.tzinfo is None else user.muted_until
+            if until > datetime.now(UTC):
+                raise HTTPException(423, f'Mute: {until.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")} gacha xabar yubora olmaysiz.')
         m = await active_match(s, uid)
         if not m or m.id != body.match or not m.mode.startswith('mini_'): raise HTTPException(409, 'Suhbat tugagan.')
         if not body.text.strip(): raise HTTPException(422, 'Xabar bo‘sh.')

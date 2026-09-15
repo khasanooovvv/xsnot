@@ -20,6 +20,7 @@ class User(Base):
     archive_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_registered: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     silver_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

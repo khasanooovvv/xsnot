@@ -33,6 +33,9 @@ app.include_router(verification_admin_router, dependencies=[Depends(admin)])
 class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(gold)$")
 class Moderation(BaseModel): banned: bool
 class Verification(BaseModel): verified: bool = True
+class WarningNotice(BaseModel):
+    text: str = Field(default="⚠️ Ogohlantirish: suhbatdoshingizga haqoratli xabar yubordingiz. Qoidani takroran buzsangiz, profilingiz bloklanadi.", min_length=1, max_length=2000)
+    mute_hours: int = Field(default=0, ge=0, le=720)
 
 @app.on_event("startup")
 async def startup():
@@ -115,7 +118,28 @@ async def user_detail(user_id: int):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"muted_until":u.muted_until,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+
+@app.post("/users/{user_id}/warn", dependencies=[Depends(admin)])
+async def warn_user(user_id: int, body: WarningNotice):
+    now = datetime.now(UTC)
+    async with SessionLocal() as s:
+        u = await s.get(User, user_id, with_for_update=True)
+        if not u:
+            raise HTTPException(404, "User not found")
+        if body.mute_hours:
+            u.muted_until = now + timedelta(hours=body.mute_hours)
+        await s.commit()
+        muted_until = u.muted_until
+    delivered = True
+    if _bot is None:
+        delivered = False
+    else:
+        try:
+            await _bot.send_message(user_id, body.text)
+        except Exception:
+            delivered = False
+    return {"ok": True, "delivered": delivered, "muted_until": muted_until}
 
 @app.post("/users/{user_id}/verify", dependencies=[Depends(admin)])
 async def verify(user_id: int, body: Verification):
