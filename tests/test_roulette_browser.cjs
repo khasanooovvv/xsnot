@@ -7,6 +7,7 @@ const {chromium} = require('playwright');
   try {
     const page = await browser.newPage({viewport:{width:384,height:650}});
     let state='idle', spins=0, chooses=0, stops=0, empty=false, busy=false;
+    let account={id:10,registered:true,name:'Test',city:'Toshkent',age:26,birthday:'2000-01-01',gender:'male',language:'uz',archive_consent:true}, saved=0;
     const errors=[];
     page.on('pageerror', e=>errors.push(e.message));
     await page.route('**/*', async route => {
@@ -14,7 +15,8 @@ const {chromium} = require('playwright');
       if(url.hostname!=='roulette.test') return route.abort();
       if(url.pathname.startsWith('/api/')) {
         let result={ok:true}, status=200;
-        if(url.pathname==='/api/me') result={registered:true,name:'Test',language:'uz',archive_consent:true};
+        if(url.pathname==='/api/me') result=account;
+        if(url.pathname==='/api/profile') {account={...account,...route.request().postDataJSON()};saved++;result=account;}
         if(url.pathname==='/api/chat') result=state==='active'?{status:state,match:1,partner:{name:'Aziza',anonymous:false},own_anonymous:false,messages:[]}:{status:state};
         if(url.pathname==='/api/search') {assert.equal(route.request().postDataJSON().roulette,true);state='searching';}
         if(url.pathname==='/api/stop') {state='idle';stops++;}
@@ -29,6 +31,32 @@ const {chromium} = require('playwright');
     await page.addInitScript(()=>window.Telegram={WebApp:{initData:'test',ready(){},expand(){}}});
     await page.goto('http://roulette.test/');
     await page.waitForSelector('#home:visible');
+    await page.locator('[data-page="profile"]').click();
+    await page.locator('#editProfile').click();
+    assert.equal(await page.locator('#editName').inputValue(),'Test');
+    assert.equal(await page.locator('#editBirthday').inputValue(),'2000-01-01');
+    await page.locator('#editName').fill('Discard this');
+    await page.locator('#cancelProfileEdit').click();
+    assert.equal(saved,0);
+    await page.locator('#editProfile').click();
+    assert.equal(await page.locator('#editName').inputValue(),'Test');
+    await page.locator('#editName').fill('  ');
+    await page.locator('#saveProfileEdit').click();
+    assert.equal(saved,0);
+    assert.equal(await page.locator('#profileEditError').isVisible(),true);
+    await page.locator('#editName').fill('Yangi nik');
+    await page.locator('#editCity').fill('Samarqand');
+    const photo = await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=16;canvas.getContext('2d').fillRect(0,0,16,16);return canvas.toDataURL('image/png').split(',')[1]});
+    await page.locator('#editAvatar').setInputFiles({name:'avatar.png',mimeType:'image/png',buffer:Buffer.from(photo,'base64')});
+    await page.waitForSelector('#editAvatarPreview img');
+    await page.screenshot({path:path.join(require('node:os').tmpdir(),'profile-editor-preview.png')});
+    await page.locator('#saveProfileEdit').click();
+    await page.waitForFunction(()=>!document.querySelector('#profileEditor').open);
+    assert.equal(saved,1);
+    assert.equal(account.name,'Yangi nik');
+    assert(account.avatar.startsWith('data:image/jpeg;base64,'));
+    assert((await page.locator('#profileInfo').textContent()).includes('Yangi nik'));
+    await page.locator('[data-page="home"]').click();
     const search=()=>page.locator('#searchForm').evaluate(form=>form.requestSubmit());
     await search();
     await page.waitForSelector('.roulette-card.chosen');
@@ -61,6 +89,6 @@ const {chromium} = require('playwright');
     assert.equal(stops,2);
     assert.equal(state,'idle');
     assert.deepEqual(errors,[]);
-    console.log('PASS: roulette movement, avatar selection, reroll, busy/empty states and back cancellation');
+    console.log('PASS: profile edit/save/cancel/validation; roulette selection, reroll and back cancellation');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1});

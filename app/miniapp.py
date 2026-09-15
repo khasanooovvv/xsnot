@@ -36,6 +36,10 @@ async def gold_status_script():
 async def roulette_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette.js', media_type='application/javascript')
 
+@router.get('/assets/profile-editor.js')
+async def profile_editor_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-editor.js', media_type='application/javascript')
+
 @router.get('/assets/photo-picker.js')
 async def photo_picker_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'photo-picker.js', media_type='application/javascript')
@@ -121,6 +125,8 @@ async def me(include_avatar: bool = True, uid=Depends(identity)):
         user = await s.get(User, uid)
         data = await profile(s, user, include_avatar)
         data['muted_until'] = user.muted_until
+        data['birthday'] = user.birth_date
+        data['gender'] = user.gender
         data['server_now'] = datetime.now(UTC)
         return data
 
@@ -194,6 +200,48 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
         user.display_name = name
         await s.commit()
     return {'name': name}
+
+class ProfileEdit(BaseModel):
+    name: str = Field(min_length=2, max_length=64)
+    city: str = Field(min_length=2, max_length=100)
+    birthday: date
+    gender: Literal['male', 'female']
+    avatar: str | None = Field(default=None, max_length=2000000)
+
+@router.post('/api/profile')
+async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
+    name, city = body.name.strip(), body.city.strip()
+    if len(name) < 2 or len(city) < 2:
+        raise HTTPException(422, 'Ism va shahar kamida 2 ta belgidan iborat bo‘lsin.')
+    if not 18 <= age_on(body.birthday) <= 120:
+        raise HTTPException(422, 'Tug‘ilgan sana noto‘g‘ri. Chat 18+ uchun.')
+    avatar = None
+    if body.avatar is not None:
+        try:
+            raw = base64.b64decode(body.avatar.split(',', 1)[1], validate=True)
+            with Image.open(io.BytesIO(raw)) as source:
+                if source.width * source.height > 40000000:
+                    raise ValueError()
+                image = ImageOps.fit(ImageOps.exif_transpose(source).convert('RGB'), (512, 512))
+                output = io.BytesIO()
+                image.save(output, format='JPEG', quality=90)
+                avatar = 'data:image/jpeg;base64,' + base64.b64encode(output.getvalue()).decode()
+        except Exception:
+            raise HTTPException(422, 'Rasm ochilmadi. Boshqa rasm tanlang.')
+    async with SessionLocal() as s:
+        user = await s.get(User, uid, with_for_update=True)
+        user.display_name, user.city = name, city
+        user.birth_date, user.gender = body.birthday, body.gender
+        if avatar:
+            existing = await s.get(MiniAvatar, uid)
+            if existing:
+                existing.data = avatar
+            else:
+                s.add(MiniAvatar(user_id=uid, data=avatar))
+        await s.commit()
+        data = await profile(s, user)
+        data.update(birthday=user.birth_date, gender=user.gender)
+        return data
 
 class Registration(BaseModel):
     name: str = Field(min_length=2, max_length=64)
