@@ -41,6 +41,10 @@ async def roulette_script():
 async def profile_editor_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-editor.js', media_type='application/javascript')
 
+@router.get('/assets/partner-profile.js')
+async def partner_profile_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'partner-profile.js', media_type='application/javascript')
+
 @router.get('/assets/photo-picker.js')
 async def photo_picker_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'photo-picker.js', media_type='application/javascript')
@@ -426,6 +430,23 @@ async def chat(after: int = 0, uid=Depends(registered)):
                 item['image_name'] = r.image_name
             messages.append(item)
         return {'status': 'active', 'match': m.id, 'partner': partner, 'own_anonymous': is_anonymous(m, uid), 'messages': messages}
+
+@router.get('/api/chat/partner')
+async def partner_profile(match_id: int, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        m = await active_match(s, uid)
+        if not m or m.id != match_id or not m.mode.startswith('mini_'):
+            raise HTTPException(409, 'Suhbat tugagan. Profilni ochib bo‘lmaydi.')
+        partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
+        if is_anonymous(m, partner_id):
+            return {'match': m.id, 'partner': {'name': 'Anonim', 'avatar': None, 'anonymous': True}}
+        user = await s.get(User, partner_id)
+        if not user or not user.is_registered or user.is_banned:
+            raise HTTPException(404, 'Profil mavjud emas.')
+        data = await profile(s, user, include_referrals=False)
+        public = {key: data[key] for key in ('name', 'avatar', 'app_username', 'bio', 'age', 'city', 'verified', 'silver', 'gold')}
+        public['anonymous'] = False
+        return {'match': m.id, 'partner': public}
 
 class MessageBody(BaseModel):
     match: int

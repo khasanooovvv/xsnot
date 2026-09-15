@@ -79,6 +79,7 @@ $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$(
 let chatEpoch=0, chatBusy=false, revealMarkup='',messageSending=false,seenMessageIds=new Set(),pendingMessage=null,idlePolls=0;
 function scrollChatToBottom(){const el=$('messages');if(!el)return;const move=()=>{el.scrollTop=el.scrollHeight};move();if(typeof requestAnimationFrame==='function')requestAnimationFrame(move)}
 function clearChatView(){
+  window.partnerProfile?.close();
   window.chatRoulette?.reset();
   match=null;after=0;revealMarkup='';seenMessageIds=new Set();pendingMessage=null;idlePolls=0;document.body?.classList?.remove('chat-fullscreen','chat-searching');
   $('messages').replaceChildren();$('message').value='';$('reveal').replaceChildren();$('chatTopBar').hidden=true;$('chatTitle').hidden=false;scrollChatToBottom();
@@ -125,6 +126,7 @@ async function poll(){
       const partnerMeta=d.partner.anonymous?t('Profil yashirin'):(d.partner.city?(d.partner.city+(d.partner.age?' • '+d.partner.age:'')):'Online');
       const markup=avatar(d.partner)+'<div class="chat-partner-copy"><strong class="chat-partner-name">'+esc(partnerName)+badgeMarkup(d.partner)+'</strong><span class="chat-partner-status">'+esc(partnerMeta)+'</span></div>';
       if(markup!==revealMarkup){$('reveal').innerHTML=markup;revealMarkup=markup}
+      window.partnerProfile?.sync(d.match,d.partner.anonymous);
       $('reveal').hidden=false;$('chatTopBar').hidden=false;$('chatTitle').textContent=t('Suhbat boshlandi');$('chatTitle').hidden=true;$('chatMenuToggle').hidden=false;document.body?.classList?.add('chat-fullscreen');
       $('messageForm').hidden=false;$('report').hidden=false;
       $('anonymousMode').checked=Boolean(d.own_anonymous);
@@ -360,4 +362,4 @@ const chatBackStyle=document.createElement('style');chatBackStyle.textContent='#
 chatBack.onclick=()=>chatAction(async()=>{chatBack.disabled=true;try{await api('stop',{});clearChatView();show('home')}finally{chatBack.disabled=false}});
 const wordingObserver=()=>{if(!document.createTreeWalker||typeof NodeFilter==='undefined')return;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;const next=node.nodeValue.split('Sherik topish').join('Suhbatdosh topish').split('Sherik qidirilmoqda').join('Suhbatdosh qidirilmoqda');if(next!==node.nodeValue)node.nodeValue=next}};
 wordingObserver();if(typeof MutationObserver==='function')new MutationObserver(wordingObserver).observe(document.body,{subtree:true,childList:true,characterData:true});
-</script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js"></script><script src="/assets/roulette.js"></script><script src="/assets/profile-editor.js"></script></body></html>
+</script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js"></script><script src="/assets/roulette.js"></script><script src="/assets/profile-editor.js"></script><script src="/assets/partner-profile.js"></script></body></html>

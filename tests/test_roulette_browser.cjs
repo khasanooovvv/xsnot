@@ -7,6 +7,7 @@ const {chromium} = require('playwright');
   try {
     const page = await browser.newPage({viewport:{width:384,height:650}});
     let state='idle', spins=0, chooses=0, stops=0, empty=false, busy=false;
+    let partnerAnonymous=false;
     let account={id:10,registered:true,name:'Test',city:'Toshkent',age:26,birthday:'2000-01-01',gender:'male',language:'uz',archive_consent:true}, saved=0;
     const errors=[];
     page.on('pageerror', e=>errors.push(e.message));
@@ -17,7 +18,8 @@ const {chromium} = require('playwright');
         let result={ok:true}, status=200;
         if(url.pathname==='/api/me') result=account;
         if(url.pathname==='/api/profile') {account={...account,...route.request().postDataJSON()};saved++;result=account;}
-        if(url.pathname==='/api/chat') result=state==='active'?{status:state,match:1,partner:{name:'Aziza',anonymous:false},own_anonymous:false,messages:[]}:{status:state};
+        if(url.pathname==='/api/chat') result=state==='active'?{status:state,match:1,partner:{name:partnerAnonymous?'Anonim':'Aziza',anonymous:partnerAnonymous},own_anonymous:false,messages:[]}:{status:state};
+        if(url.pathname==='/api/chat/partner') result={match:1,partner:partnerAnonymous?{name:'Anonim',avatar:null,anonymous:true}:{name:'Aziza',app_username:'aziza',bio:'Salom! <b>Bio</b>',city:'Toshkent',age:25,anonymous:false}};
         if(url.pathname==='/api/search') {assert.equal(route.request().postDataJSON().roulette,true);state='searching';}
         if(url.pathname==='/api/stop') {state='idle';stops++;}
         if(url.pathname==='/api/roulette/spin') {spins++;result=empty?{items:[],ticket:null,selected:null}:{items:[{name:'Aziza',avatar:null,anonymous:false},{name:'Anonim',avatar:null,anonymous:true},{name:'Javohir',avatar:null,anonymous:false}],selected:0,ticket:'test-ticket'};}
@@ -88,6 +90,20 @@ const {chromium} = require('playwright');
     await page.waitForSelector('body.chat-fullscreen');
     assert.equal(await page.locator('#roulette').isVisible(),false);
     assert.equal(await page.locator('#chatBack').isVisible(),false);
+    await page.locator('#reveal').click();
+    await page.waitForSelector('#partnerProfileDialog .partner-handle');
+    assert.equal(await page.locator('.partner-handle').textContent(),'@aziza');
+    assert.equal(await page.locator('.partner-bio').textContent(),'Salom! <b>Bio</b>');
+    assert.equal(await page.locator('.partner-bio b').count(),0);
+    await page.screenshot({path:path.join(require('node:os').tmpdir(),'partner-profile-preview.png')});
+    partnerAnonymous=true;
+    await page.waitForFunction(()=>!document.querySelector('#partnerProfileDialog').open);
+    await page.locator('#reveal').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(()=>document.querySelector('#partnerProfileContent').textContent.includes('anonim rejimda'));
+    assert.equal(await page.locator('.partner-handle,.partner-bio').count(),0);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>!document.querySelector('#partnerProfileDialog').open);
     await page.locator('#chatMenuToggle').click();
     await page.locator('#stop').click();
     await page.waitForSelector('#home:visible');
