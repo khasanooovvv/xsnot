@@ -61,6 +61,18 @@ async def badge_script():
 async def badge_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'badges.css', media_type='text/css')
 
+@router.get('/assets/theme.css')
+async def theme_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.css', media_type='text/css')
+
+@router.get('/assets/theme.js')
+async def theme_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.js', media_type='application/javascript')
+
+@router.get('/assets/direct-chat.js')
+async def direct_chat_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-chat.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
