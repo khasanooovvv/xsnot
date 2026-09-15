@@ -113,6 +113,14 @@ async def direct_exact_styles():
 async def direct_exact_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-exact.js', media_type='application/javascript')
 
+@router.get('/assets/direct-behavior.js')
+async def direct_behavior_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-behavior.js', media_type='application/javascript')
+
+@router.get('/assets/direct-behavior.css')
+async def direct_behavior_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-behavior.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
