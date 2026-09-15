@@ -29,6 +29,7 @@ class Query:
 class Session:
     async def __aenter__(self): return self
     async def __aexit__(self, *args): pass
+    async def execute(self, query): pass
     async def get(self, model, uid): return SimpleNamespace(telegram_id=uid)
     async def scalars(self, query): return SimpleNamespace(all=lambda: [])
 
@@ -56,7 +57,7 @@ class PrivacyTests(unittest.IsolatedAsyncioTestCase):
             for uid in (1, 2):
                 with self.subTest(mode=mode, viewer=uid):
                     profile = AsyncMock(return_value=dict(name='Private name',avatar='private-photo',age=23,city='Toshkent',verified=False,silver=False,gold=0))
-                    ns = dict(SessionLocal=Session, active_match=AsyncMock(return_value=match), is_anonymous=anonymous, profile=profile, User=object,
+                    ns = dict(SessionLocal=Session, sql=lambda x:x, active_match=AsyncMock(return_value=match), is_anonymous=anonymous, profile=profile, User=object,
                               MiniMessage=SimpleNamespace(match_id=Query(),id=Query()),select=lambda *args: Query())
                     chat = load_function('app/miniapp.py','chat',ns)
                     response = await chat(0,uid)

@@ -4,10 +4,10 @@ import hmac
 import secrets
 import time
 import unittest
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace as Obj
 from unittest.mock import AsyncMock
-from test_chat_privacy import load_function
+from test_chat_privacy import load_function, Query
 
 
 class HttpError(Exception):
@@ -33,11 +33,15 @@ class RouletteTests(unittest.IsolatedAsyncioTestCase):
         self.partner = Obj(user_id=20, mode='mini_ra', archive_consent=True)
         self.session = Session(self.own)
         self.ns = dict(hmac=hmac, hashlib=hashlib, time=time, secrets=secrets,
-                       datetime=datetime, UTC=UTC, HTTPException=HttpError,
+                       datetime=datetime, UTC=UTC, timedelta=timedelta, HTTPException=HttpError,
                        settings=lambda: Obj(bot_token='test-secret', archive_channel_id=123),
                        SessionLocal=lambda: self.session, MatchQueue=object, User=object,
                        Match=lambda **kwargs: Obj(**kwargs), sql=lambda x:x,
                        active_match=AsyncMock(return_value=None),
+                       pending_invitation=AsyncMock(return_value=None),
+                       invitation_payload=AsyncMock(return_value={'id':'invite','direction':'outgoing'}),
+                       ChatInvitation=type('Invitation',(),{'expires_at':type('Expiry',(),{'__le__':lambda self,other:True})(),'__init__':lambda self,**kw:self.__dict__.update(kw)}),
+                       delete=lambda *args:Query(),
                        roulette_candidates=AsyncMock(return_value=[self.partner]),
                        leave_queue=AsyncMock(), profile=AsyncMock())
         self.ticket = load_function('app/miniapp.py', 'roulette_ticket', self.ns)
@@ -54,12 +58,19 @@ class RouletteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.session.matches, [])
         self.assertIsNotNone(result['ticket'])
 
-    async def test_selected_avatar_starts_exact_match_and_leaves_queue(self):
-        await self.choose(self.choice(), 10)
-        match = self.session.matches[0]
-        self.assertEqual((match.user_one_id, match.user_two_id, match.mode), (10, 20, 'mini_oa'))
-        self.assertEqual(self.ns['leave_queue'].await_count, 2)
+    async def test_selected_avatar_only_invites_without_starting_chat(self):
+        result=await self.choose(self.choice(), 10)
+        invitation = self.session.matches[0]
+        self.assertEqual((invitation.sender_id,invitation.recipient_id),(10,20))
+        self.assertFalse(hasattr(invitation,'mode'))
+        self.assertEqual(result['invitation']['direction'],'outgoing')
+        self.ns['leave_queue'].assert_not_awaited()
         self.session.commit.assert_awaited_once()
+
+    async def test_pending_invitation_blocks_another_selection(self):
+        self.ns['pending_invitation'].return_value=Obj(id='pending')
+        with self.assertRaises(HttpError): await self.choose(self.choice(),10)
+        self.assertFalse(self.session.matches)
 
     async def test_ticket_cannot_be_used_by_another_viewer(self):
         with self.assertRaises(HttpError): await self.choose(self.choice(uid=99), 10)

@@ -142,7 +142,7 @@ async function poll(){
       const ended=Boolean(match);if(ended||d.status!=='searching')clearChatView();
       if(ended)notice(t('Suhbat yakunlandi. Yangi sherik topishingiz mumkin.'));
       $('chatTitle').textContent=t(d.status==='searching'?'Sherik qidirilmoqda…':'Suhbat tugagan');
-      if(d.status==='searching'){document.body.classList.add('chat-searching');show('chat');window.chatRoulette?.start()}else document.body.classList.remove('chat-searching');
+      if(d.status==='searching'){document.body.classList.add('chat-searching');show('chat');window.chatRoulette?.start(d.invitation)}else document.body.classList.remove('chat-searching');
     }
   }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false;if(me?.registered&&!document.hidden)setTimeout(poll,250)}
 }

@@ -2,10 +2,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
-from app.models import Match, MatchQueue, MiniMessage, User
+from app.models import ChatInvitation, Match, MatchQueue, MiniMessage, User
 from app.services.users import age_on
 
 async def leave_queue(session: AsyncSession, user_id: int):
+    await session.execute(delete(ChatInvitation).where(or_(ChatInvitation.sender_id == user_id, ChatInvitation.recipient_id == user_id)))
     await session.execute(delete(MatchQueue).where(MatchQueue.user_id == user_id))
 
 async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str | None, min_age: int | None, max_age: int | None, archive_consent: bool = False):

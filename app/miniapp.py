@@ -23,7 +23,7 @@ from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification
+from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
@@ -345,12 +345,37 @@ def roulette_ticket(uid, candidate, expires):
 
 async def roulette_candidates(s, uid):
     busy = select(Match.user_one_id).where(Match.status == 'active').union(select(Match.user_two_id).where(Match.status == 'active'))
+    reserved = select(ChatInvitation.sender_id).where(ChatInvitation.expires_at > datetime.now(UTC)).union(select(ChatInvitation.recipient_id).where(ChatInvitation.expires_at > datetime.now(UTC)))
     return (await s.scalars(select(MatchQueue).join(User, User.telegram_id == MatchQueue.user_id).where(
         MatchQueue.user_id != uid, MatchQueue.mode.in_(['mini_ra', 'mini_ro']),
         MatchQueue.queued_at >= datetime.now(UTC) - timedelta(seconds=30),
         User.is_registered.is_(True), User.is_banned.is_(False),
         MatchQueue.user_id.not_in(busy),
+        MatchQueue.user_id.not_in(reserved),
     ))).all()
+
+async def pending_invitation(s, uid):
+    return await s.scalar(select(ChatInvitation).where(
+        or_(ChatInvitation.sender_id == uid, ChatInvitation.recipient_id == uid),
+        ChatInvitation.expires_at > datetime.now(UTC)))
+
+async def invitation_payload(s, invitation, uid):
+    incoming = invitation.recipient_id == uid
+    other = invitation.sender_id if incoming else invitation.recipient_id
+    queued = await s.get(MatchQueue, other)
+    user = await s.get(User, other)
+    if (not queued or queued.mode not in ('mini_ra', 'mini_ro') or
+        queued.queued_at < datetime.now(UTC) - timedelta(seconds=30) or
+        not user or not user.is_registered or user.is_banned or await active_match(s, other)):
+        await s.delete(invitation)
+        return None
+    person = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
+    if queued.mode == 'mini_ro':
+        data = await profile(s, user, include_referrals=False)
+        person = {key: data[key] for key in ('name', 'avatar')}
+        person['anonymous'] = False
+    return {'id': invitation.id, 'direction': 'incoming' if incoming else 'outgoing',
+            'expires_at': invitation.expires_at.timestamp(), 'remaining': max(0, int((invitation.expires_at - datetime.now(UTC)).total_seconds())), 'person': person}
 
 @router.post('/api/roulette/spin')
 async def roulette_spin(uid=Depends(registered)):
@@ -359,6 +384,8 @@ async def roulette_spin(uid=Depends(registered)):
         own = await s.get(MatchQueue, uid)
         if not own or own.mode not in ('mini_ra', 'mini_ro') or await active_match(s, uid):
             raise HTTPException(409, 'Qidiruvni qayta boshlang.')
+        if await pending_invitation(s, uid):
+            raise HTTPException(409, 'Avval joriy taklifga javob bering yoki uni bekor qiling.')
         own.queued_at = datetime.now(UTC)
         candidates = [c for c in await roulette_candidates(s, uid) if not settings().archive_channel_id or (own.archive_consent and c.archive_consent)]
         secrets.SystemRandom().shuffle(candidates)
@@ -391,29 +418,74 @@ async def roulette_choose(body: RouletteChoice, uid=Depends(registered)):
         own = await s.get(MatchQueue, uid)
         if not own or own.mode not in ('mini_ra', 'mini_ro') or await active_match(s, uid):
             raise HTTPException(409, 'Qidiruvni qayta boshlang.')
+        if await pending_invitation(s, uid):
+            raise HTTPException(409, 'Sizda javob kutilayotgan taklif bor.')
         candidates = await roulette_candidates(s, uid)
         partner = next((c for c in candidates if hmac.compare_digest(body.ticket, roulette_ticket(uid, c, expires))), None)
         if not partner or (settings().archive_channel_id and not (own.archive_consent and partner.archive_consent)):
             raise HTTPException(409, 'Bu suhbatdosh hozir band. Qayta aylantiring.')
-        match = Match(user_one_id=uid, user_two_id=partner.user_id,
-                      mode='mini_' + ('a' if own.mode == 'mini_ra' else 'o') + ('a' if partner.mode == 'mini_ra' else 'o'),
-                      archive_consent=bool(own.archive_consent and partner.archive_consent))
-        s.add(match)
-        await leave_queue(s, uid)
-        await leave_queue(s, partner.user_id)
+        await s.execute(delete(ChatInvitation).where(ChatInvitation.expires_at <= datetime.now(UTC)))
+        invitation = ChatInvitation(id=secrets.token_urlsafe(18), sender_id=uid, recipient_id=partner.user_id,
+                                    expires_at=datetime.now(UTC) + timedelta(seconds=30))
+        s.add(invitation)
+        own.queued_at = datetime.now(UTC)
+        payload = await invitation_payload(s, invitation, uid)
+        if payload is None:
+            raise HTTPException(409, 'Bu suhbatdosh hozir band. Qayta aylantiring.')
         await s.commit()
-    return {'ok': True}
+    return {'ok': True, 'invitation': payload}
+
+class InvitationResponse(BaseModel):
+    invitation_id: str = Field(min_length=1, max_length=36)
+    action: Literal['accept', 'reject', 'cancel']
+
+@router.post('/api/roulette/respond')
+async def respond_invitation(body: InvitationResponse, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
+        invitation = await s.get(ChatInvitation, body.invitation_id)
+        if not invitation or uid not in (invitation.sender_id, invitation.recipient_id):
+            raise HTTPException(409, 'Taklif endi mavjud emas.')
+        allowed = ('cancel',) if uid == invitation.sender_id else ('accept', 'reject')
+        if body.action not in allowed:
+            raise HTTPException(403, 'Bu taklifni tasdiqlay olmaysiz.')
+        if body.action != 'accept':
+            await s.delete(invitation)
+            await s.commit()
+            return {'ok': True}
+        if invitation.expires_at <= datetime.now(UTC):
+            raise HTTPException(409, 'Taklif muddati tugadi. Qayta aylantiring.')
+        sender = await s.get(MatchQueue, invitation.sender_id)
+        recipient = await s.get(MatchQueue, invitation.recipient_id)
+        for queued, participant in ((sender, invitation.sender_id), (recipient, invitation.recipient_id)):
+            user = await s.get(User, participant)
+            if (not queued or queued.mode not in ('mini_ra', 'mini_ro') or
+                queued.queued_at < datetime.now(UTC) - timedelta(seconds=30) or
+                not user or not user.is_registered or user.is_banned or await active_match(s, participant)):
+                raise HTTPException(409, 'Suhbatdosh qidiruvdan chiqdi. Qayta aylantiring.')
+        if settings().archive_channel_id and not (sender.archive_consent and recipient.archive_consent):
+            raise HTTPException(409, 'Suhbatni boshlash uchun qoidalarga rozilik kerak.')
+        s.add(Match(user_one_id=invitation.sender_id, user_two_id=invitation.recipient_id,
+                    mode='mini_' + ('a' if sender.mode == 'mini_ra' else 'o') + ('a' if recipient.mode == 'mini_ra' else 'o'),
+                    archive_consent=bool(sender.archive_consent and recipient.archive_consent)))
+        await leave_queue(s, invitation.sender_id)
+        await leave_queue(s, invitation.recipient_id)
+        await s.commit()
+        return {'ok': True}
 
 @router.get('/api/chat')
 async def chat(after: int = 0, uid=Depends(registered)):
     async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         m = await active_match(s, uid)
         if not m or not m.mode.startswith('mini_'):
             queued = await s.get(MatchQueue, uid)
             if queued and queued.mode.startswith('mini_'):
                 queued.queued_at = datetime.now(UTC)
+                invitation = await pending_invitation(s, uid)
+                payload = await invitation_payload(s, invitation, uid) if invitation else None
                 await s.commit()
-                return {'status': 'searching'}
+                return {'status': 'searching', 'invitation': payload}
             return {'status': 'idle'}
         partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
         partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}

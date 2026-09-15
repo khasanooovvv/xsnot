@@ -43,6 +43,13 @@ class MatchQueue(Base):
     max_age: Mapped[int | None] = mapped_column(Integer)
     queued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+class ChatInvitation(Base):
+    __tablename__ = 'chat_invitations'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), index=True)
+    recipient_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
 class Match(Base):
     __tablename__ = "matches"
     id: Mapped[int] = mapped_column(primary_key=True)

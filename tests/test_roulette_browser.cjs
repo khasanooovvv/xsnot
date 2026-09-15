@@ -8,6 +8,8 @@ const {chromium} = require('playwright');
     const page = await browser.newPage({viewport:{width:384,height:650}});
     let state='idle', spins=0, chooses=0, stops=0, empty=false, busy=false;
     let partnerAnonymous=false;
+    let invitation=null, responses=[];
+    const makeInvitation=(direction='outgoing')=>({id:'test-invitation',direction,remaining:30,expires_at:Date.now()/1000+30,person:{name:'Aziza',anonymous:false,avatar:null}});
     let account={id:10,registered:true,name:'Test',city:'Toshkent',age:26,birthday:'2000-01-01',gender:'male',language:'uz',archive_consent:true}, saved=0;
     const errors=[];
     page.on('pageerror', e=>errors.push(e.message));
@@ -18,12 +20,13 @@ const {chromium} = require('playwright');
         let result={ok:true}, status=200;
         if(url.pathname==='/api/me') result=account;
         if(url.pathname==='/api/profile') {account={...account,...route.request().postDataJSON()};saved++;result=account;}
-        if(url.pathname==='/api/chat') result=state==='active'?{status:state,match:1,partner:{name:partnerAnonymous?'Anonim':'Aziza',anonymous:partnerAnonymous},own_anonymous:false,messages:[]}:{status:state};
+        if(url.pathname==='/api/chat') result=state==='active'?{status:state,match:1,partner:{name:partnerAnonymous?'Anonim':'Aziza',anonymous:partnerAnonymous},own_anonymous:false,messages:[]}:{status:state,invitation};
         if(url.pathname==='/api/chat/partner') result={match:1,partner:partnerAnonymous?{name:'Anonim',avatar:null,anonymous:true}:{name:'Aziza',app_username:'aziza',bio:'Salom! <b>Bio</b>',city:'Toshkent',age:25,anonymous:false}};
         if(url.pathname==='/api/search') {assert.equal(route.request().postDataJSON().roulette,true);state='searching';}
-        if(url.pathname==='/api/stop') {state='idle';stops++;}
+        if(url.pathname==='/api/stop') {state='idle';invitation=null;stops++;}
         if(url.pathname==='/api/roulette/spin') {spins++;result=empty?{items:[],ticket:null,selected:null}:{items:[{name:'Aziza',avatar:null,anonymous:false},{name:'Anonim',avatar:null,anonymous:true},{name:'Javohir',avatar:null,anonymous:false}],selected:0,ticket:'test-ticket'};}
-        if(url.pathname==='/api/roulette/choose') {chooses++;assert.equal(route.request().postDataJSON().ticket,'test-ticket');if(busy){status=409;result={detail:'Bu suhbatdosh hozir band. Qayta aylantiring.'}}else state='active';}
+        if(url.pathname==='/api/roulette/choose') {chooses++;assert.equal(route.request().postDataJSON().ticket,'test-ticket');if(busy){status=409;result={detail:'Bu suhbatdosh hozir band. Qayta aylantiring.'}}else {invitation=makeInvitation();result={ok:true,invitation};}}
+        if(url.pathname==='/api/roulette/respond') {const data=route.request().postDataJSON();responses.push(data.action);assert.equal(data.invitation_id,'test-invitation');invitation=null;if(data.action==='accept')state='active';}
         return route.fulfill({status,contentType:'application/json',body:JSON.stringify(result)});
       }
       const file=url.pathname==='/'?'app/web/index.html':path.join('app/web',url.pathname);
@@ -87,6 +90,25 @@ const {chromium} = require('playwright');
     await page.locator('.roulette-retry').click();
     await page.waitForSelector('.roulette-card.chosen');
     await page.locator('.roulette-card.chosen').click();
+    await page.waitForSelector('.invitation-cancel:visible');
+    assert.equal(state,'searching');
+    assert.equal(await page.locator('.invitation-accept').isVisible(),false);
+    await page.locator('.invitation-cancel').click();
+    await page.waitForSelector('.roulette-retry:visible');
+    invitation=makeInvitation('incoming');
+    await page.waitForSelector('.invitation-accept:visible');
+    await page.screenshot({path:path.join(require('node:os').tmpdir(),'chat-invitation-preview.png')});
+    await page.locator('.invitation-reject').click();
+    await page.waitForSelector('.roulette-retry:visible');
+    assert.equal(state,'searching');
+    invitation=makeInvitation('incoming');
+    await page.waitForSelector('.invitation-accept:visible');
+    invitation=null;
+    await page.waitForFunction(()=>document.querySelector('.roulette-status').textContent.includes('muddati tugadi'));
+    invitation=makeInvitation('incoming');
+    await page.waitForSelector('.invitation-accept:visible');
+    await page.locator('.invitation-accept').click();
+    assert.deepEqual(responses,['cancel','reject','accept']);
     await page.waitForSelector('body.chat-fullscreen');
     assert.equal(await page.locator('#roulette').isVisible(),false);
     assert.equal(await page.locator('#chatBack').isVisible(),false);
