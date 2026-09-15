@@ -89,6 +89,14 @@ async def direct_fullscreen_script():
 async def direct_send_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-send.js', media_type='application/javascript')
 
+@router.get('/assets/direct-ui.js')
+async def direct_ui_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-ui.js', media_type='application/javascript')
+
+@router.get('/assets/direct-ui.css')
+async def direct_ui_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-ui.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
