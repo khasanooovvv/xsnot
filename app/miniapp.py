@@ -81,6 +81,10 @@ async def direct_chat_v2_script():
 async def chat_layout_match_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-layout-match.css', media_type='text/css')
 
+@router.get('/assets/chat-viewport.css')
+async def chat_viewport_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-viewport.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
@@ -621,7 +625,11 @@ async def search_users(q: str = '', uid=Depends(registered)):
         return []
     async with SessionLocal() as s:
         rows = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid, User.app_username.ilike(f'%{term}%')).order_by(User.app_username).limit(20))).all()
-        return [{'id': u.telegram_id, 'name': u.display_name, 'username': u.app_username, 'avatar': (await s.get(MiniAvatar, u.telegram_id)).data if await s.get(MiniAvatar, u.telegram_id) else None} for u in rows]
+        result = []
+        for u in rows:
+            avatar = await s.get(MiniAvatar, u.telegram_id)
+            result.append({'id': u.telegram_id, 'name': u.display_name, 'username': u.app_username, 'avatar': avatar.data if avatar else None})
+        return result
 
 @router.get('/api/direct/chats')
 async def direct_chats(uid=Depends(registered)):
@@ -632,7 +640,8 @@ async def direct_chats(uid=Depends(registered)):
             other = chat.user_two_id if chat.user_one_id == uid else chat.user_one_id
             user = await s.get(User, other)
             if user and user.is_registered and not user.is_banned:
-                result.append({'id': chat.id, 'user': {'id': other, 'name': user.display_name, 'username': user.app_username}})
+                avatar = await s.get(MiniAvatar, other)
+                result.append({'id': chat.id, 'user': {'id': other, 'name': user.display_name, 'username': user.app_username, 'avatar': avatar.data if avatar else None}})
         return result
 
 @router.post('/api/direct/open')
@@ -650,7 +659,8 @@ async def direct_open(body: dict, uid=Depends(registered)):
             s.add(chat)
             await s.flush()
         await s.commit()
-        return {'id': chat.id, 'user': {'id': target, 'name': user.display_name, 'username': user.app_username}}
+        avatar = await s.get(MiniAvatar, target)
+        return {'id': chat.id, 'user': {'id': target, 'name': user.display_name, 'username': user.app_username, 'avatar': avatar.data if avatar else None}}
 
 @router.get('/api/direct/messages')
 async def direct_messages(chat: int, after: int = 0, uid=Depends(registered)):
