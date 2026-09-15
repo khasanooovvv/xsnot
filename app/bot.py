@@ -158,7 +158,7 @@ async def invite(q: CallbackQuery):
     async with SessionLocal() as s:
         refs = await referral_count(s, q.from_user.id); await s.commit()
     link = f"https://t.me/{cfg.public_bot_username}?start=ref_{q.from_user.id}"
-    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. 5 ta yangi do‘st = 5 kun Gold, 15 ta = 15 kun, 30 ta = 30 kun. Takroriy akkauntlar hisoblanmaydi.", parse_mode="HTML", reply_markup=main_menu())
+    await q.message.edit_text(f"🎁 Sizning havolangiz:\n<code>{link}</code>\n\nTasdiqlangan referral: {refs}. 3 ta yangi do‘st = 3 kun Gold, 15 ta = 15 kun, 30 ta = 30 kun. Takroriy akkauntlar hisoblanmaydi.", parse_mode="HTML", reply_markup=main_menu())
 
 @router.callback_query(F.data == "leaders")
 async def leaders(q: CallbackQuery):

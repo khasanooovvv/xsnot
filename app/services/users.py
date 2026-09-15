@@ -44,7 +44,7 @@ async def apply_referral_reward(session: AsyncSession, user: User):
     session.add(ReferralHistory(referrer_id=referrer.telegram_id, referred_id=user.telegram_id, referred_name=user.display_name))
     count = await referral_count(session, referrer.telegram_id)
     now = datetime.now(UTC)
-    reward_days = {5: 5, 15: 15, 30: 30}.get(count)
+    reward_days = {3: 3, 15: 15, 30: 30}.get(count)
     if reward_days:
         referrer.gold_until = max(referrer.gold_until or now, now) + timedelta(days=reward_days)
 
