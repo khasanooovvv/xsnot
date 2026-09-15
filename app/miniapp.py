@@ -102,13 +102,13 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
         raise HTTPException(422, '20 MB dan kichik rasm tanlang.')
     return await run_in_threadpool(normalize_photo, content)
 
-async def profile(s, u, include_avatar=True):
+async def profile(s, u, include_avatar=True, include_referrals=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         archive_consent=bool(u.archive_consent_at),
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
-        referrals=await referral_count(s, u.telegram_id), avatar=avatar.data if avatar else None)
+        referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
 
 @router.get('/api/me')
 async def me(include_avatar: bool = True, uid=Depends(identity)):
@@ -275,7 +275,7 @@ async def chat(after: int = 0, uid=Depends(registered)):
         partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
         partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
         if not is_anonymous(m, partner_id):
-            p = await profile(s, await s.get(User, partner_id))
+            p = await profile(s, await s.get(User, partner_id), include_referrals=False)
             partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'silver', 'gold')}
             partner['anonymous'] = False
         rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
