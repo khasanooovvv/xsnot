@@ -44,9 +44,9 @@ async function run(fn){try{notice('');await fn()}catch(e){notice(e.message)}}
 function renderProfile(){$('profileInfo').innerHTML=avatar(me)+'<h2>'+esc(me.name)+badgeMarkup(me)+'</h2><p class="muted">'+esc(me.city)+' • '+esc(me.age)+' '+t('yosh')+'</p><div class="row"><div>💎 Silver<div class="stat">'+t(me.silver?'Abadiy':'Tasdiqlanmagan')+'</div></div><div>🥇 Gold<div class="stat">'+me.gold+' '+t('kun')+'</div></div></div><p>'+t('Takliflar:')+' <b>'+me.referrals+'</b></p>'}
 async function photo(){const f=$('photo').files[0];if(!f)return null;if(f.size>10000000)throw Error(t('10 MB dan kichik rasm tanlang.'));const bitmap=await createImageBitmap(f);const canvas=document.createElement('canvas');const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',.85)}
 $('registerForm').onsubmit=e=>{e.preventDefault();const b=e.submitter;const f=$('photo');if(!f.files[0]){const msg=document.querySelector('#photoRequiredMessage');if(msg){msg.textContent='Iltimos, rasm tanlang.';msg.hidden=false}if(navigator.vibrate)navigator.vibrate(180);return}const msg=document.querySelector('#photoRequiredMessage');if(msg)msg.hidden=true;b.disabled=true;run(async()=>{me=await api('register',{name:$('displayName').value.trim(),gender:$('gender').value,birthday:$('birthday').value,city:$('city').value,accepted:$('terms').checked,avatar:await photo()});$('nav').hidden=false;show('home')}).finally(()=>b.disabled=false)};
-let chatEpoch=0, chatBusy=false, revealMarkup='',messageSending=false,seenMessageIds=new Set(),pendingMessage=null;
+let chatEpoch=0, chatBusy=false, revealMarkup='',messageSending=false,seenMessageIds=new Set(),pendingMessage=null,idlePolls=0;
 function clearChatView(){
-  match=null;after=0;revealMarkup='';seenMessageIds=new Set();pendingMessage=null;document.body?.classList?.remove('chat-fullscreen');
+  match=null;after=0;revealMarkup='';seenMessageIds=new Set();pendingMessage=null;idlePolls=0;document.body?.classList?.remove('chat-fullscreen');
   $('messages').replaceChildren();$('message').value='';$('reveal').replaceChildren();
   $('reveal').hidden=true;$('messageForm').hidden=true;$('report').hidden=true;
 }
@@ -82,13 +82,14 @@ async function poll(){
     const d=await api('chat?after='+after);
     if(epoch!==chatEpoch)return;
     if(d.status==='active'){
+      idlePolls=0;
       if(match!==d.match){clearChatView();match=d.match;show('chat')}
       const own={...me,anonymous:d.own_anonymous};
       const partnerName=d.partner.anonymous?t('Anonim'):d.partner.name;
       const partnerMeta=d.partner.anonymous?t('Profil yashirin'):(d.partner.city?(d.partner.city+(d.partner.age?' • '+d.partner.age+' '+t('yosh'):'')):'Online');
       const markup=avatar(d.partner)+'<div class="chat-partner-copy"><strong class="chat-partner-name">'+esc(partnerName)+badgeMarkup(d.partner)+'</strong><span class="chat-partner-status">'+esc(partnerMeta)+'</span></div>';
       if(markup!==revealMarkup){$('reveal').innerHTML=markup;revealMarkup=markup}
-      $('reveal').hidden=false;$('chatTitle').textContent=t('Suhbat boshlandi');document.body?.classList?.add('chat-fullscreen');if(typeof tg!=='undefined')tg.expand?.();
+      $('reveal').hidden=false;$('chatTitle').textContent=t('Suhbat boshlandi');document.body?.classList?.add('chat-fullscreen');
       $('messageForm').hidden=false;$('report').hidden=false;
       $('anonymousMode').checked=Boolean(d.own_anonymous);
       for(const m of d.messages){
@@ -98,6 +99,8 @@ async function poll(){
       }
       if(d.messages.length)$('messages').scrollTop=$('messages').scrollHeight;
     }else{
+      idlePolls+=1;
+      if(match&&document.body?.classList?.contains('chat-fullscreen')&&idlePolls<2)return;
       const ended=Boolean(match);clearChatView();
       if(ended)notice(t('Suhbat yakunlandi. Yangi sherik topishingiz mumkin.'));
       $('chatTitle').textContent=t(d.status==='searching'?'Sherik qidirilmoqda…':'Suhbat tugagan');
