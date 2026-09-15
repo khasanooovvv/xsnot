@@ -125,6 +125,14 @@ async def direct_behavior_styles():
 async def direct_match_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-match.css', media_type='text/css')
 
+@router.get('/assets/direct-final.css')
+async def direct_final_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-final.css', media_type='text/css')
+
+@router.get('/assets/direct-final.js')
+async def direct_final_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-final.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})

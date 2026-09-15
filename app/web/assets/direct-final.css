@@ -1,0 +1,1 @@
+.direct-fullscreen #directView #directForm button[type=submit]{font-size:0!important;background:#2aabee!important;background-image:none!important}.direct-fullscreen #directView #directForm button[type=submit]::before{content:'➤';font-size:25px;line-height:1;transform:translateX(1px)}
