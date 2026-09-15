@@ -133,6 +133,14 @@ async def direct_final_styles():
 async def direct_final_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-final.js', media_type='application/javascript')
 
+@router.get('/assets/chat-shared.css')
+async def chat_shared_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-shared.css', media_type='text/css')
+
+@router.get('/assets/direct-chat-v2.js')
+async def direct_chat_v2_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-chat-v2.js', media_type='application/javascript')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
