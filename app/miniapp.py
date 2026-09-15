@@ -5,6 +5,7 @@ import io
 import json
 import time
 import secrets
+import re
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal
@@ -114,7 +115,7 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
 async def profile(s, u, include_avatar=True, include_referrals=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
-        archive_consent=bool(u.archive_consent_at),
+        archive_consent=bool(u.archive_consent_at), app_username=u.app_username, bio=u.bio or '',
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
@@ -203,18 +204,18 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
 
 class ProfileEdit(BaseModel):
     name: str = Field(min_length=2, max_length=64)
-    city: str = Field(min_length=2, max_length=100)
-    birthday: date
-    gender: Literal['male', 'female']
+    app_username: str | None = Field(default=None, max_length=25)
+    bio: str | None = Field(default=None, max_length=300)
     avatar: str | None = Field(default=None, max_length=2000000)
 
 @router.post('/api/profile')
 async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
-    name, city = body.name.strip(), body.city.strip()
-    if len(name) < 2 or len(city) < 2:
-        raise HTTPException(422, 'Ism va shahar kamida 2 ta belgidan iborat bo‘lsin.')
-    if not 18 <= age_on(body.birthday) <= 120:
-        raise HTTPException(422, 'Tug‘ilgan sana noto‘g‘ri. Chat 18+ uchun.')
+    name = body.name.strip()
+    if len(name) < 2:
+        raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
+    handle = body.app_username.strip().removeprefix('@').lower() if body.app_username is not None else None
+    if handle and not re.fullmatch(r'[a-z][a-z0-9_]{2,23}', handle):
+        raise HTTPException(422, 'Username 3–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.')
     avatar = None
     if body.avatar is not None:
         try:
@@ -229,9 +230,17 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         except Exception:
             raise HTTPException(422, 'Rasm ochilmadi. Boshqa rasm tanlang.')
     async with SessionLocal() as s:
+        await s.execute(sql('SELECT pg_advisory_xact_lock(730023)'))
+        if handle:
+            owner = await s.scalar(select(User.telegram_id).where(User.app_username == handle))
+            if owner is not None and owner != uid:
+                raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
-        user.display_name, user.city = name, city
-        user.birth_date, user.gender = body.birthday, body.gender
+        user.display_name = name
+        if body.app_username is not None:
+            user.app_username = handle or None
+        if body.bio is not None:
+            user.bio = body.bio.strip()
         if avatar:
             existing = await s.get(MiniAvatar, uid)
             if existing:

@@ -9,6 +9,8 @@ class User(Base):
     __tablename__ = "users"
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     username: Mapped[str | None] = mapped_column(String(64))
+    app_username: Mapped[str | None] = mapped_column(String(24), unique=True, index=True)
+    bio: Mapped[str | None] = mapped_column(String(300))
     display_name: Mapped[str] = mapped_column(String(128), default="Player")
     language: Mapped[str] = mapped_column(String(2), default="uz")
     birth_date: Mapped[date | None] = mapped_column(Date)

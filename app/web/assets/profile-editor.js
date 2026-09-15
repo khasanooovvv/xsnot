@@ -14,9 +14,9 @@
     <input id="editAvatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
-    <label for="editCity">Yashayotgan shahar</label><input id="editCity" required minlength="2" maxlength="100" autocomplete="address-level2">
-    <label for="editBirthday">Tug‘ilgan sana</label><input id="editBirthday" type="date" required>
-    <label for="editGender">Jinsingiz</label><select id="editGender" required><option value="male">Erkak</option><option value="female">Ayol</option></select>
+    <label for="editUsername">Ichki username</label><input id="editUsername" maxlength="25" placeholder="@username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint">
+    <small id="usernameHint">Ilova ichidagi username. 3–24 belgi: lotin harflari, raqam va _. Harf bilan boshlanadi.</small>
+    <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
     <div class="row"><button type="button" id="cancelProfileEdit" class="secondary">Bekor qilish</button><button id="saveProfileEdit" type="submit">Saqlash</button></div>
   </form>`;
@@ -24,6 +24,11 @@
   const style = document.createElement('style');
   style.textContent = '#profile #editProfile{display:block;max-width:300px;margin:16px auto 24px;border:1px solid #72589b;background:linear-gradient(145deg,#35294c,#201b30);color:#e7d8ff}#profileEditor{width:min(94vw,440px);max-height:88dvh;overflow:auto;padding:24px;border:1px solid #544066;border-radius:24px;background:#121421;color:#f3f5ff;box-shadow:0 24px 70px #0009}#profileEditor::backdrop{background:#050711bb;backdrop-filter:blur(5px)}#profileEditor h2{margin:0 0 20px;font-size:22px;text-align:center}#editAvatarPreview .avatar{width:88px;height:88px;border-radius:50%;margin:0 auto 16px}#profileEditor input,#profileEditor select{width:100%;min-width:0}#profileEditor input:focus-visible,#profileEditor select:focus-visible,#profileEditor button:focus-visible{outline:2px solid #bda0ff;outline-offset:2px}#profileEditError{color:#ffacbb;font-size:14px}#profileEditor .row{margin-top:18px}';
   document.head.append(style);
+  const bioStyle = document.createElement('style');
+  bioStyle.textContent = '#profileEditor textarea{display:block;width:100%;font:inherit;color:inherit;background:#101626;border:1px solid #35405c;border-radius:14px;padding:14px;margin:6px 0;resize:vertical;min-height:100px}#profileEditor textarea:focus-visible{outline:2px solid #bda0ff;outline-offset:2px}#profileInfo .profile-username{color:#c6acff;margin:8px 0;font-size:15px;overflow-wrap:anywhere}#profileInfo .profile-bio{white-space:pre-wrap;overflow-wrap:anywhere;color:#c9cfe0;font-size:14px;line-height:1.6;margin:12px auto;max-width:360px}';
+  document.head.append(bioStyle);
+  const updateBioCount = () => { $('bioCount').textContent = `${$('editBio').value.length} / 300`; };
+  $('editBio').addEventListener('input', updateBioCount);
   let draftAvatar = null, preparing = false, saving = false, revision = 0;
   const error = message => { $('profileEditError').textContent = message; $('profileEditError').hidden = !message; };
   entry.onclick = async () => {
@@ -33,9 +38,9 @@
     draftAvatar = null;
     preparing = false;
     $('editName').value = me.name || '';
-    $('editCity').value = me.city || '';
-    $('editBirthday').value = me.birthday || '';
-    $('editGender').value = me.gender || '';
+    $('editUsername').value = me.app_username || '';
+    $('editBio').value = me.bio || '';
+    updateBioCount();
     $('editAvatar').value = '';
     $('editAvatarPreview').innerHTML = avatar(me);
     $('saveProfileEdit').disabled = false;
@@ -78,9 +83,10 @@
   $('profileEditForm').onsubmit = async event => {
     event.preventDefault();
     if (saving || preparing) return;
-    const data = {name:$('editName').value.trim(), city:$('editCity').value.trim(), birthday:$('editBirthday').value, gender:$('editGender').value};
+    const data = {name:$('editName').value.trim(), app_username:$('editUsername').value.trim().replace(/^@/, '').toLowerCase(), bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
-    if (data.name.length < 2 || data.city.length < 2) return error('Ism va shahar kamida 2 ta belgidan iborat bo‘lsin.');
+    if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
+    if (data.app_username && !/^[a-z][a-z0-9_]{2,23}$/.test(data.app_username)) return error('Username 3–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
     saving = true;
     error('');
     const controls = [...$('profileEditForm').elements];
