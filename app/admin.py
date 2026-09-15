@@ -136,7 +136,11 @@ async def warn_user(user_id: int, body: WarningNotice):
         delivered = False
     else:
         try:
-            await _bot.send_message(user_id, body.text)
+            notice = body.text
+            if body.mute_hours and muted_until:
+                until = muted_until.replace(tzinfo=UTC) if muted_until.tzinfo is None else muted_until
+                notice += f"\n\n🔇 Siz {until.astimezone(UTC).strftime('%Y-%m-%d %H:%M UTC')} gacha mute qilindingiz."
+            await _bot.send_message(user_id, notice)
         except Exception:
             delivered = False
     return {"ok": True, "delivered": delivered, "muted_until": muted_until}

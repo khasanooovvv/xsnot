@@ -112,7 +112,12 @@ async def profile(s, u, include_avatar=True):
 
 @router.get('/api/me')
 async def me(include_avatar: bool = True, uid=Depends(identity)):
-    async with SessionLocal() as s: return await profile(s, await s.get(User, uid), include_avatar)
+    async with SessionLocal() as s:
+        user = await s.get(User, uid)
+        data = await profile(s, user, include_avatar)
+        data['muted_until'] = user.muted_until
+        data['server_now'] = datetime.now(UTC)
+        return data
 
 @router.get('/api/me/avatar')
 async def my_avatar(version: str = '', uid=Depends(identity)):
