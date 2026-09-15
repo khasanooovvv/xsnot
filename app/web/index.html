@@ -125,7 +125,7 @@ async function poll(){
       $('chatTitle').textContent=t(d.status==='searching'?'Sherik qidirilmoqda…':'Suhbat tugagan');
       if(d.status==='searching')show('chat');
     }
-  }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false}
+  }catch(e){if(epoch===chatEpoch)notice(e.message)}finally{polling=false;if(me?.registered&&!document.hidden)setTimeout(poll,250)}
 }
 $('chatMenuToggle').onclick=()=>{const menu=$('chatMenu'),open=menu.hidden;menu.hidden=!open;$('chatMenuToggle').setAttribute?.('aria-expanded',String(open))};if(document.addEventListener)document.addEventListener('click',e=>{if(e.target!==$('chatMenuToggle')&&!$('chatMenu').contains?.(e.target)){$('chatMenu').hidden=true;$('chatMenuToggle').setAttribute?.('aria-expanded','false')}});
 $('message').addEventListener?.('focus',()=>{scrollChatToBottom();setTimeout(scrollChatToBottom,120);setTimeout(scrollChatToBottom,300)});$('message').addEventListener?.('input',scrollChatToBottom);
@@ -220,7 +220,7 @@ async function loadCachedAvatar(){
     await avatarCacheStore('put',id,{avatar:data.avatar,version:data.version});
   }catch{/* Keep the cached image when offline. */}
 }
-run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered){poll();setInterval(poll,700)}else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
+run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered)poll();else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);
 document.addEventListener('click',e=>{if(e.target.id!=='deleteAccount')return;if(!confirm('Account o\u2018chiriladi. Gold muddati va taklif qilingan do\u2018stlaringiz statistikasi ham o\u2018chadi. Bu amalni tasdiqlaysizmi?'))return;run(async()=>{await api('delete-account',{});++avatarCacheEpoch;await avatarCacheStore('delete',me.id);verificationCamera?.cancel();me=null;match=null;$('nav').hidden=true;show('outside');notice('Account o‘chirildi. Botda /start bosib yangi profil yarating.')})});
 function setupRegistrationPicker(){
