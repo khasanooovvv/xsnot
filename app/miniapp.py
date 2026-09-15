@@ -85,6 +85,10 @@ async def chat_layout_match_styles():
 async def chat_viewport_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-viewport.css', media_type='text/css')
 
+@router.get('/assets/chat-media.css')
+async def chat_media_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-media.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
