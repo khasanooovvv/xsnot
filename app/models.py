@@ -90,6 +90,9 @@ class MiniMessage(Base):
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"), index=True)
     sender_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     text: Mapped[str] = mapped_column(Text)
+    image_data: Mapped[bytes | None] = mapped_column(LargeBinary)
+    image_type: Mapped[str | None] = mapped_column(String(64))
+    image_name: Mapped[str | None] = mapped_column(String(255))
 
 class VideoVerification(Base):
     __tablename__ = "video_verifications"

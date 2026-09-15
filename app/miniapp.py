@@ -8,12 +8,12 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qsl
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
-from fastapi import UploadFile, File
+from fastapi import UploadFile
 from starlette.concurrency import run_in_threadpool
 register_heif_opener()
 from sqlalchemy import select, func, delete, update, text as sql, or_
@@ -279,24 +279,62 @@ async def chat(after: int = 0, uid=Depends(registered)):
             partner = {k:p[k] for k in ('name', 'avatar', 'age', 'city', 'verified', 'silver', 'gold')}
             partner['anonymous'] = False
         rows = (await s.scalars(select(MiniMessage).where(MiniMessage.match_id == m.id, MiniMessage.id > after).order_by(MiniMessage.id).limit(100))).all()
-        return {'status': 'active', 'match': m.id, 'partner': partner, 'own_anonymous': is_anonymous(m, uid), 'messages': [{'id':r.id, 'mine':r.sender_id == uid, 'text':r.text} for r in rows]}
+        messages = []
+        for r in rows:
+            item = {'id': r.id, 'mine': r.sender_id == uid, 'text': r.text}
+            if r.image_data and r.image_type:
+                item['image'] = 'data:' + r.image_type + ';base64,' + base64.b64encode(r.image_data).decode()
+                item['image_name'] = r.image_name
+            messages.append(item)
+        return {'status': 'active', 'match': m.id, 'partner': partner, 'own_anonymous': is_anonymous(m, uid), 'messages': messages}
 
 class MessageBody(BaseModel):
     match: int
     text: str = Field(min_length=1, max_length=2000)
 
+async def _check_message_access(s, uid, match_id):
+    user = await s.get(User, uid)
+    if user.muted_until:
+        until = user.muted_until.replace(tzinfo=UTC) if user.muted_until.tzinfo is None else user.muted_until
+        if until > datetime.now(UTC):
+            raise HTTPException(423, f'Mute: {until.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")} gacha xabar yubora olmaysiz.')
+    m = await active_match(s, uid)
+    if not m or m.id != match_id or not m.mode.startswith('mini_'):
+        raise HTTPException(409, 'Suhbat tugagan.')
+    return m
+
 @router.post('/api/message')
 async def message(body: MessageBody, uid=Depends(registered)):
     async with SessionLocal() as s:
-        user = await s.get(User, uid)
-        if user.muted_until:
-            until = user.muted_until.replace(tzinfo=UTC) if user.muted_until.tzinfo is None else user.muted_until
-            if until > datetime.now(UTC):
-                raise HTTPException(423, f'Mute: {until.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")} gacha xabar yubora olmaysiz.')
-        m = await active_match(s, uid)
-        if not m or m.id != body.match or not m.mode.startswith('mini_'): raise HTTPException(409, 'Suhbat tugagan.')
+        m = await _check_message_access(s, uid, body.match)
         if not body.text.strip(): raise HTTPException(422, 'Xabar bo‘sh.')
         item = MiniMessage(match_id=m.id, sender_id=uid, text=body.text.strip())
+        s.add(item)
+        await s.commit()
+    return {'ok': True, 'id': item.id}
+
+@router.post('/api/message/image')
+async def image_message(match: int = Form(...), image: UploadFile = File(...), uid=Depends(registered)):
+    filename = (image.filename or 'image').strip()[:255]
+    suffix = filename.lower().rsplit('.', 1)[-1] if '.' in filename else ''
+    image_type = image.content_type.lower() if image.content_type and image.content_type.startswith('image/') else ({'heic': 'image/heic', 'heif': 'image/heif'}.get(suffix) or '')
+    if not image_type:
+        raise HTTPException(422, 'Faqat rasm yuborish mumkin.')
+    try:
+        content = await image.read(10 * 1024 * 1024 + 1)
+    finally:
+        await image.close()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(422, 'Rasm 10 MB dan kichik bo‘lishi kerak.')
+    try:
+        with Image.open(io.BytesIO(content)) as source:
+            source.verify()
+    except Exception:
+        raise HTTPException(422, 'Rasmni ochib bo‘lmadi.')
+    async with SessionLocal() as s:
+        m = await _check_message_access(s, uid, match)
+        item = MiniMessage(match_id=m.id, sender_id=uid, text='', image_data=content,
+                           image_type=image_type, image_name=filename)
         s.add(item)
         await s.commit()
     return {'ok': True, 'id': item.id}

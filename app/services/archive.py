@@ -24,7 +24,10 @@ def chat_text(match, people, messages, part):
     lines = [header]
     for m in messages:
         who = names.get(m.sender_id, f'ID: {m.sender_id}')
-        lines.append(f'[{m.id}] {who}\n    ' + m.text.replace('\n', '\n    ') + '\n\n')
+        if m.image_data:
+            lines.append(f'[{m.id}] {who}\n    [RASM] {m.image_name or "image"} — alohida fayl sifatida yuborildi.\n\n')
+        elif m.text:
+            lines.append(f'[{m.id}] {who}\n    ' + m.text.replace('\n', '\n    ') + '\n\n')
     return ''.join(lines).encode('utf-8')
 
 async def enqueue_chat(session, match):
@@ -45,6 +48,15 @@ async def enqueue_chat(session, match):
             break
         payload = await asyncio.to_thread(chat_text, match, people, rows, part)
         session.add(ArchiveDelivery(event_key=f'chat:{match.id}:{part}', channel_id=channel, media_type='text/plain', filename=f'chat_{match.id}_{part}.txt', caption=caption+f'\nQism: {part}', payload=payload))
+        names = {u.telegram_id: identity_label(u) for u in people}
+        for row in rows:
+            if row.image_data and row.image_type:
+                who = names.get(row.sender_id, f'ID: {row.sender_id}')
+                session.add(ArchiveDelivery(
+                    event_key=f'chat:{match.id}:image:{row.id}', channel_id=channel,
+                    media_type=row.image_type, filename=row.image_name or f'image_{row.id}',
+                    caption=f'Suhbat #{match.id} — rasm #{row.id}\n{who}', payload=row.image_data,
+                ))
         if len(rows) < 1000:
             break
         cursor, part = rows[-1].id, part + 1
