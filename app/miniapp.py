@@ -669,7 +669,11 @@ async def direct_open(body: dict, uid=Depends(registered)):
         if not user or not user.is_registered or user.is_banned: raise HTTPException(404, 'Foydalanuvchi topilmadi.')
         one, two = _direct_pair(uid, target)
         chat = await s.scalar(select(DirectChat).where(DirectChat.user_one_id == one, DirectChat.user_two_id == two))
-        if not chat: chat = DirectChat(user_one_id=one, user_two_id=two); s.add(chat); await s.flush()
+        if not chat:
+            chat = DirectChat(user_one_id=one, user_two_id=two)
+            s.add(chat)
+            await s.flush()
+        await s.commit()
         return {'id': chat.id, 'user': {'id': target, 'name': user.display_name, 'username': user.app_username}}
 
 @router.get('/api/direct/messages')
