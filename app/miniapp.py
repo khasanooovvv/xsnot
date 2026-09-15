@@ -141,6 +141,10 @@ async def chat_shared_styles():
 async def direct_chat_v2_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-chat-v2.js', media_type='application/javascript')
 
+@router.get('/assets/chat-layout-match.css')
+async def chat_layout_match_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-layout-match.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
