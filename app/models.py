@@ -13,6 +13,7 @@ class User(Base):
     language: Mapped[str] = mapped_column(String(2), default="uz")
     birth_date: Mapped[date | None] = mapped_column(Date)
     city: Mapped[str | None] = mapped_column(String(100))
+    gender: Mapped[str | None] = mapped_column(String(16))
     avatar_file_id: Mapped[str | None] = mapped_column(String(255))
     avatar_is_default: Mapped[bool] = mapped_column(Boolean, default=True)
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
