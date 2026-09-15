@@ -67,7 +67,7 @@ $('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
   await api('search',searchOptions);if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
 })};
 async function poll(){
-  if(document.hidden||polling||chatBusy||!me?.registered)return;
+  if(document.hidden||polling||chatBusy||(typeof muteOnlyActive!=='undefined'&&muteOnlyActive)||!me?.registered)return;
   const epoch=chatEpoch;polling=true;
   try{
     const d=await api('chat?after='+after);

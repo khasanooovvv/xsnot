@@ -6,10 +6,10 @@ from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, or_, text
+from sqlalchemy import func, select, or_, text, delete
 from app.config import settings
 from app.database import SessionLocal, init_db
-from app.models import Report, User, VideoVerification
+from app.models import MatchQueue, Report, User, VideoVerification
 from app.services.users import referral_count
 from app.services.badges import badge_status
 from app.bot import router as bot_router
@@ -129,6 +129,7 @@ async def warn_user(user_id: int, body: WarningNotice):
             raise HTTPException(404, "User not found")
         if body.mute_hours:
             u.muted_until = now + timedelta(hours=body.mute_hours)
+            await s.execute(delete(MatchQueue).where(MatchQueue.user_id == user_id))
         await s.commit()
         muted_until = u.muted_until
     delivered = True
