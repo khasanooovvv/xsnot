@@ -121,6 +121,10 @@ async def direct_behavior_script():
 async def direct_behavior_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-behavior.css', media_type='text/css')
 
+@router.get('/assets/direct-match.css')
+async def direct_match_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct-match.css', media_type='text/css')
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
