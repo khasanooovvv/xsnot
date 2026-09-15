@@ -1,4 +1,5 @@
 """Private video submissions and human review, with no automated sex inference."""
+import asyncio
 from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header, Request
 from fastapi.responses import Response
@@ -9,7 +10,7 @@ from app.database import SessionLocal
 from app.models import User, MiniAvatar, VideoVerification
 from app.miniapp import registered
 from app.services.referral_notifications import send_verification_result
-from app.services.archive import enqueue_video
+from app.services.archive import send_video_immediately
 from app.config import settings
 
 router = APIRouter(prefix='/api/verification')
@@ -28,7 +29,7 @@ async def verification_status(uid=Depends(registered)):
         return {'status': 'none', 'reason': None}
 
 @router.post('/submit')
-async def submit(video: UploadFile = File(...), consent: bool = Form(...), archive_consent: bool = Form(False), uid=Depends(registered)):
+async def submit(request: Request, video: UploadFile = File(...), consent: bool = Form(...), archive_consent: bool = Form(False), uid=Depends(registered)):
     if not consent: raise HTTPException(422, 'Videoni admin ko‘rishiga rozilik kerak.')
     try:
         content = await video.read(MAX_VIDEO_BYTES + 1)
@@ -58,9 +59,12 @@ async def submit(video: UploadFile = File(...), consent: bool = Form(...), archi
         row.video, row.media_type, row.status = content, media, 'pending'
         row.submitted_at = row.consent_at = datetime.now(UTC)
         row.reviewed_at, row.reason = None, None
-        if archive_consent:
-            enqueue_video(s, u, content, media, row.submitted_at)
         await s.commit()
+        if archive_consent:
+            channel = settings().archive_channel_id.strip()
+            caption = f'Verifikatsiya\n{u.display_name} | ' + ('@' + u.username.lstrip('@') if u.username else 'ID: ' + str(u.telegram_id)) + f'\nYuborilgan: {row.submitted_at.isoformat()} (UTC)'
+            filename = f'verification_{u.telegram_id}_{row.submitted_at.strftime("%Y%m%dT%H%M%S%f")}.{"mp4" if media == "video/mp4" else "webm"}'
+            asyncio.create_task(send_video_immediately(getattr(request.app.state, 'bot', None), channel, caption, content, media, filename))
     return {'status':'pending'}
 
 @admin_router.get('')

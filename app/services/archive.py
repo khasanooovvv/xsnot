@@ -76,6 +76,21 @@ async def send_delivery(bot, row):
         return await bot.send_video(video=upload, **options)
     return await bot.send_document(document=upload, **options)
 
+async def send_video_immediately(bot, channel_id, caption, content, media_type, filename):
+    """Send a fresh verification video without making the user wait for the outbox."""
+    if not bot or not channel_id:
+        return
+    channel = int(channel_id) if channel_id.lstrip('-').isdigit() else channel_id
+    upload = BufferedInputFile(content, filename=filename)
+    options = dict(chat_id=channel, caption=caption, parse_mode=None, protect_content=True, request_timeout=60)
+    try:
+        if media_type == 'video/mp4':
+            await bot.send_video(video=upload, **options)
+        else:
+            await bot.send_document(document=upload, **options)
+    except Exception as error:
+        log.warning('Immediate archive delivery failed (%s)', type(error).__name__)
+
 async def deliver_one(bot):
     async with SessionLocal() as session:
         row = await session.scalar(select(ArchiveDelivery).where(ArchiveDelivery.sent_at.is_(None), ArchiveDelivery.next_attempt_at <= datetime.now(UTC)).order_by(ArchiveDelivery.id).with_for_update(skip_locked=True).limit(1))
