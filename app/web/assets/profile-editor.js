@@ -37,7 +37,20 @@
   // completely empty, separate window and make a best effort to maximize it.
   const openBlankUsernameWindow = () => {
     const win=window.open('about:blank','_blank','popup=yes,fullscreen=yes');
-    if(!win)return;
+    if(!win){
+      let blank=document.getElementById('blankUsernameWindow');
+      if(!blank){
+        blank=document.createElement('dialog'); blank.id='blankUsernameWindow';
+        blank.innerHTML='<button type="button" aria-label="Yopish" style="position:fixed;top:16px;right:18px;font-size:24px">×</button>';
+        document.body.append(blank);
+        blank.firstElementChild.onclick=()=>blank.close();
+        const s=document.createElement('style');
+        s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#fff}#blankUsernameWindow::backdrop{background:#fff}';
+        document.head.append(s);
+      }
+      blank.showModal();
+      return;
+    }
     try{
       win.document.title='';
       win.document.body.replaceChildren();
