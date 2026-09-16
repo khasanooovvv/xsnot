@@ -14,6 +14,22 @@ async def init_db() -> None:
             await connection.execute(text("SELECT pg_advisory_xact_lock(730021)"))
         await connection.run_sync(Base.metadata.create_all)
         if connection.dialect.name == "postgresql":
+            # Older private-chat deployments used *_id column names while the
+            # current ORM models use user_one/user_two.  Rename in place so
+            # existing chats remain available after an upgrade.
+            await connection.execute(text("""
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='user_one_id')
+                       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='user_one') THEN
+                        ALTER TABLE direct_chats RENAME COLUMN user_one_id TO user_one;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='user_two_id')
+                       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='user_two') THEN
+                        ALTER TABLE direct_chats RENAME COLUMN user_two_id TO user_two;
+                    END IF;
+                END $$;
+            """))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS silver_verified BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16)"))
