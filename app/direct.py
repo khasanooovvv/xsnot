@@ -20,7 +20,7 @@ def aware(value):
 async def pair_lock(s, a, b):
     # Same lock for send/open/block: no send can race past a completed block.
     if s.bind.dialect.name == 'postgresql':
-        await s.execute(text('SELECT pg_advisory_xact_lock(hashtextextended(:pair, 0))'), {'pair': f'direct:{min(a,b)}:{max(a,b)}'})
+        await s.execute(text('SELECT pg_advisory_xact_lock(hashtext(:pair))'), {'pair': f'direct:{min(a,b)}:{max(a,b)}'})
 
 async def user_exists(s, uid):
     user = await s.get(User, uid)
