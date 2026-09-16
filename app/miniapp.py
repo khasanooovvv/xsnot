@@ -282,7 +282,6 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         except Exception:
             raise HTTPException(422, 'Rasm ochilmadi. Boshqa rasm tanlang.')
     async with SessionLocal() as s:
-        await s.execute(sql('SELECT pg_advisory_xact_lock(730023)'))
         handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()])) if body.usernames is not None else ([handle] if handle else [])
         if handle and handle not in handles:
             handles.insert(0, handle)
