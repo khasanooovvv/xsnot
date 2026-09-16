@@ -28,8 +28,14 @@ async def init_db() -> None:
                        AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='user_two') THEN
                         ALTER TABLE direct_chats RENAME COLUMN user_two_id TO user_two;
                     END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='updated_at')
+                       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='direct_chats' AND column_name='created_at') THEN
+                        ALTER TABLE direct_chats RENAME COLUMN updated_at TO created_at;
+                    END IF;
                 END $$;
             """))
+            await connection.execute(text("ALTER TABLE direct_chats ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMPTZ"))
+            await connection.execute(text("ALTER TABLE direct_chats ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS silver_verified BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16)"))
