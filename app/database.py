@@ -18,6 +18,7 @@ async def init_db() -> None:
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16)"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS app_username VARCHAR(24)"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS short_username_access BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS short_username_min_length INTEGER NOT NULL DEFAULT 0"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(300)"))
             await connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_app_username ON users (app_username)"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS archive_consent_at TIMESTAMPTZ"))

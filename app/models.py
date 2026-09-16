@@ -11,6 +11,7 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(String(64))
     app_username: Mapped[str | None] = mapped_column(String(24), unique=True, index=True)
     short_username_access: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    short_username_min_length: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     bio: Mapped[str | None] = mapped_column(String(300))
     display_name: Mapped[str] = mapped_column(String(128), default="Player")
     language: Mapped[str] = mapped_column(String(2), default="uz")

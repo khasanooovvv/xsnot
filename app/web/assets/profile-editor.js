@@ -86,7 +86,7 @@
     const data = {name:$('editName').value.trim(), app_username:$('editUsername').value.trim().replace(/^@/, '').toLowerCase(), bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    const minimumUsernameLength = me?.short_username_access ? 1 : ((Number(me?.gold) > 0 || me?.silver || me?.verified) ? 5 : 6);
+    const minimumUsernameLength = Number(me?.short_username_min_length) || ((Number(me?.gold) > 0 || me?.silver || me?.verified) ? 5 : 6);
     if (data.app_username && (data.app_username.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(data.app_username))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
     saving = true;
     error('');
