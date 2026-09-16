@@ -33,7 +33,23 @@
   const updateUsernameList = () => { const list=$('usernameList'); if(!list)return; const items=$('editUsername').value.split(/\s+/).map(x=>x.replace(/^@/,'')).filter(Boolean); const x=items[0]; list.innerHTML=x?`<button type="button" class="username-list-row" data-username="${x}"><span class="username-link-icon">@</span><span><b>@${x}</b></span><span class="username-drag">☷</span></button>`:''; };
   $('editBio').addEventListener('input', updateBioCount);
   $('editUsername').addEventListener('input', updateUsernameList);
-  $('usernameList').addEventListener('click',e=>{const row=e.target.closest('.username-list-row');if(!row)return;$('usernameDetailInput').value=row.dataset.username||'';usernameDialog.showModal()});
+  // The username chip is a launcher, rather than an inline editor. Open a
+  // completely empty, separate window and make a best effort to maximize it.
+  $('usernameList').addEventListener('click',e=>{
+    const row=e.target.closest('.username-list-row');
+    if(!row)return;
+    const win=window.open('about:blank','_blank','popup=yes,fullscreen=yes');
+    if(!win)return;
+    try{
+      win.document.title='';
+      win.document.body.replaceChildren();
+      win.document.documentElement.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
+      win.document.body.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
+      win.focus();
+      const request=win.document.documentElement.requestFullscreen;
+      if(request)Promise.resolve(request.call(win.document.documentElement)).catch(()=>{});
+    }catch{}
+  });
   const closeUsername=()=>usernameDialog.close();$('usernameBack').onclick=closeUsername;$('usernameCancel').onclick=closeUsername;$('usernameApply').onclick=()=>{const value=$('usernameDetailInput').value.trim().replace(/^@/,'');if(!value)return;const rows=$('editUsername').value.split(/\s+/).filter(Boolean);const index=rows.findIndex(x=>x.replace(/^@/,'')===$('usernameDetailInput').dataset.original);if(index>=0)rows[index]='@'+value;else rows.push('@'+value);$('editUsername').value=rows.join('\n');updateUsernameList();closeUsername()};
   let draftAvatar = null, preparing = false, saving = false, revision = 0;
   const error = message => { $('profileEditError').textContent = message; $('profileEditError').hidden = !message; };
