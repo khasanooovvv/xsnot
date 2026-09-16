@@ -60,6 +60,14 @@
       win.document.documentElement.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
       win.document.body.style.cssText='width:100%;height:100%;margin:0;background:#101820;';
       const list=win.document.getElementById('usernameList'); list.innerHTML=current.split(/\s+/).filter(Boolean).map(x=>'<div class="tg-row"><span class="tg-icon">↗</span><span>@'+x.replace(/^@/,'')+'<small>Username</small></span></div>').join('');
+      // Refresh from the server so usernames saved earlier are not lost from
+      // the editor when the parent page has stale profile data.
+      win.opener.api('me?include_avatar=false').then(fresh=>{
+        win.opener.me={...win.opener.me,...fresh};
+        const values=fresh.usernames || (fresh.app_username?[fresh.app_username]:[]);
+        win.document.getElementById('usernames').value=values.join('\n');
+        list.innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">↗</span><span>@'+x+'<small>Username</small></span></div>').join('');
+      }).catch(()=>{});
       win.document.getElementById('cancel').onclick=()=>win.close();
       win.document.getElementById('save').onclick=async()=>{const values=win.document.getElementById('usernames').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);const error=win.document.getElementById('error');if(values.some(x=>!/^[a-z][a-z0-9_]{0,23}$/.test(x))){error.textContent='Username noto‘g‘ri.';return}try{await win.opener.api('profile',{name:win.opener.me.name,app_username:values[0]||'',usernames:values,bio:win.opener.me.bio||''});win.opener.me.usernames=values;win.opener.me.app_username=values[0]||'';win.opener.renderProfile();win.close()}catch(e){error.textContent=e.message||'Saqlashda xato.'}};
       win.focus();
