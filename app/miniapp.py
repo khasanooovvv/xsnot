@@ -131,7 +131,7 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
 async def profile(s, u, include_avatar=True, include_referrals=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
-        archive_consent=bool(u.archive_consent_at), app_username=u.app_username, bio=u.bio or '',
+        archive_consent=bool(u.archive_consent_at), app_username=u.app_username, short_username_access=bool(u.short_username_access), bio=u.bio or '',
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
@@ -228,7 +228,7 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
     async with SessionLocal() as s:
         user = await s.get(User, uid, with_for_update=True)
-        minimum_username_length = 5 if badge_status(user)['gold'] or badge_status(user)['silver'] or badge_status(user)['verified'] else 6
+        minimum_username_length = 1 if user.short_username_access else (5 if badge_status(user)['gold'] or badge_status(user)['silver'] or badge_status(user)['verified'] else 6)
         if handle and len(handle) < minimum_username_length:
             raise HTTPException(422, f'Username kamida {minimum_username_length} ta belgidan iborat bo‘lsin.')
         user.display_name = name

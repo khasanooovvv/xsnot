@@ -10,6 +10,7 @@ class User(Base):
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     username: Mapped[str | None] = mapped_column(String(64))
     app_username: Mapped[str | None] = mapped_column(String(24), unique=True, index=True)
+    short_username_access: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     bio: Mapped[str | None] = mapped_column(String(300))
     display_name: Mapped[str] = mapped_column(String(128), default="Player")
     language: Mapped[str] = mapped_column(String(2), default="uz")

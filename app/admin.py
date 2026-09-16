@@ -118,7 +118,19 @@ async def user_detail(user_id: int):
     async with SessionLocal() as s:
         u = await s.get(User, user_id)
         if not u: raise HTTPException(404, "User not found")
-        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"muted_until":u.muted_until,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+        return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"muted_until":u.muted_until,"short_username_access":u.short_username_access,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
+
+class ShortUsernameAccess(BaseModel):
+    enabled: bool
+
+@app.post("/users/{user_id}/short-username-access", dependencies=[Depends(admin)])
+async def short_username_access(user_id: int, body: ShortUsernameAccess):
+    async with SessionLocal() as s:
+        u = await s.get(User, user_id, with_for_update=True)
+        if not u: raise HTTPException(404, "User not found")
+        u.short_username_access = body.enabled
+        await s.commit()
+    return {"ok": True, "enabled": body.enabled}
 
 @app.post("/users/{user_id}/warn", dependencies=[Depends(admin)])
 async def warn_user(user_id: int, body: WarningNotice):
