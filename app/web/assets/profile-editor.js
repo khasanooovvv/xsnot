@@ -41,9 +41,10 @@
       let blank=document.getElementById('blankUsernameWindow');
       if(!blank){
         blank=document.createElement('dialog'); blank.id='blankUsernameWindow';
-        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button>';
+        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username</h2><textarea rows="5" placeholder="username\nqo‘shimcha_username"></textarea><button type="submit">Saqlash</button></form>';
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
+        blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
         const s=document.createElement('style');
         s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#fff}#blankUsernameWindow::backdrop{background:#fff}#blankUsernameWindow .blank-window-close{position:fixed;top:14px;left:14px;width:42px;height:42px;padding:0;border:1px solid #9aa8b5;border-radius:12px;background:linear-gradient(145deg,#ffffff,#d7e0e7);color:#344454;font:700 25px/1 Arial;box-shadow:inset 0 2px 1px #fff,0 5px 0 #9aa8b5,0 8px 14px #65758566;cursor:pointer}#blankUsernameWindow .blank-window-close:hover{filter:brightness(1.04);transform:translateY(-1px)}#blankUsernameWindow .blank-window-close:active{transform:translateY(3px);box-shadow:inset 0 2px 3px #b5c0c8,0 2px 0 #9aa8b5,0 4px 8px #65758555}';
         document.head.append(s);
@@ -52,10 +53,13 @@
       return;
     }
     try{
-      win.document.title='';
-      win.document.body.replaceChildren();
+      win.document.title='Username';
+      const current=(me?.usernames|| (me?.app_username?[me.app_username]:[])).join('\n');
+      win.document.body.innerHTML='<main style="max-width:520px;margin:80px auto;padding:24px;font:16px Arial;color:#243447"><h2>Username</h2><p>Username qo‘shing yoki tahrirlang.</p><textarea id="usernames" rows="5" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #aab9c4;border-radius:12px;font:inherit">'+current+'</textarea><div style="display:flex;gap:10px;margin-top:18px"><button id="save" style="padding:12px 24px">Saqlash</button><button id="cancel" style="padding:12px 24px">Bekor qilish</button></div><p id="error" style="color:#b34255"></p></main>';
       win.document.documentElement.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
       win.document.body.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
+      win.document.getElementById('cancel').onclick=()=>win.close();
+      win.document.getElementById('save').onclick=async()=>{const values=win.document.getElementById('usernames').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);const error=win.document.getElementById('error');if(values.some(x=>!/^[a-z][a-z0-9_]{0,23}$/.test(x))){error.textContent='Username noto‘g‘ri.';return}try{await win.opener.api('profile',{name:win.opener.me.name,app_username:values[0]||'',usernames:values,bio:win.opener.me.bio||''});win.opener.me.usernames=values;win.opener.me.app_username=values[0]||'';win.opener.renderProfile();win.close()}catch(e){error.textContent=e.message||'Saqlashda xato.'}};
       win.focus();
       const request=win.document.documentElement.requestFullscreen;
       if(request)Promise.resolve(request.call(win.document.documentElement)).catch(()=>{});
