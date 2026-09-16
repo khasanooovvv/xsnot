@@ -15,7 +15,7 @@
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
     <label for="editUsername">Ichki username</label><input id="editUsername" maxlength="25" placeholder="@username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint">
-    <small id="usernameHint">Ilova ichidagi username. 3–24 belgi: lotin harflari, raqam va _. Harf bilan boshlanadi.</small>
+    <small id="usernameHint">Ilova ichidagi username. 1–24 belgi: lotin harflari, raqam va _. Harf bilan boshlanadi.</small>
     <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
     <div class="row"><button type="button" id="cancelProfileEdit" class="secondary">Bekor qilish</button><button id="saveProfileEdit" type="submit">Saqlash</button></div>
@@ -86,7 +86,7 @@
     const data = {name:$('editName').value.trim(), app_username:$('editUsername').value.trim().replace(/^@/, '').toLowerCase(), bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    if (data.app_username && !/^[a-z][a-z0-9_]{2,23}$/.test(data.app_username)) return error('Username 3–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
+    if (data.app_username && !/^[a-z][a-z0-9_]{0,23}$/.test(data.app_username)) return error('Username 1–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
     saving = true;
     error('');
     const controls = [...$('profileEditForm').elements];

@@ -244,8 +244,8 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
     if len(name) < 2:
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
     handle = body.app_username.strip().removeprefix('@').lower() if body.app_username is not None else None
-    if handle and not re.fullmatch(r'[a-z][a-z0-9_]{2,23}', handle):
-        raise HTTPException(422, 'Username 3–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.')
+    if handle and not re.fullmatch(r'[a-z][a-z0-9_]{0,23}', handle):
+        raise HTTPException(422, 'Username 1–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.')
     avatar = None
     if body.avatar is not None:
         try:
