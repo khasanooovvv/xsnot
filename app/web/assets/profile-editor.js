@@ -33,6 +33,7 @@
   const updateUsernameList = () => { const list=$('usernameList'); if(!list)return; const items=$('editUsername').value.split(/\s+/).map(x=>x.replace(/^@/,'')).filter(Boolean); const x=items[0]; list.innerHTML=x?`<button type="button" class="username-list-row" data-username="${x}"><span class="username-link-icon">@</span><span><b>@${x}</b></span><span class="username-drag">☷</span></button>`:''; };
   $('editBio').addEventListener('input', updateBioCount);
   $('editUsername').addEventListener('input', updateUsernameList);
+  $('usernameList').after($('addUsername'));
   // Username controls are launchers, rather than inline editors. Open a
   // completely empty, separate window and make a best effort to maximize it.
   const openBlankUsernameWindow = () => {
