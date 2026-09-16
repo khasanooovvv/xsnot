@@ -164,7 +164,7 @@
     controls.forEach(control => control.disabled = true);
     $('saveProfileEdit').textContent = 'Saqlanmoqda…';
     try {
-      const fresh = await Promise.race([api('profile', data), new Promise((_, reject) => setTimeout(() => reject(Error('Saqlash vaqti tugadi. Qayta urinib ko‘ring.')), 15000))]);
+      const fresh = await Promise.race([api('profile', data), new Promise((_, reject) => setTimeout(() => reject(Error('Saqlash vaqti tugadi. Qayta urinib ko‘ring.')), 2000))]);
       ++avatarCacheEpoch;
       me = {...me, ...fresh};
       await avatarCacheStore('delete', me.id);
@@ -179,6 +179,7 @@
     }
   };
 })();
+
 
 
 
