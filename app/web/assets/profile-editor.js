@@ -15,7 +15,7 @@
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
     <label for="editUsername">Ichki username</label><input id="editUsername" maxlength="25" placeholder="@username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint">
-    <small id="usernameHint">Oddiy profil: kamida 1, Silver: 2, Gold: 3 belgi.</small>
+    <small id="usernameHint">Ilova ichidagi username. Oddiy profil: kamida 6, Gold/verifikatsiya: kamida 5 belgi.</small>
     <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
     <div class="row"><button type="button" id="cancelProfileEdit" class="secondary">Bekor qilish</button><button id="saveProfileEdit" type="submit">Saqlash</button></div>
@@ -86,7 +86,7 @@
     const data = {name:$('editName').value.trim(), app_username:$('editUsername').value.trim().replace(/^@/, '').toLowerCase(), bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    const minimumUsernameLength = Number(me?.short_username_min_length) || (Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1);
+    const minimumUsernameLength = Number(me?.short_username_min_length) || ((Number(me?.gold) > 0 || me?.silver || me?.verified) ? 5 : 6);
     if (data.app_username && (data.app_username.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(data.app_username))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
     saving = true;
     error('');

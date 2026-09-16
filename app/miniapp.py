@@ -228,8 +228,7 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
     async with SessionLocal() as s:
         user = await s.get(User, uid, with_for_update=True)
-        badges = badge_status(user)
-        minimum_username_length = user.short_username_min_length or (3 if badges['gold'] else 2 if badges['silver'] else 1)
+        minimum_username_length = user.short_username_min_length or (5 if badge_status(user)['gold'] or badge_status(user)['silver'] or badge_status(user)['verified'] else 6)
         if handle and len(handle) < minimum_username_length:
             raise HTTPException(422, f'Username kamida {minimum_username_length} ta belgidan iborat bo‘lsin.')
         user.display_name = name
