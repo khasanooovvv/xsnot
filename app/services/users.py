@@ -54,6 +54,9 @@ async def consume_share(session: AsyncSession, user_id: int) -> bool:
     if not item:
         item = ReferralShare(user_id=user_id, share_day=today); session.add(item); await session.flush()
     user = await session.get(User, user_id)
+    if user.is_verified:
+        item.count += 1
+        return True
     limit = settings().silver_referral_daily_share_limit if user.silver_verified else settings().referral_daily_share_limit
     if item.count >= limit: return False
     item.count += 1

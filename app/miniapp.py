@@ -135,7 +135,7 @@ async def profile(s, u, include_avatar=True, include_referrals=True):
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         archive_consent=bool(u.archive_consent_at), app_username=u.app_username, usernames=usernames, short_username_access=bool(u.short_username_access), short_username_min_length=u.short_username_min_length or 0, bio=u.bio or '',
         registered=u.is_registered, **badge_status(u),
-        invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
+        invite_limit=None if u.is_verified else (settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit),
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
 
 @router.get('/api/users/search')
@@ -230,7 +230,8 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
     async with SessionLocal() as s:
         user = await s.get(User, uid, with_for_update=True)
-        minimum_username_length = user.short_username_min_length or (5 if badge_status(user)['gold'] or badge_status(user)['silver'] or badge_status(user)['verified'] else 6)
+        badges = badge_status(user)
+        minimum_username_length = 1 if badges['verified'] else (user.short_username_min_length or (3 if badges['gold'] else 2 if badges['silver'] else 1))
         if handle and len(handle) < minimum_username_length:
             raise HTTPException(422, f'Username kamida {minimum_username_length} ta belgidan iborat bo‘lsin.')
         user.display_name = name
@@ -277,7 +278,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()]))
             if handle and handle not in handles: handles.insert(0, handle)
             badges = badge_status(user)
-            username_limit = 3 if badges['gold'] else 2 if badges['silver'] else 1
+            username_limit = 999 if badges['verified'] else (3 if badges['gold'] else 2 if badges['silver'] else 1)
             if len(handles) > username_limit:
                 raise HTTPException(422, 'Username limiti oshib ketdi.')
             for item in handles:
