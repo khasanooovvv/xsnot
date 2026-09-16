@@ -189,7 +189,7 @@ $('copyInvite').onclick=async()=>{try{await navigator.clipboard.writeText($('inv
 let navVersion=0, profileRefresh=null, leadersRefresh=null;
 
 function renderUserSearchResults(rows){const box=$('userSearchResults');if(!rows.length){box.innerHTML='<p class="muted">Foydalanuvchi topilmadi.</p>';return}box.innerHTML=rows.map(p=>'<div class="direct-result">'+(p.avatar?'<img class="avatar" alt="Profil rasmi" src="'+esc(p.avatar)+'">':'<div class="avatar">'+esc((p.name||'?').slice(0,1))+'</div>')+'<div class="direct-result-copy"><strong>'+esc(p.name)+'</strong><small>@'+esc(p.app_username)+'</small></div></div>').join('')}
-$('userSearchForm').onsubmit=e=>{e.preventDefault();const q=$('userSearchInput').value.trim();if(!q){$('userSearchResults').innerHTML='';return}run(async()=>{const rows=await api('users/search?q='+encodeURIComponent(q));renderUserSearchResults(rows)})};
+let userSearchTimer=null,userSearchRequest=0;async function searchUsers(){const q=$('userSearchInput').value.trim();if(!q){$('userSearchResults').innerHTML='';return}const request=++userSearchRequest;await run(async()=>{const rows=await api('users/search?q='+encodeURIComponent(q));if(request===userSearchRequest)renderUserSearchResults(rows)})} $('userSearchForm').onsubmit=e=>{e.preventDefault();searchUsers()};$('userSearchInput').addEventListener('input',()=>{clearTimeout(userSearchTimer);userSearchTimer=setTimeout(searchUsers,250)});
 
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
