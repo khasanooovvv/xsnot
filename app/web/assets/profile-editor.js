@@ -44,8 +44,9 @@
         blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username</h2><textarea rows="5" placeholder="username\nqo‘shimcha_username"></textarea><button type="submit">Saqlash</button></form>';
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
-        blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
-        const s=document.createElement('style');
+      blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
+      api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};blank.querySelector('textarea').value=(fresh.usernames|| (fresh.app_username?[fresh.app_username]:[])).join('\n')}).catch(()=>{});
+      const s=document.createElement('style');
         s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#101820;color:#f1f5f9}#blankUsernameWindow::backdrop{background:#101820}#blankUsernameWindow .blank-window-close{position:fixed;top:18px;left:18px;width:42px;height:42px;border:0;border-radius:50%;background:#263746;color:#fff;font-size:28px;z-index:2}#blankUsernameWindow .blank-username-form{max-width:620px;margin:0 auto;padding:76px 22px;font:16px Arial}.blank-username-form h2{font-size:26px;margin:0 0 22px}.blank-username-form textarea{width:100%;padding:18px;border:0;border-radius:18px;background:#1d2a38;color:#fff;font:19px Arial;resize:vertical}.blank-username-form button[type=submit]{margin-top:18px;padding:14px 24px;border:0;border-radius:14px;background:#229ed9;color:#fff;font-weight:700;font-size:16px}';
         document.head.append(s);
       }
