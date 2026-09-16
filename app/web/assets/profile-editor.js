@@ -41,11 +41,11 @@
       let blank=document.getElementById('blankUsernameWindow');
       if(!blank){
         blank=document.createElement('dialog'); blank.id='blankUsernameWindow';
-        blank.innerHTML='<button type="button" aria-label="Yopish" style="position:fixed;top:16px;right:18px;font-size:24px">×</button>';
+        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button>';
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
         const s=document.createElement('style');
-        s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#fff}#blankUsernameWindow::backdrop{background:#fff}';
+        s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#fff}#blankUsernameWindow::backdrop{background:#fff}#blankUsernameWindow .blank-window-close{position:fixed;top:14px;left:14px;width:42px;height:42px;padding:0;border:1px solid #9aa8b5;border-radius:12px;background:linear-gradient(145deg,#ffffff,#d7e0e7);color:#344454;font:700 25px/1 Arial;box-shadow:inset 0 2px 1px #fff,0 5px 0 #9aa8b5,0 8px 14px #65758566;cursor:pointer}#blankUsernameWindow .blank-window-close:hover{filter:brightness(1.04);transform:translateY(-1px)}#blankUsernameWindow .blank-window-close:active{transform:translateY(3px);box-shadow:inset 0 2px 3px #b5c0c8,0 2px 0 #9aa8b5,0 4px 8px #65758555}';
         document.head.append(s);
       }
       blank.showModal();
