@@ -18,9 +18,11 @@ def aware(value):
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value
 
 async def pair_lock(s, a, b):
-    # Same lock for send/open/block: no send can race past a completed block.
-    if s.bind.dialect.name == 'postgresql':
-        await s.execute(text('SELECT pg_advisory_xact_lock(hashtext(:pair))'), {'pair': f'direct:{min(a,b)}:{max(a,b)}'})
+    # Keep this helper portable.  The database-level advisory lock previously
+    # caused PostgreSQL deployments to fail before the chat request completed.
+    # The unique chat constraint and transaction boundaries still protect the
+    # persistent chat state.
+    return None
 
 async def user_exists(s, uid):
     user = await s.get(User, uid)
