@@ -33,11 +33,9 @@
   const updateUsernameList = () => { const list=$('usernameList'); if(!list)return; const items=$('editUsername').value.split(/\s+/).map(x=>x.replace(/^@/,'')).filter(Boolean); const x=items[0]; list.innerHTML=x?`<button type="button" class="username-list-row" data-username="${x}"><span class="username-link-icon">@</span><span><b>@${x}</b></span><span class="username-drag">☷</span></button>`:''; };
   $('editBio').addEventListener('input', updateBioCount);
   $('editUsername').addEventListener('input', updateUsernameList);
-  // The username chip is a launcher, rather than an inline editor. Open a
+  // Username controls are launchers, rather than inline editors. Open a
   // completely empty, separate window and make a best effort to maximize it.
-  $('usernameList').addEventListener('click',e=>{
-    const row=e.target.closest('.username-list-row');
-    if(!row)return;
+  const openBlankUsernameWindow = () => {
     const win=window.open('about:blank','_blank','popup=yes,fullscreen=yes');
     if(!win)return;
     try{
@@ -49,6 +47,15 @@
       const request=win.document.documentElement.requestFullscreen;
       if(request)Promise.resolve(request.call(win.document.documentElement)).catch(()=>{});
     }catch{}
+  };
+  $('usernameList').addEventListener('click',e=>{
+    if(e.target.closest('.username-list-row'))openBlankUsernameWindow();
+  });
+  // Other profile views render the handle directly instead of using the
+  // editor's username row. Give those handles the same behavior.
+  document.addEventListener('click',e=>{
+    if(e.target.closest('.username-list-row'))return;
+    if(e.target.closest('.partner-handle,.profile-primary-username,.profile-extra-usernames span:not(.profile-usernames-label)'))openBlankUsernameWindow();
   });
   const closeUsername=()=>usernameDialog.close();$('usernameBack').onclick=closeUsername;$('usernameCancel').onclick=closeUsername;$('usernameApply').onclick=()=>{const value=$('usernameDetailInput').value.trim().replace(/^@/,'');if(!value)return;const rows=$('editUsername').value.split(/\s+/).filter(Boolean);const index=rows.findIndex(x=>x.replace(/^@/,'')===$('usernameDetailInput').dataset.original);if(index>=0)rows[index]='@'+value;else rows.push('@'+value);$('editUsername').value=rows.join('\n');updateUsernameList();closeUsername()};
   let draftAvatar = null, preparing = false, saving = false, revision = 0;
