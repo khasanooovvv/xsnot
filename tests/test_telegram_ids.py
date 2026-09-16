@@ -44,7 +44,10 @@ class TelegramIdTests(unittest.TestCase):
             self.assertIn('ALTER TABLE users ALTER COLUMN telegram_id TYPE BIGINT', statements)
             self.assertIn('ALTER TABLE mini_messages ALTER COLUMN sender_id TYPE BIGINT', statements)
             self.assertFalse(any('ALTER COLUMN id ' in s for s in statements))
-            self.assertEqual(len(statements), 13)
+            expected = sum(1 for table in Base.metadata.tables.values() for column in table.columns
+                           if column is User.__table__.c.telegram_id or any(
+                               fk.target_fullname == 'users.telegram_id' for fk in column.foreign_keys))
+            self.assertEqual(len(statements), expected)
             connection.reset_mock()
             legacy = False
             widen_telegram_ids(connection)

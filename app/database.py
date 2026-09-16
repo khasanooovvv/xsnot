@@ -3,6 +3,7 @@ from app.migrations import widen_telegram_ids
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.config import settings
 from app.models import Base
+from app import direct_models  # Register private-chat tables for create_all.
 
 engine = create_async_engine(settings().database_url, pool_pre_ping=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)

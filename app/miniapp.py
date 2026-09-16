@@ -29,6 +29,14 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/direct.js')
+async def direct_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.js', media_type='application/javascript')
+
+@router.get('/assets/direct.css')
+async def direct_style():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.css', media_type='text/css')
+
 @router.get('/assets/gold-status.js')
 async def gold_status_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'gold-status.js', media_type='application/javascript')
@@ -140,13 +148,17 @@ async def profile(s, u, include_avatar=True, include_referrals=True):
 
 @router.get('/api/users/search')
 async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
+    from app.direct_models import BlockedUser
     handle = q.strip().removeprefix('@').lower()
     if not handle:
         return []
     async with SessionLocal() as s:
         primary_users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
-            User.telegram_id != uid, User.app_username.is_not(None), User.app_username.ilike(f'%{handle}%')).order_by(User.app_username).limit(20))).all()
-        extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.user_id != uid, UserUsername.username.ilike(f'%{handle}%')).limit(20))).all()
+            User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
+            User.telegram_id != uid, User.app_username.is_not(None), User.app_username.icontains(handle, autoescape=True)).order_by(User.app_username).limit(20))).all()
+        extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.user_id != uid,
+            UserUsername.user_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
+            UserUsername.username.icontains(handle, autoescape=True)).distinct().limit(20))).all()
         extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
         users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
         results = []
