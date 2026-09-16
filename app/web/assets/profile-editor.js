@@ -14,8 +14,8 @@
     <input id="editAvatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
-    <label for="editUsername">Username’lar</label><textarea id="editUsername" rows="3" placeholder="Har qatorda bitta @username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint"></textarea>
-    <small id="usernameHint">Ilova ichidagi username. Oddiy profil: kamida 6, Gold/verifikatsiya: kamida 5 belgi.</small>
+    <label for="editUsername">Username’lar</label><textarea id="editUsername" rows="3" placeholder="Har qatorda bitta @username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint"></textarea><button id="addUsername" type="button" class="secondary">+ Username qo‘shish</button>
+    <small id="usernameHint">Oddiy profil: 1 ta, Silver: 2 ta, Gold: 3 ta username.</small>
     <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
     <div class="row"><button type="button" id="cancelProfileEdit" class="secondary">Bekor qilish</button><button id="saveProfileEdit" type="submit">Saqlash</button></div>
@@ -48,6 +48,7 @@
     dialog.showModal();
   };
   $('cancelProfileEdit').onclick = () => { if (!saving) dialog.close(); };
+  $('addUsername').onclick = () => { const field=$('editUsername'); const limit=Number(me?.gold)>0?3:me?.silver?2:1; const count=field.value.split(/\s+/).filter(Boolean).length; if(count>=limit){error('Siz ko‘pi bilan '+limit+' ta username qo‘ya olasiz.');return} field.value=field.value.trim()+(field.value.trim()?'\n':'')+'@'; field.focus(); };
   $('pickEditAvatar').onclick = () => $('editAvatar').click();
   $('profileEditForm').addEventListener('input', () => error(''));
   dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
@@ -87,7 +88,7 @@
     const data = {name:$('editName').value.trim(), app_username:usernames[0]||'', usernames, bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    const minimumUsernameLength = Number(me?.short_username_min_length) || ((Number(me?.gold) > 0 || me?.silver || me?.verified) ? 5 : 6);
+    const minimumUsernameLength = Number(me?.short_username_min_length) || (Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1);
     const usernameLimit = Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1;
     if (usernames.length > usernameLimit) return error('Siz ko‘pi bilan '+usernameLimit+' ta username qo‘ya olasiz.');
     if (usernames.some(x=>x.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
