@@ -145,9 +145,9 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
         return []
     async with SessionLocal() as s:
         primary_users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
-            User.app_username.is_not(None), User.app_username.ilike(f'%{handle}%')).order_by(User.app_username).limit(20))).all()
-        extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.username.ilike(f'%{handle}%')).limit(20))).all()
-        extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
+            User.telegram_id != uid, User.app_username.is_not(None), User.app_username.ilike(f'%{handle}%')).order_by(User.app_username).limit(20))).all()
+        extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.user_id != uid, UserUsername.username.ilike(f'%{handle}%')).limit(20))).all()
+        extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
         users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
         results = []
         for user in users:
