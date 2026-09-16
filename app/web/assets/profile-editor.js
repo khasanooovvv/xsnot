@@ -42,7 +42,7 @@
       let blank=document.getElementById('blankUsernameWindow');
       if(!blank){
         blank=document.createElement('dialog'); blank.id='blankUsernameWindow';
-        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username</h2><textarea rows="2" placeholder="username\nqo‘shimcha_username"></textarea><button type="submit">Saqlash</button><section class="blank-username-list"><b>Username tartibi</b><div class="blank-rows"></div></section></form>';
+        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username tartibi</h2><section class="blank-username-list"><b>Username tartibi</b><div class="blank-rows"></div></section></form>';
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
       blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
