@@ -46,7 +46,12 @@
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
         const initial=me?.usernames || (me?.app_username ? [me.app_username] : []);
-        blank.querySelector('.blank-rows').innerHTML=initial.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('');
+        const rows=blank.querySelector('.blank-rows');
+        rows.innerHTML=initial.map(x=>'<div class="tg-row" draggable="true" data-username="'+x+'"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('');
+        let dragged=null;
+        rows.addEventListener('dragstart',e=>{dragged=e.target.closest('.tg-row')});
+        rows.addEventListener('dragover',e=>e.preventDefault());
+        rows.addEventListener('drop',async e=>{e.preventDefault();const target=e.target.closest('.tg-row');if(!dragged||!target||dragged===target)return;target.before(dragged);const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile()}catch{}});
       blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
       api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};const values=fresh.usernames|| (fresh.app_username?[fresh.app_username]:[]);blank.querySelector('textarea').value=values.join('\n');blank.querySelector('.blank-rows').innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('')}).catch(()=>{});
       const s=document.createElement('style');
