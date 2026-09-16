@@ -92,7 +92,9 @@ async def open_chat(other: int, uid=Depends(registered)):
             await s.flush()
         await s.execute(delete(ChatDeletion).where(ChatDeletion.chat_id == chat.id, ChatDeletion.user_id == uid))
         await s.commit()
-        return {'chat_id': chat.id, 'partner': await person(s, other)}
+        # Profile/presence is loaded by the messages endpoint.  Do not make
+        # successful chat creation depend on that optional response payload.
+        return {'chat_id': chat.id}
 
 @router.get('/chats')
 async def chats(offset: int = Query(0, ge=0), uid=Depends(registered)):
