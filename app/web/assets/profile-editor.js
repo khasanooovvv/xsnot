@@ -42,7 +42,7 @@
       let blank=document.getElementById('blankUsernameWindow');
       if(!blank){
         blank=document.createElement('dialog'); blank.id='blankUsernameWindow';
-        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username tartibi</h2><section class="blank-username-list"><b>Username tartibi</b><div class="blank-rows"></div></section></form>';
+        blank.innerHTML='<button type="button" class="blank-window-close" aria-label="Yopish">×</button><form class="blank-username-form"><h2>Username tartibi</h2><section class="blank-username-list"><b>Username tartibi</b><div class="blank-rows"></div><button type="button" class="order-save">Saqlash</button></section></form>';
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
         const initial=me?.usernames || (me?.app_username ? [me.app_username] : []);
@@ -51,7 +51,8 @@
         let dragged=null;
         rows.addEventListener('dragstart',e=>{dragged=e.target.closest('.tg-row')});
         rows.addEventListener('dragover',e=>e.preventDefault());
-        rows.addEventListener('drop',async e=>{e.preventDefault();const target=e.target.closest('.tg-row');if(!dragged||!target||dragged===target)return;target.before(dragged);const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);me.usernames=values;me.app_username=values[0]||'';renderProfile();try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''})}catch{}});
+        rows.addEventListener('drop',e=>{e.preventDefault();const target=e.target.closest('.tg-row');if(!dragged||!target||dragged===target)return;target.before(dragged);const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);me.usernames=values;me.app_username=values[0]||'';renderProfile()});
+        blank.querySelector('.order-save').onclick=async()=>{const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});blank.close()};
       blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
       api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};const values=fresh.usernames|| (fresh.app_username?[fresh.app_username]:[]);blank.querySelector('textarea').value=values.join('\n');blank.querySelector('.blank-rows').innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('')}).catch(()=>{});
       const s=document.createElement('style');
