@@ -14,7 +14,7 @@
     <input id="editAvatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
-    <label for="editUsername">Ichki username</label><input id="editUsername" maxlength="25" placeholder="@username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint">
+    <label for="editUsername">Username’lar</label><textarea id="editUsername" rows="3" placeholder="Har qatorda bitta @username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint"></textarea>
     <small id="usernameHint">Ilova ichidagi username. Oddiy profil: kamida 6, Gold/verifikatsiya: kamida 5 belgi.</small>
     <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
@@ -38,7 +38,7 @@
     draftAvatar = null;
     preparing = false;
     $('editName').value = me.name || '';
-    $('editUsername').value = me.app_username || '';
+    $('editUsername').value = (me.usernames || (me.app_username ? [me.app_username] : [])).map(x => '@'+x).join('\n');
     $('editBio').value = me.bio || '';
     updateBioCount();
     $('editAvatar').value = '';
@@ -83,11 +83,14 @@
   $('profileEditForm').onsubmit = async event => {
     event.preventDefault();
     if (saving || preparing) return;
-    const data = {name:$('editName').value.trim(), app_username:$('editUsername').value.trim().replace(/^@/, '').toLowerCase(), bio:$('editBio').value.trim()};
+    const usernames = $('editUsername').value.split(/\s+/).map(x=>x.trim().replace(/^@/,'').toLowerCase()).filter(Boolean);
+    const data = {name:$('editName').value.trim(), app_username:usernames[0]||'', usernames, bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
     const minimumUsernameLength = Number(me?.short_username_min_length) || ((Number(me?.gold) > 0 || me?.silver || me?.verified) ? 5 : 6);
-    if (data.app_username && (data.app_username.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(data.app_username))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.');
+    const usernameLimit = Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1;
+    if (usernames.length > usernameLimit) return error('Siz ko‘pi bilan '+usernameLimit+' ta username qo‘ya olasiz.');
+    if (usernames.some(x=>x.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
     saving = true;
     error('');
     const controls = [...$('profileEditForm').elements];

@@ -23,7 +23,7 @@ from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
+from app.models import User, UserUsername, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
@@ -130,8 +130,10 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
 
 async def profile(s, u, include_avatar=True, include_referrals=True):
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
+    extra_usernames = (await s.scalars(select(UserUsername.username).where(UserUsername.user_id == u.telegram_id).order_by(UserUsername.position, UserUsername.id))).all()
+    usernames = list(dict.fromkeys(([u.app_username] if u.app_username else []) + list(extra_usernames)))
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
-        archive_consent=bool(u.archive_consent_at), app_username=u.app_username, short_username_access=bool(u.short_username_access), short_username_min_length=u.short_username_min_length or 0, bio=u.bio or '',
+        archive_consent=bool(u.archive_consent_at), app_username=u.app_username, usernames=usernames, short_username_access=bool(u.short_username_access), short_username_min_length=u.short_username_min_length or 0, bio=u.bio or '',
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
@@ -238,6 +240,7 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
 class ProfileEdit(BaseModel):
     name: str = Field(min_length=2, max_length=64)
     app_username: str | None = Field(default=None, max_length=25)
+    usernames: list[str] | None = None
     bio: str | None = Field(default=None, max_length=300)
     avatar: str | None = Field(default=None, max_length=2000000)
 
@@ -269,9 +272,25 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             if owner is not None and owner != uid:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
+        handles = [handle] if handle else []
+        if body.usernames is not None:
+            handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()]))
+            if handle and handle not in handles: handles.insert(0, handle)
+            badges = badge_status(user)
+            username_limit = 3 if badges['gold'] else 2 if badges['silver'] else 1
+            if len(handles) > username_limit:
+                raise HTTPException(422, 'Username limiti oshib ketdi.')
+            for item in handles:
+                if not re.fullmatch(r'[a-z][a-z0-9_]{0,23}', item):
+                    raise HTTPException(422, 'Username formati noto‘g‘ri.')
+            handle = handles[0] if handles else None
         user.display_name = name
         if body.app_username is not None:
             user.app_username = handle or None
+        if body.usernames is not None:
+            await s.execute(delete(UserUsername).where(UserUsername.user_id == uid))
+            for position, item in enumerate(handles[1:], 1):
+                s.add(UserUsername(user_id=uid, username=item, position=position))
         if body.bio is not None:
             user.bio = body.bio.strip()
         if avatar:

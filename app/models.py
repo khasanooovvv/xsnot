@@ -35,6 +35,13 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     referrer: Mapped["User | None"] = relationship(remote_side=[telegram_id])
 
+class UserUsername(Base):
+    __tablename__ = "user_usernames"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True)
+    username: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
 class MatchQueue(Base):
     __tablename__ = "match_queue"
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
