@@ -144,8 +144,11 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
     if not handle:
         return []
     async with SessionLocal() as s:
-        users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
+        primary_users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
             User.app_username.is_not(None), User.app_username.ilike(f'%{handle}%')).order_by(User.app_username).limit(20))).all()
+        extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.username.ilike(f'%{handle}%')).limit(20))).all()
+        extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
+        users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
         results = []
         for user in users:
             data = await profile(s, user, include_avatar=True, include_referrals=False)
@@ -271,6 +274,13 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         if handle:
             owner = await s.scalar(select(User.telegram_id).where(User.app_username == handle))
             if owner is not None and owner != uid:
+                raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
+        if body.usernames is not None:
+            primary_taken = (await s.scalars(select(User).where(User.app_username.in_(handles), User.telegram_id != uid))).first()
+            if primary_taken:
+                raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
+            taken = (await s.scalars(select(UserUsername).where(UserUsername.username.in_(handles), UserUsername.user_id != uid))).first()
+            if taken:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
         handles = [handle] if handle else []
