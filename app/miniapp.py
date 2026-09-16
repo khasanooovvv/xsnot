@@ -10,7 +10,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qsl
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
@@ -135,6 +135,20 @@ async def profile(s, u, include_avatar=True, include_referrals=True):
         registered=u.is_registered, **badge_status(u),
         invite_limit=settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit,
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
+
+@router.get('/api/users/search')
+async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
+    handle = q.strip().removeprefix('@').lower()
+    if not handle:
+        return []
+    async with SessionLocal() as s:
+        users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
+            User.app_username.is_not(None), User.app_username.ilike(f'%{handle}%')).order_by(User.app_username).limit(20))).all()
+        results = []
+        for user in users:
+            data = await profile(s, user, include_avatar=True, include_referrals=False)
+            results.append({key: data[key] for key in ('id', 'name', 'app_username', 'avatar', 'city', 'age', 'verified', 'silver', 'gold')})
+        return results
 
 @router.get('/api/me')
 async def me(include_avatar: bool = True, uid=Depends(identity)):
