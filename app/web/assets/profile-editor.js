@@ -45,7 +45,7 @@
         document.body.append(blank);
         blank.firstElementChild.onclick=()=>blank.close();
       blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
-      api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};const values=fresh.usernames|| (fresh.app_username?[fresh.app_username]:[]);blank.querySelector('textarea').value=values.join('\n');blank.querySelector('.blank-rows').innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">↗</span><span>@'+x+'<small>Username</small></span><span>☷</span></div>').join('')}).catch(()=>{});
+      api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};const values=fresh.usernames|| (fresh.app_username?[fresh.app_username]:[]);blank.querySelector('textarea').value=values.join('\n');blank.querySelector('.blank-rows').innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('')}).catch(()=>{});
       const s=document.createElement('style');
         s.textContent='#blankUsernameWindow{width:100vw;height:100vh;max-width:none;max-height:none;border:0;padding:0;background:#101820;color:#f1f5f9}#blankUsernameWindow::backdrop{background:#101820}#blankUsernameWindow .blank-window-close{position:fixed;top:18px;left:18px;width:42px;height:42px;border:0;border-radius:50%;background:#263746;color:#fff;font-size:28px;z-index:2}#blankUsernameWindow .blank-username-form{max-width:620px;margin:0 auto;padding:76px 22px;font:16px Arial}.blank-username-form h2{font-size:26px;margin:0 0 22px}.blank-username-form textarea{width:100%;padding:18px;border:0;border-radius:18px;background:#1d2a38;color:#fff;font:19px Arial;resize:vertical}.blank-username-form button[type=submit]{margin-top:18px;padding:14px 24px;border:0;border-radius:14px;background:#229ed9;color:#fff;font-weight:700;font-size:16px}.blank-username-list{margin-top:24px;padding:20px;border-radius:22px;background:#1d2a38}.blank-username-list>b{display:block;color:#76c5ff;font-size:18px;margin-bottom:8px}.blank-username-list .tg-row{display:flex;align-items:center;gap:12px;margin-top:8px;padding:12px;border-radius:14px;background:#243343}.blank-username-list .tg-row>span:nth-child(2){flex:1;font-weight:700}.blank-username-list .tg-row small{display:block;color:#78bce8;font-weight:400;margin-top:4px}.blank-username-list .tg-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#229ed9}';
         document.head.append(s);
@@ -60,14 +60,14 @@
       win.document.head.innerHTML='<style>*{box-sizing:border-box}body{margin:0;background:#101820;color:#f1f5f9;font:16px Arial}.tg-usernames{max-width:620px;margin:auto;padding:18px}.tg-usernames header{display:flex;align-items:center;justify-content:space-between;height:58px}.tg-usernames header button{border:0;background:none;color:#eef6ff;font-size:34px;cursor:pointer}.tg-usernames h1{font-size:25px;margin:0}.tg-card{background:#1d2a38;border-radius:24px;padding:22px;margin-top:18px}.tg-card b{display:block;color:#76c5ff;font-size:18px;margin-bottom:14px}.tg-input{display:flex;align-items:center;background:#16222e;border-radius:16px;padding:15px;color:#dce8f2;font-size:20px}.tg-input textarea{flex:1;border:0;outline:0;resize:none;background:transparent;color:#fff;font:20px Arial;margin-left:4px}.tg-help{color:#91a0ae;line-height:1.5;margin:18px 12px}.tg-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #2b3a49}.tg-row:last-child{border-bottom:0}.tg-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#229ed9}.tg-row small{display:block;color:#78bce8;margin-top:4px}#error{color:#ff8e9b}</style>';
       win.document.documentElement.style.cssText='width:100%;height:100%;margin:0;background:#fff;';
       win.document.body.style.cssText='width:100%;height:100%;margin:0;background:#101820;';
-      const list=win.document.getElementById('usernameList'); list.innerHTML=current.split(/\s+/).filter(Boolean).map(x=>'<div class="tg-row"><span class="tg-icon">↗</span><span>@'+x.replace(/^@/,'')+'<small>Username</small></span></div>').join('');
+      const list=win.document.getElementById('usernameList'); list.innerHTML=current.split(/\s+/).filter(Boolean).map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x.replace(/^@/,'')+'</span></div>').join('');
       // Refresh from the server so usernames saved earlier are not lost from
       // the editor when the parent page has stale profile data.
       win.opener.api('me?include_avatar=false').then(fresh=>{
         win.opener.me={...win.opener.me,...fresh};
         const values=fresh.usernames || (fresh.app_username?[fresh.app_username]:[]);
         win.document.getElementById('usernames').value=values.join('\n');
-        list.innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">↗</span><span>@'+x+'<small>Username</small></span></div>').join('');
+        list.innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span></div>').join('');
       }).catch(()=>{});
       win.document.getElementById('cancel').onclick=()=>win.close();
       win.document.getElementById('save').onclick=async()=>{const values=win.document.getElementById('usernames').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);const error=win.document.getElementById('error');if(values.some(x=>!/^[a-z][a-z0-9_]{0,23}$/.test(x))){error.textContent='Username noto‘g‘ri.';return}try{await win.opener.api('profile',{name:win.opener.me.name,app_username:values[0]||'',usernames:values,bio:win.opener.me.bio||''});win.opener.me.usernames=values;win.opener.me.app_username=values[0]||'';win.opener.renderProfile();win.close()}catch(e){error.textContent=e.message||'Saqlashda xato.'}};
@@ -171,3 +171,4 @@
     }
   };
 })();
+
