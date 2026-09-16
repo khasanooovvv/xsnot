@@ -37,7 +37,7 @@
   // Username controls are launchers, rather than inline editors. Open a
   // completely empty, separate window and make a best effort to maximize it.
   const openBlankUsernameWindow = () => {
-    const win=window.open('about:blank','_blank','popup=yes,fullscreen=yes');
+    const win=null;
     if(!win){
       let blank=document.getElementById('blankUsernameWindow');
       if(!blank){
@@ -172,6 +172,7 @@
     }
   };
 })();
+
 
 
 
