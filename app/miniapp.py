@@ -283,6 +283,9 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             raise HTTPException(422, 'Rasm ochilmadi. Boshqa rasm tanlang.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730023)'))
+        handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()])) if body.usernames is not None else ([handle] if handle else [])
+        if handle and handle not in handles:
+            handles.insert(0, handle)
         if handle:
             owner = await s.scalar(select(User.telegram_id).where(User.app_username == handle))
             if owner is not None and owner != uid:
@@ -295,10 +298,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             if taken:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
-        handles = [handle] if handle else []
         if body.usernames is not None:
-            handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()]))
-            if handle and handle not in handles: handles.insert(0, handle)
             badges = badge_status(user)
             username_limit = 999 if badges['verified'] else (3 if badges['gold'] else 2 if badges['silver'] else 1)
             if len(handles) > username_limit:
