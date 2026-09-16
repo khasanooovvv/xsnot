@@ -1,4 +1,4 @@
-:root{--page:#f4f6f8;--surface:#fff;--surface-2:#eef2f5;--text:#17212b;--muted:#70808f;--border:#dce3e8;--accent:#168acd;--nav:#ffffffed;color-scheme:light}#profileInfo{background:transparent!important;border:0!important;box-shadow:none!important}
+:root{--page:#f4f6f8;--surface:#fff;--surface-2:#eef2f5;--text:#17212b;--muted:#70808f;--border:#dce3e8;--accent:#168acd;--nav:#ffffffed;color-scheme:light}body.profile-page>main>header{display:none!important}#profileInfo{background:transparent!important;border:0!important;box-shadow:none!important}
 body{background:var(--page)!important;color:var(--text)!important}
 body.theme-dark{--page:#0e1621;--surface:#17212b;--surface-2:#202b36;--text:#f1f5f8;--muted:#9aa9b6;--border:#2b3946;--accent:#718897;--nav:#17212bf2;color-scheme:dark;background:var(--page)!important}
 .theme-card,.card{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}
