@@ -286,17 +286,18 @@ photo = async () => {
   if (!confirmed || selected !== input.files[0]) throw Error('Rasmni crop oynasida tasdiqlang.');
   return confirmed;
 };
-input.addEventListener('change', async () => {
-  const token = ++generation, file = input.files[0];
-  confirmed = null; selected = null;
+window.cropAvatar = async (file, onConfirm, onCancel, compact=false) => {
+  const token = ++generation;
   document.querySelector('#cropModal')?.remove();
   if (!file) return;
-  const modal = document.createElement('div');
+  const modal = document.createElement('dialog');
   modal.id = 'cropModal'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
   modal.innerHTML = '<p id="cropHelp">Rasm yuklanmoqda…</p><div id="cropStage"><canvas id="cropCanvas" width="512" height="512"></canvas><div id="cropMask"></div></div><div class="crop-controls"><button id="cropConfirm" type="button" disabled>Tasdiqlash ✓</button><button id="cropCancel" type="button" class="secondary">Bekor qilish</button></div>';
-  document.body.append(modal);
+  modal.style.cssText='margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;box-sizing:border-box';
+  document.body.append(modal);modal.showModal();
   const canvas = modal.querySelector('canvas'), ctx = canvas.getContext('2d'), stage = modal.querySelector('#cropStage'), confirm = modal.querySelector('#cropConfirm');
-  const cancel = () => { ++generation; input.value=''; confirmed=null; selected=null; $('pickPhoto').textContent='Rasm tanlash'; modal.remove(); };
+  const cancel = () => { ++generation; modal.remove(); onCancel(); };
+  modal.addEventListener('cancel',e=>{e.preventDefault();cancel()});
   modal.querySelector('#cropCancel').onclick=cancel;
   let bitmap;
   try {
@@ -324,7 +325,12 @@ input.addEventListener('change', async () => {
   stage.addEventListener('wheel',e=>{e.preventDefault();resize(scale*Math.exp(-e.deltaY*.001))},{passive:false});
   modal.querySelector('#cropHelp').textContent='Rasmni suring. Ikki barmoq bilan kattalashtiring.';
   draw();confirm.disabled=false;
-  confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=Math.max(1,Math.round(512/scale));output.getContext('2d').drawImage(bitmap,-x/scale,-y/scale,512/scale,512/scale,0,0,output.width,output.height);confirmed=output.toDataURL('image/png');selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true;modal.remove();};
+  confirm.onclick=()=>{const output=document.createElement('canvas');output.width=output.height=compact?512:Math.max(1,Math.round(512/scale));output.getContext('2d').drawImage(bitmap,-x/scale,-y/scale,512/scale,512/scale,0,0,output.width,output.height);const result=compact?output.toDataURL('image/jpeg',.9):output.toDataURL('image/png');modal.remove();onConfirm(result);};
+};
+input.addEventListener('change',()=>{
+  const file=input.files[0];confirmed=null;selected=null;
+  if(!file)return;
+  window.cropAvatar(file,result=>{confirmed=result;selected=file;$('pickPhoto').textContent='Rasm tasdiqlandi';$('photoRequiredMessage').hidden=true},()=>{input.value='';confirmed=null;selected=null;$('pickPhoto').textContent='Rasm tanlash'});
 });
 })();
 

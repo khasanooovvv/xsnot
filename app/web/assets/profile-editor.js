@@ -180,16 +180,13 @@
     $('saveProfileEdit').disabled = true;
     try {
       if (file.size > 10000000) throw Error('10 MB dan kichik rasm tanlang.');
-      const bitmap = await createImageBitmap(file);
-      try {
-        const side = Math.min(bitmap.width, bitmap.height);
-        const canvas = document.createElement('canvas');
-        canvas.width = canvas.height = 512;
-        canvas.getContext('2d').drawImage(bitmap, (bitmap.width-side)/2, (bitmap.height-side)/2, side, side, 0, 0, 512, 512);
-        if (current !== revision) return;
-        draftAvatar = canvas.toDataURL('image/jpeg', .9);
-        $('editAvatarPreview').innerHTML = avatar({name:me.name, avatar:draftAvatar});
-      } finally { bitmap.close(); }
+      const cropped = await new Promise((resolve,reject)=>{
+        window.cropAvatar(file,resolve,()=>resolve(null),true).catch(reject);
+      });
+      if(current !== revision)return;
+      draftAvatar = cropped;
+      if(cropped)$('editAvatarPreview').innerHTML = avatar({name:me.name, avatar:cropped});
+      $('editAvatar').value='';
     } catch (e) {
       if (current === revision) { error(e.message || 'Rasm ochilmadi.'); $('editAvatar').value = ''; }
     } finally {
@@ -216,6 +213,10 @@
       const fresh = await api('profile', data);
       ++avatarCacheEpoch;
       me = {...me, ...fresh};
+      if (draftAvatar) {
+        me.avatar = draftAvatar;
+        void avatarCacheStore('put', me.id, {avatar:draftAvatar,version:''});
+      }
       renderProfile();
       dialog.close();
       notice('Profil yangilandi.');
