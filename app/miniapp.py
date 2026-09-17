@@ -328,6 +328,11 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         data = await profile(s, user, include_avatar=False, include_referrals=False)
         data.pop('avatar', None)
         data.pop('referrals', None)
+        # Return the exact order submitted by the editor immediately.  This
+        # keeps the UI authoritative even before a later profile refresh.
+        if body.usernames is not None:
+            data['app_username'] = handle
+            data['usernames'] = handles
         data.update(birthday=user.birth_date, gender=user.gender)
         return data
 

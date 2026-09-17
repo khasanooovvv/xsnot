@@ -168,7 +168,6 @@
       const fresh = await api('profile', data);
       ++avatarCacheEpoch;
       me = {...me, ...fresh};
-      await avatarCacheStore('delete', me.id);
       renderProfile();
       dialog.close();
       notice('Profil yangilandi.');
