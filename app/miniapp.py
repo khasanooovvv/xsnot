@@ -187,27 +187,57 @@ async def normalize_gold_usernames(s, u):
 @router.get('/api/users/search')
 async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
     from app.direct_models import BlockedUser
+    from sqlalchemy import literal, union_all, and_, not_, case
     handle = q.strip().removeprefix('@').lower()
     if not handle:
         return []
+    now = datetime.now(UTC)
+    # Active assignments take precedence over historical hidden names. A hold
+    # with a future deadline is still reserved for its original owner.
+    candidates = union_all(
+        select(User.telegram_id.label('owner'), User.app_username.label('handle'),
+               literal(False).label('hidden'), literal(True).label('claimed'),
+               literal(0).label('priority')).where(User.app_username.is_not(None)),
+        select(UserUsername.user_id, UserUsername.username,
+               UserUsername.hidden_until.is_not(None),
+               or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until > now),
+               case((UserUsername.hidden_until.is_(None), 0),
+                    (UserUsername.hidden_until > now, 1), else_=2)),
+        select(User.telegram_id, User.gold_hidden_username, literal(True),
+               func.coalesce(User.gold_hidden_username_until > now, False),
+               case((User.gold_hidden_username_until > now, 1), else_=2)
+        ).where(User.gold_hidden_username.is_not(None)),
+    ).subquery()
+    ranked = select(candidates, func.row_number().over(
+        partition_by=func.lower(candidates.c.handle),
+        order_by=(candidates.c.priority, candidates.c.owner)
+    ).label('ownership_rank')).where(candidates.c.handle.icontains(handle, autoescape=True)).subquery()
+    hidden_unclaimed_expired = and_(
+        User.gold_until.is_not(None), User.gold_until <= now,
+        ranked.c.hidden.is_(True), ranked.c.claimed.is_(False))
     async with SessionLocal() as s:
-        primary_users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
-            User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-            User.telegram_id != uid, or_(User.app_username.icontains(handle, autoescape=True),
-                User.gold_hidden_username.icontains(handle, autoescape=True))).order_by(User.app_username).limit(20))).all()
-        extra_rows = (await s.scalars(select(UserUsername).where(UserUsername.user_id != uid,
-            UserUsername.user_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-            UserUsername.username.icontains(handle, autoescape=True)).limit(20))).all()
-        extra_ids = list(dict.fromkeys(row.user_id for row in extra_rows))
-        extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
-        users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
-        matched = {u.telegram_id: u.app_username for u in primary_users if u.app_username and handle in u.app_username.lower()}
-        matched.update({row.user_id: row.username for row in extra_rows})
+        visible = select(User.telegram_id.label('owner'), ranked.c.handle,
+            func.row_number().over(partition_by=User.telegram_id,
+                order_by=(case((func.lower(ranked.c.handle) == handle, 0), else_=1), ranked.c.handle)
+            ).label('user_rank')).join(ranked, ranked.c.owner == User.telegram_id).where(
+                ranked.c.ownership_rank == 1, not_(hidden_unclaimed_expired),
+                User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid,
+                User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid))
+            ).subquery()
+        rows = (await s.execute(select(User, visible.c.handle).join(visible, visible.c.owner == User.telegram_id)
+            .where(visible.c.user_rank == 1).order_by(
+                case((func.lower(visible.c.handle) == handle, 0), else_=1), visible.c.handle
+            ).limit(20))).all()
+        ids = [user.telegram_id for user, _ in rows]
+        avatars = {a.user_id: a.data for a in (await s.scalars(
+            select(MiniAvatar).where(MiniAvatar.user_id.in_(ids)))).all()} if ids else {}
         results = []
-        for user in users:
-            data = await profile(s, user, include_avatar=True, include_referrals=False)
-            data['app_username'] = matched.get(user.telegram_id, data.get('app_username'))
-            results.append({key: data[key] for key in ('id', 'name', 'app_username', 'avatar', 'city', 'age', 'verified', 'silver', 'gold')})
+        for user, matched_handle in rows:
+            # Searching must never normalize, restore, delete or flush usernames.
+            results.append(dict(id=user.telegram_id, name=user.display_name,
+                app_username=matched_handle, avatar=avatars.get(user.telegram_id),
+                city=user.city, age=age_on(user.birth_date) if user.birth_date else None,
+                **badge_status(user)))
         return results
 
 @router.get('/api/me')
