@@ -70,7 +70,16 @@
   async function loadMore(offset,b){try{const d=await request('/chats?offset='+offset);for(const c of d.chats){const n=document.createElement('button');n.className='dm-row';n.dataset.chatId=c.id;c.partner=mergePerson(c.partner);n.innerHTML=avatar(c.partner)+'<div class="dm-row-copy"><strong>'+esc(c.partner.name)+badgeMarkup(c.partner)+'</strong><small>'+esc(c.last_message?.text||'')+'</small></div><div class="dm-row-meta">'+esc(time(c.last_message_at))+(c.unread?'<span class="dm-unread">'+c.unread+'</span>':'')+'</div>';hold(n,()=>actions([['O‘chirish',()=>hide(c.id)]]));n.onclick=()=>open(c.id);b.before(n)}if(d.more)b.onclick=()=>loadMore(offset+d.chats.length,b);else b.remove()}catch(e){notice(e.message)}}
   tools.querySelector('button').onclick=async()=>{try{const rows=await request('/blocks');actions(rows.length?rows.map(p=>[p.name+' — blokdan chiqarish',async()=>{await request('/blocks/'+p.id,'DELETE');await refreshList()}]):[['Bloklanganlar yo‘q',()=>{}]])}catch(e){notice(e.message)}};
   const originalRender=renderUserSearchResults;renderUserSearchResults=rows=>{originalRender(rows);el('userSearchResults').querySelectorAll('.direct-result').forEach((n,i)=>{n.classList.add('dm-search-hit');n.tabIndex=0;n.setAttribute('role','button');const action=async()=>{try{const d=await request('/chats/with/'+rows[i].id,'POST');await open(d.chat_id)}catch(e){notice(e.message)}};n.onclick=action;n.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}}})};
-  let heartbeat=0;async function tick(){if(!refreshBusy&&me?.registered&&!document.hidden){refreshBusy=true;try{if(Date.now()-heartbeat>10000){heartbeat=Date.now();void request('/presence','POST',{online:true}).catch(()=>{})}void restoreList();if(current)await poll();else if(Date.now()-lastListSync>5000)await refreshList()}catch(e){if(current)error(e);else notice(e.message)}finally{refreshBusy=false}}setTimeout(tick,1000)}tick();
+  const requestedChat=new URLSearchParams(location.search).get('dm_chat');
+  let launchHandled=false;
+  async function openRequestedChat(){
+    if(launchHandled||!me?.registered)return;
+    launchHandled=true;
+    if(!requestedChat||!/^\d+$/.test(requestedChat)||!Number.isSafeInteger(Number(requestedChat)))return;
+    document.querySelector('[data-page="instagram"]')?.click();
+    await open(Number(requestedChat));
+  }
+  let heartbeat=0;async function tick(){if(!refreshBusy&&me?.registered&&!document.hidden){refreshBusy=true;try{await openRequestedChat();if(Date.now()-heartbeat>10000){heartbeat=Date.now();void request('/presence','POST',{online:true}).catch(()=>{})}void restoreList();if(current)await poll();else if(Date.now()-lastListSync>5000)await refreshList()}catch(e){if(current)error(e);else notice(e.message)}finally{refreshBusy=false}}setTimeout(tick,1000)}tick();
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&me?.registered)request('/presence','POST',{online:false}).catch(()=>{});else heartbeat=0});
   function viewport(){if(window.visualViewport){root.style.height=window.visualViewport.height+'px';root.style.top=window.visualViewport.offsetTop+'px'}}window.visualViewport?.addEventListener('resize',viewport);window.visualViewport?.addEventListener('scroll',viewport);viewport();
 })();

@@ -4,7 +4,7 @@ import base64
 import io
 from PIL import Image, ImageOps
 from starlette.concurrency import run_in_threadpool
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Request, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select, delete, func, or_, text
 from app.database import SessionLocal
@@ -12,6 +12,7 @@ from app.models import User, MiniAvatar
 from app.direct_models import DirectChat, DirectMessage, DirectRead, ChatDeletion, BlockedUser, UserPresence
 from app.miniapp import registered
 from app.services.badges import badge_status
+from app.services.direct_notifications import notify_direct_message
 
 router = APIRouter(prefix='/api/direct')
 
@@ -167,13 +168,13 @@ async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0),
         return result
 
 @router.post('/chats/{chat_id}/messages')
-async def send(chat_id: int, body: TextBody, uid=Depends(registered)):
+async def send(chat_id: int, body: TextBody, request: Request, background_tasks: BackgroundTasks, uid=Depends(registered)):
     value = body.text.strip()
     if not value: raise HTTPException(422, 'Xabar bo‘sh.')
     async with SessionLocal() as s:
         c, other = await access(s, chat_id, uid)
         user = await user_exists(s, uid)
-        await user_exists(s, other)
+        recipient = await user_exists(s, other)
         if user.muted_until and aware(user.muted_until)>now(): raise HTTPException(423, 'Mute faol.')
         if await blocked(s, uid, other): raise HTTPException(403, 'Foydalanuvchi bloklangan.')
         c.revision += 1
@@ -182,6 +183,8 @@ async def send(chat_id: int, body: TextBody, uid=Depends(registered)):
         s.add(m)
         await s.execute(delete(ChatDeletion).where(ChatDeletion.chat_id == chat_id))
         await s.commit()
+        background_tasks.add_task(notify_direct_message, getattr(request.app.state, 'bot', None),
+                                  other, c.id, user.display_name, user.app_username, recipient.language)
         return message_data(m, uid)
 
 async def change_message(chat_id, message_id, uid, value=None):
