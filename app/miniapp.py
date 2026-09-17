@@ -31,7 +31,7 @@ router = APIRouter()
 
 @router.get('/assets/direct.js')
 async def direct_script():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.js', media_type='application/javascript')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/direct.css')
 async def direct_style():

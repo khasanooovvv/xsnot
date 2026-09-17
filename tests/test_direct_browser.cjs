@@ -20,6 +20,7 @@ await page.goto('http://example.test');
 await page.setContent('<section id="instagram"><div id="userSearchResults"></div></section>');
 await page.addScriptTag({content:`const me={registered:true},tg={initData:'test'};const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;');const avatar=p=>'<div class="avatar">P</div>';const badgeMarkup=()=>'';const notice=()=>{};let renderUserSearchResults=rows=>{document.getElementById('userSearchResults').innerHTML=rows.map(p=>'<div class="direct-result">'+p.name+'</div>').join('')};`});
 await page.addStyleTag({content:fs.readFileSync('app/web/assets/direct.css','utf8')});
+await page.addScriptTag({content:`async function avatarCacheStore(){return null}`});
 await page.addScriptTag({content:fs.readFileSync('app/web/assets/direct.js','utf8')});
 await page.evaluate(()=>renderUserSearchResults([{id:2,name:'Partner'}]));
 await page.locator('.direct-result').click();await page.locator('#dmPartner strong').waitFor();

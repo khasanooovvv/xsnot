@@ -41,6 +41,35 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(r.status_code, status, r.text)
         return r.json()
 
+    async def test_lightweight_refresh_and_thumbnail(self):
+        import base64, io
+        from PIL import Image
+        from app.models import MiniAvatar
+        from sqlalchemy import event
+        raw = io.BytesIO()
+        Image.new('RGB', (1024, 1024), 'blue').save(raw, format='PNG')
+        async with self.sessions() as s:
+            s.add(MiniAvatar(user_id=2, data='data:image/png;base64,'+base64.b64encode(raw.getvalue()).decode()))
+            await s.commit()
+        cid = (await self.call('POST', '/chats/with/2'))['chat_id']
+        await self.call('POST', '/chats/with/3')
+        statements = []
+        def record(conn, cursor, statement, parameters, context, many):
+            statements.append(statement)
+        event.listen(self.engine.sync_engine, 'before_cursor_execute', record)
+        try:
+            data = await self.call('GET', '/chats?include_avatar=false')
+        finally:
+            event.remove(self.engine.sync_engine, 'before_cursor_execute', record)
+        self.assertEqual(len(statements), 5)
+        self.assertTrue(all('avatar' not in c['partner'] for c in data['chats']))
+        full = await self.call('GET', '/chats')
+        photo = next(c['partner']['avatar'] for c in full['chats'] if c['partner']['id'] == 2)
+        with Image.open(io.BytesIO(base64.b64decode(photo.split(',')[1]))) as thumb:
+            self.assertEqual(thumb.size, (128,128))
+        delta = await self.call('GET', f'/chats/{cid}/messages?since_revision=0&include_avatar=false')
+        self.assertNotIn('avatar', delta['partner'])
+
     async def test_delivery_edits_deletes_history_and_permissions(self):
         cid = (await self.call('POST','/chats/with/2'))['chat_id']
         self.assertEqual((await self.call('POST','/chats/with/2'))['chat_id'],cid)

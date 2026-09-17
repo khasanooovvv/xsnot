@@ -1,5 +1,9 @@
 """Private messaging API. Poll messages with since_revision for edits/deletions."""
 from datetime import UTC, datetime, timedelta
+import base64
+import io
+from PIL import Image, ImageOps
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select, delete, func, or_, text
@@ -43,13 +47,29 @@ async def access(s, chat_id, uid):
     await s.refresh(chat)
     return chat, chat.user_two if uid == chat.user_one else chat.user_one
 
-async def person(s, uid):
+def person_data(user, avatar, presence, include_avatar=True):
+    result = {'id': user.telegram_id, 'name': user.display_name, 'app_username': user.app_username,
+              **badge_status(user), 'online': bool(presence and aware(presence.last_seen_at) > now()-timedelta(seconds=30))}
+    if include_avatar:
+        result['avatar'] = None
+        if avatar and avatar.data:
+            try:
+                with Image.open(io.BytesIO(base64.b64decode(avatar.data.split(',', 1)[1]))) as source:
+                    if source.width * source.height > 40000000:
+                        raise ValueError('Image too large')
+                    thumb = ImageOps.fit(source.convert('RGB'), (128, 128))
+                    output = io.BytesIO()
+                    thumb.save(output, format='JPEG', quality=75)
+                    result['avatar'] = 'data:image/jpeg;base64,' + base64.b64encode(output.getvalue()).decode()
+            except (ValueError, OSError, IndexError):
+                pass
+    return result
+
+async def person(s, uid, include_avatar=True):
     user = await s.get(User, uid)
-    avatar = await s.get(MiniAvatar, uid)
+    avatar = await s.get(MiniAvatar, uid) if include_avatar else None
     presence = await s.get(UserPresence, uid)
-    return {'id': uid, 'name': user.display_name, 'app_username': user.app_username,
-            'avatar': avatar.data if avatar else None, **badge_status(user),
-            'online': bool(presence and aware(presence.last_seen_at) > now()-timedelta(seconds=30))}
+    return await run_in_threadpool(person_data, user, avatar, presence, include_avatar)
 
 def message_data(m, uid):
     return {'id': m.id, 'mine': m.sender_id == uid, 'text': '' if m.is_deleted else m.text,
@@ -97,24 +117,35 @@ async def open_chat(other: int, uid=Depends(registered)):
         return {'chat_id': chat.id}
 
 @router.get('/chats')
-async def chats(offset: int = Query(0, ge=0), uid=Depends(registered)):
+async def chats(offset: int = Query(0, ge=0), include_avatar: bool = True, uid=Depends(registered)):
     async with SessionLocal() as s:
         hidden = select(ChatDeletion.chat_id).where(ChatDeletion.user_id == uid)
         rows = (await s.scalars(select(DirectChat).where(or_(DirectChat.user_one == uid, DirectChat.user_two == uid),
             DirectChat.id.not_in(hidden)).order_by(func.coalesce(DirectChat.last_message_at, DirectChat.created_at).desc(), DirectChat.id.desc()).offset(offset).limit(51))).all()
+        ids = [c.id for c in rows[:50]]
+        if not ids:
+            return {'chats': [], 'more': False}
+        people = [c.user_two if c.user_one == uid else c.user_one for c in rows[:50]]
+        users = {u.telegram_id: u for u in (await s.scalars(select(User).where(User.telegram_id.in_(people)))).all()}
+        avatars = {a.user_id: a for a in (await s.scalars(select(MiniAvatar).where(MiniAvatar.user_id.in_(people)))).all()} if include_avatar else {}
+        presences = {p.user_id: p for p in (await s.scalars(select(UserPresence).where(UserPresence.user_id.in_(people)))).all()}
+        last_ids = select(func.max(DirectMessage.id)).where(DirectMessage.chat_id.in_(ids)).group_by(DirectMessage.chat_id)
+        lasts = {m.chat_id: m for m in (await s.scalars(select(DirectMessage).where(DirectMessage.id.in_(last_ids)))).all()}
+        unread_counts = dict((await s.execute(select(DirectMessage.chat_id, func.count(DirectMessage.id)).outerjoin(
+            DirectRead, (DirectRead.chat_id == DirectMessage.chat_id) & (DirectRead.user_id == uid)).where(
+            DirectMessage.chat_id.in_(ids), DirectMessage.sender_id != uid,
+            DirectMessage.id > func.coalesce(DirectRead.last_message_id, 0), DirectMessage.is_deleted.is_(False)
+        ).group_by(DirectMessage.chat_id))).all())
         result = []
         for c in rows[:50]:
             other = c.user_two if c.user_one == uid else c.user_one
-            last = await s.scalar(select(DirectMessage).where(DirectMessage.chat_id == c.id).order_by(DirectMessage.id.desc()).limit(1))
-            read = await s.get(DirectRead, (c.id, uid))
-            unread = await s.scalar(select(func.count()).select_from(DirectMessage).where(DirectMessage.chat_id == c.id,
-                DirectMessage.sender_id != uid, DirectMessage.id > (read.last_message_id if read else 0), DirectMessage.is_deleted.is_(False)))
-            result.append({'id': c.id, 'partner': await person(s, other), 'last_message': message_data(last, uid) if last else None,
-                           'last_message_at': c.last_message_at, 'unread': unread})
+            last = lasts.get(c.id)
+            result.append({'id': c.id, 'partner': await run_in_threadpool(person_data, users[other], avatars.get(other), presences.get(other), include_avatar), 'last_message': message_data(last, uid) if last else None,
+                           'last_message_at': c.last_message_at, 'unread': unread_counts.get(c.id, 0)})
         return {'chats': result, 'more': len(rows)>50}
 
 @router.get('/chats/{chat_id}/messages')
-async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0), before_id: int | None = Query(None, ge=1), uid=Depends(registered)):
+async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0), before_id: int | None = Query(None, ge=1), include_avatar: bool = True, uid=Depends(registered)):
     if since_revision is not None and before_id is not None: raise HTTPException(422, 'Bitta kursor yuboring.')
     async with SessionLocal() as s:
         c, other = await access(s, chat_id, uid)
@@ -131,7 +162,7 @@ async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0),
         if since_revision is None: rows.reverse()
         mine_block = await s.get(BlockedUser, (uid, other))
         result = {'messages': [message_data(m, uid) for m in rows], 'revision': cursor, 'more': more,
-                  'before_id': rows[0].id if rows else None, 'partner': await person(s, other),
+                  'before_id': rows[0].id if rows else None, 'partner': await person(s, other, include_avatar),
                   'blocked_by_me': bool(mine_block), 'can_send': not await blocked(s, uid, other)}
         return result
 
