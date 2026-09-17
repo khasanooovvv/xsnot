@@ -570,6 +570,9 @@ async def chat(after: int = 0, uid=Depends(registered)):
                 await s.commit()
                 return {'status': 'searching', 'invitation': payload}
             return {'status': 'idle'}
+        # Release the matchmaking lock before loading avatar/message payloads.
+        # Active readers must not serialize image transfers for every user.
+        await s.commit()
         partner_id = m.user_two_id if m.user_one_id == uid else m.user_one_id
         partner = {'name': 'Anonim', 'avatar': None, 'anonymous': True}
         if not is_anonymous(m, partner_id):

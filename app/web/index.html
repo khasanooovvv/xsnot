@@ -121,7 +121,10 @@ async function poll(){
     const d=await api('chat?after='+after);
     if(epoch!==chatEpoch)return;
     if(d.status==='active'){
-      if(match!==d.match&&window.chatRoulette?.hold(d.partner))return;
+      if(match!==d.match){
+        await window.chatRoulette?.ready(d.partner);
+        if(epoch!==chatEpoch)return;
+      }
       idlePolls=0;document.body.classList.remove('chat-searching');
       if(match!==d.match){clearChatView();match=d.match;show('chat')}
       const own={...me,anonymous:d.own_anonymous};

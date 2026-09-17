@@ -7,8 +7,9 @@
   const style=document.createElement('style');
   style.textContent='#roulette{padding:24px 0;text-align:center}body.chat-searching #messages{display:none}.roulette-window{position:relative;overflow:hidden;height:202px;border:1px solid #384365;border-radius:24px;background:#151c2d}.roulette-marker{position:absolute;left:50%;top:14px;bottom:14px;width:124px;transform:translateX(-50%);border:2px solid #bc96ff;border-radius:20px;box-shadow:0 0 24px #9461e644;pointer-events:none}.roulette-track{display:flex;align-items:center;height:100%;width:max-content;will-change:transform}.roulette-card{flex:0 0 132px;width:132px;padding:16px 8px;box-sizing:border-box;color:#c5bed6}.roulette-card .avatar{width:88px;height:88px;border-radius:50%;margin:auto}.roulette-card strong{display:block;margin:12px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.roulette-status{color:#b4a7c5}body.chat-fullscreen #roulette{display:none}';
   document.head.append(style);
-  let started=0,animation=null,timer=null,landing=null,signature='';
+  let started=0,animation=null,timer=null,landing=null,signature='',wake=null;
   function reset(){
+    wake?.();wake=null;
     started=0;clearTimeout(timer);animation?.cancel();animation=null;
     panel.hidden=true;track.replaceChildren();landing=null;signature='';
   }
@@ -32,9 +33,16 @@
     timer=setTimeout(()=>{status.textContent='Suhbatdosh kutilmoqda…'},3000);
   }
   window.chatRoulette={reset,start,hold(person){
-    if(!started)start();
+    if(!started)return false;
     const next=JSON.stringify(person);
     if(signature!==next&&landing){signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+'</strong>'}
     return performance.now()-started<3000;
+  },async ready(person){
+    if(!this.hold(person))return;
+    const remaining=Math.max(0,3000-(performance.now()-started));
+    await new Promise(resolve=>{
+      const timeout=setTimeout(()=>{wake=null;resolve()},remaining);
+      wake=()=>{clearTimeout(timeout);resolve()};
+    });
   }};
 })();

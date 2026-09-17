@@ -30,6 +30,7 @@ class Session:
     async def __aenter__(self): return self
     async def __aexit__(self, *args): pass
     async def execute(self, query): pass
+    async def commit(self): pass
     async def get(self, model, uid): return SimpleNamespace(telegram_id=uid)
     async def scalars(self, query): return SimpleNamespace(all=lambda: [])
 
