@@ -47,11 +47,14 @@
         blank.firstElementChild.onclick=()=>blank.close();
         const initial=me?.usernames || (me?.app_username ? [me.app_username] : []);
         const rows=blank.querySelector('.blank-rows');
-        rows.innerHTML=initial.map(x=>'<div class="tg-row" draggable="true" data-username="'+x+'"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('');
+        const renderRows=()=>{rows.innerHTML=[...rows.querySelectorAll('.tg-row')].map((row,index)=>'<div class="tg-row" draggable="true" data-username="'+row.dataset.username+'"><span class="tg-icon">@</span><span>@'+row.dataset.username+'</span><button type="button" class="order-up" '+(index?'':'disabled')+'>↑</button><button type="button" class="order-down" '+(index<rows.children.length-1?'':'disabled')+'>↓</button></div>').join('');};
+        rows.innerHTML=initial.map(x=>'<div class="tg-row" draggable="true" data-username="'+x+'"><span class="tg-icon">@</span><span>@'+x+'</span></div>').join('');
+        renderRows();
+        rows.addEventListener('click',e=>{const row=e.target.closest('.tg-row');if(!row)return;const rowsList=[...rows.querySelectorAll('.tg-row')];const index=rowsList.indexOf(row);if(e.target.closest('.order-up')&&index>0)rowsList[index-1].before(row);if(e.target.closest('.order-down')&&index<rowsList.length-1)rowsList[index+1].after(row);renderRows();});
         let dragged=null;
         rows.addEventListener('dragstart',e=>{dragged=e.target.closest('.tg-row')});
         rows.addEventListener('dragover',e=>e.preventDefault());
-        rows.addEventListener('drop',e=>{e.preventDefault();const target=e.target.closest('.tg-row');if(!dragged||!target||dragged===target)return;target.before(dragged);const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);me.usernames=values;me.app_username=values[0]||'';renderProfile()});
+        rows.addEventListener('drop',e=>{e.preventDefault();const target=e.target.closest('.tg-row');if(!dragged||!target||dragged===target)return;target.before(dragged);renderRows();const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);me.usernames=values;me.app_username=values[0]||'';renderProfile()});
         blank.querySelector('.order-save').onclick=async()=>{const values=[...rows.querySelectorAll('.tg-row')].map(x=>x.dataset.username);const fresh=await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me={...me,...fresh,usernames:values,app_username:values[0]||''};renderProfile();blank.close()};
       blank.querySelector('form').onsubmit=async e=>{e.preventDefault();const values=e.target.querySelector('textarea').value.split(/\s+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);try{await api('profile',{name:me.name,app_username:values[0]||'',usernames:values,bio:me.bio||''});me.usernames=values;me.app_username=values[0]||'';renderProfile();blank.close()}catch{}};
       api('me?include_avatar=false').then(fresh=>{me={...me,...fresh};const values=fresh.usernames|| (fresh.app_username?[fresh.app_username]:[]);blank.querySelector('textarea').value=values.join('\n');blank.querySelector('.blank-rows').innerHTML=values.map(x=>'<div class="tg-row"><span class="tg-icon">@</span><span>@'+x+'</span><span>☷</span></div>').join('')}).catch(()=>{});
