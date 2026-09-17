@@ -49,3 +49,17 @@ class SearchTests(unittest.IsolatedAsyncioTestCase):
             response=await self.client.get('/api/users/search',params={'q':name})
             self.assertEqual(response.status_code,200,response.text)
             self.assertEqual([r['id'] for r in response.json()],expected)
+
+    async def test_letters_digits_and_underscore_are_searchable(self):
+        async with self.sessions() as s:
+            s.add_all([
+                User(telegram_id=21, display_name='Letters', app_username='ali', is_registered=True),
+                User(telegram_id=22, display_name='Digits', app_username='user01', is_registered=True),
+                User(telegram_id=23, display_name='Underscore', app_username='ali_23', is_registered=True),
+                User(telegram_id=24, display_name='Both', app_username='user_01', is_registered=True),
+            ])
+            await s.commit()
+        for query, expected in [('ali', [21, 23]), ('user01', [22]), ('ali_23', [23]), ('user_01', [24])]:
+            response = await self.client.get('/api/users/search', params={'q': query})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual([row['id'] for row in response.json()], expected)
