@@ -30,6 +30,8 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    gold_hidden_username: Mapped[str | None] = mapped_column(String(24))
+    gold_hidden_username_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     referred_by_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     referral_rewarded: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -41,6 +43,7 @@ class UserUsername(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True)
     username: Mapped[str] = mapped_column(String(24), unique=True, index=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    hidden_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 class MatchQueue(Base):
     __tablename__ = "match_queue"

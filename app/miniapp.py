@@ -137,14 +137,49 @@ async def prepare_photo(image: UploadFile = File(...), uid=Depends(identity)):
     return await run_in_threadpool(normalize_photo, content)
 
 async def profile(s, u, include_avatar=True, include_referrals=True):
+    await normalize_gold_usernames(s, u)
     avatar = await s.get(MiniAvatar, u.telegram_id) if include_avatar else None
-    extra_usernames = (await s.scalars(select(UserUsername.username).where(UserUsername.user_id == u.telegram_id).order_by(UserUsername.position, UserUsername.id))).all()
+    now = datetime.now(UTC)
+    extra_usernames = (await s.scalars(select(UserUsername.username).where(UserUsername.user_id == u.telegram_id, or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until <= now)).order_by(UserUsername.position, UserUsername.id))).all()
     usernames = list(dict.fromkeys(([u.app_username] if u.app_username else []) + list(extra_usernames)))
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         archive_consent=bool(u.archive_consent_at), app_username=u.app_username, usernames=usernames, short_username_access=bool(u.short_username_access), short_username_min_length=u.short_username_min_length or 0, bio=u.bio or '',
         registered=u.is_registered, **badge_status(u),
         invite_limit=None if u.is_verified else (settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit),
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
+
+async def normalize_gold_usernames(s, u):
+    """Hide exactly five-character usernames for three days after Gold expires."""
+    now = datetime.now(UTC)
+    gold_active = bool(u.gold_until and (u.gold_until.replace(tzinfo=UTC) if u.gold_until.tzinfo is None else u.gold_until) > now)
+    changed = False
+    if gold_active:
+        if u.gold_hidden_username and u.gold_hidden_username_until and u.gold_hidden_username_until > now:
+            u.app_username = u.gold_hidden_username
+            u.gold_hidden_username = None
+            u.gold_hidden_username_until = None
+            changed = True
+        for row in (await s.scalars(select(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until.is_not(None)))).all():
+            row.hidden_until = None
+            changed = True
+    else:
+        release = now + timedelta(days=3)
+        if u.app_username and len(u.app_username) == 5:
+            u.gold_hidden_username = u.app_username
+            u.gold_hidden_username_until = release
+            u.app_username = None
+            changed = True
+        for row in (await s.scalars(select(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until.is_(None)))).all():
+            if len(row.username) == 5:
+                row.hidden_until = release
+                changed = True
+        if u.gold_hidden_username_until and u.gold_hidden_username_until <= now:
+            u.gold_hidden_username = None
+            u.gold_hidden_username_until = None
+            changed = True
+        await s.execute(delete(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until <= now))
+    if changed or not gold_active:
+        await s.flush()
 
 @router.get('/api/users/search')
 async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
@@ -158,7 +193,8 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             User.telegram_id != uid, User.app_username.is_not(None), User.app_username.icontains(handle, autoescape=True)).order_by(User.app_username).limit(20))).all()
         extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.user_id != uid,
             UserUsername.user_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-            UserUsername.username.icontains(handle, autoescape=True)).distinct().limit(20))).all()
+            UserUsername.username.icontains(handle, autoescape=True),
+            or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until <= datetime.now(UTC))).distinct().limit(20))).all()
         extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
         users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
         results = []
@@ -172,6 +208,7 @@ async def me(include_avatar: bool = True, uid=Depends(identity)):
     async with SessionLocal() as s:
         user = await s.get(User, uid)
         data = await profile(s, user, include_avatar)
+        await s.commit()
         data['muted_until'] = user.muted_until
         data['birthday'] = user.birth_date
         data['gender'] = user.gender
