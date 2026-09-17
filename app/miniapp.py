@@ -47,7 +47,7 @@ async def roulette_script():
 
 @router.get('/assets/profile-editor.js')
 async def profile_editor_script():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-editor.js', media_type='application/javascript')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-editor.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/partner-profile.js')
 async def partner_profile_script():
