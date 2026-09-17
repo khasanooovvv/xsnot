@@ -41,6 +41,25 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(r.status_code, status, r.text)
         return r.json()
 
+    async def test_automatic_reciprocal_match(self):
+        from app.services.matching import find_or_queue, active_match, is_anonymous
+        from app.models import MatchQueue
+        async with self.sessions() as s:
+            one, two, three = [await s.get(User, i) for i in (1,2,3)]
+            match, _ = await find_or_queue(s, one, 'mini_open', None, None, None, True)
+            self.assertIsNone(match)
+            await s.commit()
+            match, partner = await find_or_queue(s, two, 'mini_anonymous', None, None, None, True)
+            await s.commit()
+            self.assertEqual(partner.telegram_id, 1)
+            self.assertEqual((await active_match(s,1)).id, (await active_match(s,2)).id)
+            self.assertTrue(is_anonymous(match,2))
+            self.assertFalse(is_anonymous(match,1))
+            self.assertIsNone(await s.get(MatchQueue,1))
+            self.assertIsNone(await s.get(MatchQueue,2))
+            third, _ = await find_or_queue(s, three, 'mini_open', None, None, None, True)
+            self.assertIsNone(third)
+
     async def test_lightweight_refresh_and_thumbnail(self):
         import base64, io
         from PIL import Image

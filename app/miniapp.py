@@ -43,7 +43,7 @@ async def gold_status_script():
 
 @router.get('/assets/roulette.js')
 async def roulette_script():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette.js', media_type='application/javascript')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/profile-editor.js')
 async def profile_editor_script():
@@ -416,11 +416,7 @@ async def search(body: Search, uid=Depends(registered)):
         if existing and existing.mode.startswith('mini_'):
             set_anonymous(existing, uid, body.mode == 'anonymous')
         elif not existing:
-            if body.roulette:
-                await leave_queue(s, uid)
-                s.add(MatchQueue(user_id=uid, mode='mini_ra' if body.mode == 'anonymous' else 'mini_ro', archive_consent=archive_consent))
-            else:
-                await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
+            await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
         await s.commit()
     return {'ok': True}
 

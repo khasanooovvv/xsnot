@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+import secrets
 from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
@@ -19,11 +20,14 @@ async def find_or_queue(session: AsyncSession, user: User, mode: str, city: str 
     else:
         query = query.where(MatchQueue.mode == mode)
     candidates = (await session.scalars(query.order_by(MatchQueue.queued_at))).all()
+    if mini:
+        secrets.SystemRandom().shuffle(candidates)
     for candidate in candidates:
         if mini and archive_consent and not candidate.archive_consent:
             continue
         partner = await session.get(User, candidate.user_id)
         if not partner or not partner.is_registered or partner.is_banned: continue
+        if await active_match(session, candidate.user_id): continue
         partner_age = age_on(partner.birth_date) if partner.birth_date else 0
         own_age = age_on(user.birth_date) if user.birth_date else 0
         # Both people's filters must be met.

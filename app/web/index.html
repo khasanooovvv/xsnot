@@ -111,7 +111,7 @@ $('anonymousMode').onchange=()=>{
 };
 $('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
   searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:true,roulette:true,archive_consent:Boolean(me?.archive_consent||$('chatTerms').checked)};
-  clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');
+  clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');document.body.classList.add('chat-searching');window.chatRoulette?.start();
   await api('search',searchOptions);document.body.classList.add('chat-searching');if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
 })};
 async function poll(){
@@ -121,6 +121,7 @@ async function poll(){
     const d=await api('chat?after='+after);
     if(epoch!==chatEpoch)return;
     if(d.status==='active'){
+      if(match!==d.match&&window.chatRoulette?.hold(d.partner))return;
       idlePolls=0;document.body.classList.remove('chat-searching');
       if(match!==d.match){clearChatView();match=d.match;show('chat')}
       const own={...me,anonymous:d.own_anonymous};
