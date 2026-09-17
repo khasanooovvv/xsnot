@@ -307,12 +307,19 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
                     raise HTTPException(422, 'Username formati noto‘g‘ri.')
             handle = handles[0] if handles else None
         user.display_name = name
-        if body.app_username is not None:
-            user.app_username = handle or None
         if body.usernames is not None:
+            # Clear the unique primary value before replacing the ordered
+            # username set. This makes reordering deterministic even when the
+            # new primary username was previously an additional username.
+            user.app_username = None
             await s.execute(delete(UserUsername).where(UserUsername.user_id == uid))
+            await s.flush()
+            user.app_username = handle or None
             for position, item in enumerate(handles[1:], 1):
                 s.add(UserUsername(user_id=uid, username=item, position=position))
+            await s.flush()
+        elif body.app_username is not None:
+            user.app_username = handle or None
         if body.bio is not None:
             user.bio = body.bio.strip()
         if avatar:
