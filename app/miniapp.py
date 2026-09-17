@@ -152,6 +152,9 @@ async def normalize_gold_usernames(s, u):
     """Hide exactly five-character usernames for three days after Gold expires."""
     now = datetime.now(UTC)
     gold_active = bool(u.gold_until and (u.gold_until.replace(tzinfo=UTC) if u.gold_until.tzinfo is None else u.gold_until) > now)
+    # Users who never had Gold keep their normal usernames untouched.
+    if u.gold_until is None and not u.gold_hidden_username:
+        return
     changed = False
     if gold_active:
         if u.gold_hidden_username and u.gold_hidden_username_until and u.gold_hidden_username_until > now:
@@ -336,6 +339,8 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         user = await s.get(User, uid, with_for_update=True)
         if body.usernames is not None:
             badges = badge_status(user)
+            if not badges['gold'] and not badges['verified'] and any(len(item) == 5 for item in handles):
+                raise HTTPException(422, '5 belgili username faqat Gold bilan ishlaydi.')
             username_limit = 999 if badges['verified'] else (3 if badges['gold'] else 2 if badges['silver'] else 1)
             if len(handles) > username_limit:
                 raise HTTPException(422, 'Username limiti oshib ketdi.')

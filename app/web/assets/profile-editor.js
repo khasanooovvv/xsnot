@@ -204,6 +204,7 @@
     const usernameLimit = me?.verified ? 999 : Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1;
     if (usernames.length > usernameLimit) return error('Siz ko‘pi bilan '+usernameLimit+' ta username qo‘ya olasiz.');
     if (usernames.some(x=>x.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
+    if (!me?.gold && !me?.verified && usernames.some(x=>x.length===5)) return error('5 belgili username faqat Gold bilan ishlaydi.');
     saving = true;
     error('');
     const controls = [...$('profileEditForm').elements];
