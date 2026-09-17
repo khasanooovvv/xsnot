@@ -322,7 +322,12 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             else:
                 s.add(MiniAvatar(user_id=uid, data=avatar))
         await s.commit()
-        data = await profile(s, user)
+        # The client already has the avatar and referral count.  Rebuilding the
+        # complete profile here makes every save wait for an extra avatar read
+        # and referral aggregate query (and can be very noticeable on mobile).
+        data = await profile(s, user, include_avatar=False, include_referrals=False)
+        data.pop('avatar', None)
+        data.pop('referrals', None)
         data.update(birthday=user.birth_date, gender=user.gender)
         return data
 
