@@ -196,8 +196,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             User.telegram_id != uid, User.app_username.is_not(None), User.app_username.icontains(handle, autoescape=True)).order_by(User.app_username).limit(20))).all()
         extra_ids = (await s.scalars(select(UserUsername.user_id).where(UserUsername.user_id != uid,
             UserUsername.user_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-            UserUsername.username.icontains(handle, autoescape=True),
-            or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until <= datetime.now(UTC))).distinct().limit(20))).all()
+            UserUsername.username.icontains(handle, autoescape=True)).distinct().limit(20))).all()
         extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
         users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
         results = []
