@@ -193,8 +193,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
     async with SessionLocal() as s:
         primary_users = (await s.scalars(select(User).where(User.is_registered.is_(True), User.is_banned.is_(False),
             User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-            User.telegram_id != uid, or_(User.username.icontains(handle, autoescape=True),
-                User.app_username.icontains(handle, autoescape=True),
+            User.telegram_id != uid, or_(User.app_username.icontains(handle, autoescape=True),
                 User.gold_hidden_username.icontains(handle, autoescape=True))).order_by(User.app_username).limit(20))).all()
         extra_rows = (await s.scalars(select(UserUsername).where(UserUsername.user_id != uid,
             UserUsername.user_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
@@ -202,8 +201,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
         extra_ids = list(dict.fromkeys(row.user_id for row in extra_rows))
         extra_users = (await s.scalars(select(User).where(User.telegram_id.in_(extra_ids), User.telegram_id != uid, User.is_registered.is_(True), User.is_banned.is_(False)))).all() if extra_ids else []
         users = list({u.telegram_id: u for u in [*primary_users, *extra_users]}.values())[:20]
-        matched = {u.telegram_id: (u.app_username or u.username) for u in primary_users
-                   if (u.app_username and handle in u.app_username.lower()) or (u.username and handle in u.username.lower())}
+        matched = {u.telegram_id: u.app_username for u in primary_users if u.app_username and handle in u.app_username.lower()}
         matched.update({row.user_id: row.username for row in extra_rows})
         results = []
         for user in users:
