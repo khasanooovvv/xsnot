@@ -192,6 +192,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
     if not handle:
         return []
     now = datetime.now(UTC)
+    print(f"[DEBUG] Search query: '{q}' -> handle: '{handle}'")
     # Active assignments take precedence over historical hidden names. A hold
     # with a future deadline is still reserved for its original owner.
     candidates = union_all(
@@ -228,6 +229,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             .where(visible.c.user_rank == 1).order_by(
                 case((func.lower(visible.c.handle) == handle, 0), else_=1), visible.c.handle
             ).limit(20))).all()
+        print(f"[DEBUG] Found {len(rows)} results for '{handle}'")
         ids = [user.telegram_id for user, _ in rows]
         avatars = {a.user_id: a.data for a in (await s.scalars(
             select(MiniAvatar).where(MiniAvatar.user_id.in_(ids)))).all()} if ids else {}
