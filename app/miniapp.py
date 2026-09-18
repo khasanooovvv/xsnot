@@ -228,15 +228,11 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             .where(visible.c.user_rank == 1).order_by(
                 case((func.lower(visible.c.handle) == handle, 0), else_=1), visible.c.handle
             ).limit(20))).all()
-        avatar_check = {a.user_id for a in (await s.scalars(
-            select(MiniAvatar.user_id).where(MiniAvatar.user_id.in_([u.telegram_id for u, _ in rows])))).all()} if rows else set()
         results = []
         for user, matched_handle in rows:
             # Searching must never normalize, restore, delete or flush usernames.
-            # Avatar returned as URL, not base64 data - client loads separately for speed
-            avatar_url = f"/api/avatar/{user.telegram_id}" if user.telegram_id in avatar_check else None
             results.append(dict(id=user.telegram_id, name=user.display_name,
-                app_username=matched_handle, avatar=avatar_url,
+                app_username=matched_handle,
                 city=user.city, age=age_on(user.birth_date) if user.birth_date else None,
                 **badge_status(user)))
         return results
