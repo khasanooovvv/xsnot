@@ -228,14 +228,15 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             .where(visible.c.user_rank == 1).order_by(
                 case((func.lower(visible.c.handle) == handle, 0), else_=1), visible.c.handle
             ).limit(20))).all()
-        ids = [user.telegram_id for user, _ in rows]
-        avatars = {a.user_id: a.data for a in (await s.scalars(
-            select(MiniAvatar).where(MiniAvatar.user_id.in_(ids)))).all()} if ids else {}
+        avatar_check = {a.user_id for a in (await s.scalars(
+            select(MiniAvatar.user_id).where(MiniAvatar.user_id.in_([u.telegram_id for u, _ in rows])))).all()} if rows else set()
         results = []
         for user, matched_handle in rows:
             # Searching must never normalize, restore, delete or flush usernames.
+            # Avatar returned as URL, not base64 data - client loads separately for speed
+            avatar_url = f"/api/avatar/{user.telegram_id}" if user.telegram_id in avatar_check else None
             results.append(dict(id=user.telegram_id, name=user.display_name,
-                app_username=matched_handle, avatar=avatars.get(user.telegram_id),
+                app_username=matched_handle, avatar=avatar_url,
                 city=user.city, age=age_on(user.birth_date) if user.birth_date else None,
                 **badge_status(user)))
         return results
@@ -261,6 +262,14 @@ async def my_avatar(version: str = '', uid=Depends(identity)):
         if version == current:
             return {'version': current, 'unchanged': True}
         return {'avatar': data, 'version': current, 'unchanged': False}
+
+@router.get('/api/avatar/{user_id}')
+async def get_user_avatar(user_id: int):
+    async with SessionLocal() as s:
+        avatar = await s.get(MiniAvatar, user_id)
+        if not avatar:
+            raise HTTPException(404, 'Avatar not found')
+        return {'avatar': avatar.data}
 
 @router.get('/api/me/gold')
 async def my_gold(uid=Depends(registered)):
