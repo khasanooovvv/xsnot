@@ -63,3 +63,22 @@ class SearchTests(unittest.IsolatedAsyncioTestCase):
             response = await self.client.get('/api/users/search', params={'q': query})
             self.assertEqual(response.status_code, 200, response.text)
             self.assertEqual([row['id'] for row in response.json()], expected)
+
+    async def test_extra_usernames_searchable(self):
+        async with self.sessions() as s:
+            s.add_all([
+                User(telegram_id=30, display_name='Bakhiytova', is_registered=True),
+                User(telegram_id=31, display_name='Developer', app_username='dev_pro', is_registered=True),
+                User(telegram_id=32, display_name='Trader', is_registered=True),
+            ])
+            s.add_all([
+                UserUsername(user_id=30, username='bakhiytova', position=1),
+                UserUsername(user_id=32, username='trader_star', position=1),
+                UserUsername(user_id=30, username='bakhi_2024', position=2),
+            ])
+            await s.commit()
+        for query, expected in [('bakhiytova', [30]), ('bakhi', [30]), ('trader_star', [32]), ('dev_pro', [31]), ('@BAKHIYTOVA', [30])]:
+            with self.subTest(query=query):
+                response = await self.client.get('/api/users/search', params={'q': query})
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual([row['id'] for row in response.json()], expected, f"Failed for query '{query}'")

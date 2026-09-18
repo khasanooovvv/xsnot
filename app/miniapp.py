@@ -198,14 +198,14 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
         select(User.telegram_id.label('owner'), User.app_username.label('handle'),
                literal(False).label('hidden'), literal(True).label('claimed'),
                literal(0).label('priority')).where(User.app_username.is_not(None)),
-        select(UserUsername.user_id, UserUsername.username,
-               UserUsername.hidden_until.is_not(None),
-               or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until > now),
+        select(UserUsername.user_id.label('owner'), UserUsername.username.label('handle'),
+               UserUsername.hidden_until.is_not(None).label('hidden'),
+               or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until > now).label('claimed'),
                case((UserUsername.hidden_until.is_(None), 0),
-                    (UserUsername.hidden_until > now, 1), else_=2)),
-        select(User.telegram_id, User.gold_hidden_username, literal(True),
-               func.coalesce(User.gold_hidden_username_until > now, False),
-               case((User.gold_hidden_username_until > now, 1), else_=2)
+                    (UserUsername.hidden_until > now, 1), else_=2).label('priority')),
+        select(User.telegram_id.label('owner'), User.gold_hidden_username.label('handle'), literal(True).label('hidden'),
+               func.coalesce(User.gold_hidden_username_until > now, False).label('claimed'),
+               case((User.gold_hidden_username_until > now, 1), else_=2).label('priority')
         ).where(User.gold_hidden_username.is_not(None)),
     ).subquery()
     ranked = select(candidates, func.row_number().over(
