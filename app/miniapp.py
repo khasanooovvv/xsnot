@@ -211,7 +211,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
     ranked = select(candidates, func.row_number().over(
         partition_by=func.lower(candidates.c.handle),
         order_by=(candidates.c.priority, candidates.c.owner)
-    ).label('ownership_rank')).where(candidates.c.handle.icontains(handle, autoescape=True)).subquery()
+    ).label('ownership_rank')).where(func.lower(candidates.c.handle).like(f'%{handle}%', escape='\\')).subquery()
     hidden_unclaimed_expired = and_(
         User.gold_until.is_not(None), User.gold_until <= now,
         ranked.c.hidden.is_(True), ranked.c.claimed.is_(False))
