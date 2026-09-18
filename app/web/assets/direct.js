@@ -35,18 +35,19 @@
   el('dmCancelEdit').onclick=cancelEdit;
   el('dmForm').onsubmit=async e=>{e.preventDefault();if(busy||!current?.canSend)return;const value=el('dmInput').value.trim();if(!value)return;busy=true;const ticket=epoch,id=current.id,editId=editing;try{await request(`/chats/${id}/messages`+(editId?`/${editId}`:''),editId?'PATCH':'POST',{text:value});if(ticket===epoch){cancelEdit();await poll();el('dmMessages').scrollTop=el('dmMessages').scrollHeight}}catch(e){if(ticket===epoch)error(e)}finally{busy=false;if(current)el('dmForm').querySelector('button').disabled=!current.canSend}};
   el('dmMenu').onclick=()=>{if(!current?.partner)return;const id=current.id,p=current.partner,blocked=current.blocked;actions([[blocked?'Blokdan chiqarish':'Bloklash',async()=>{if(!confirm(p.name+(blocked?' blokdan chiqarilsinmi?':' bloklansinmi?')))return;await request('/blocks/'+p.id,blocked?'DELETE':'POST');await poll()}],['Chatni ro‘yxatdan o‘chirish',()=>hide(id)]])};
-  async function hide(id){if(!confirm('Chat sizning ro‘yxatingizdan o‘chirilsinmi?'))return;await request('/chats/'+id,'DELETE');if(current?.id===id)el('dmBack').click();await refreshList()}
+  async function hide(id){if(!confirm(‘Chat sizning ro’yxatingizdan o’chirilsinmi?’))return;await request(‘/chats/’+id,’DELETE’);cachedList=null;if(current?.id===id)el(‘dmBack’).click();await refreshList()}
   function renderList(d){
     const signature=JSON.stringify(d);if(signature===listSignature)return;listSignature=signature;
     const existing=new Map([...list.querySelectorAll('.dm-row')].map(n=>[Number(n.dataset.chatId),n]));
-    list.querySelector('.dm-more')?.remove();
+    list.querySelector(‘.dm-more’)?.remove();
     for(const c of d.chats){
+      if(!c.last_message_at)continue;
       let b=existing.get(c.id);existing.delete(c.id);
-      if(!b){b=document.createElement('button');b.type='button';b.className='dm-row';b.dataset.chatId=c.id;hold(b,()=>actions([['O‘chirish',()=>hide(c.id)]]));b.onclick=()=>open(c.id)}
+      if(!b){b=document.createElement(‘button’);b.type=’button’;b.className=’dm-row’;b.dataset.chatId=c.id;hold(b,()=>actions([[‘O’chirish’,()=>hide(c.id)]]));b.onclick=()=>open(c.id)}
       const rowSignature=JSON.stringify({...c,partner:{...c.partner,online:undefined}});
       if(b.dataset.signature!==rowSignature){
         b.dataset.signature=rowSignature;
-        b.innerHTML=avatar(c.partner)+'<div class="dm-row-copy"><strong>'+esc(c.partner.name)+badgeMarkup(c.partner)+'</strong><small>'+esc(c.last_message?(c.last_message.is_deleted?'Xabar o‘chirildi':c.last_message.text.slice(0,90)):'Hali xabar yo‘q')+'</small></div><div class="dm-row-meta">'+esc(time(c.last_message_at))+(c.unread?'<span class="dm-unread">'+c.unread+'</span>':'')+'</div>';
+        b.innerHTML=avatar(c.partner)+’<div class="dm-row-copy"><strong>’+esc(c.partner.name)+badgeMarkup(c.partner)+’</strong><small>’+esc(c.last_message?(c.last_message.is_deleted?’Xabar o’chirildi’:c.last_message.text.slice(0,90)):’Hali xabar yo’q’)+’</small></div><div class="dm-row-meta">’+esc(time(c.last_message_at))+(c.unread?’<span class="dm-unread">’+c.unread+’</span>’:’’)+’</div>’;
       }
       list.append(b);
     }
