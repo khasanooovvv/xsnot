@@ -121,8 +121,9 @@ async def open_chat(other: int, uid=Depends(registered)):
 async def chats(offset: int = Query(0, ge=0), include_avatar: bool = True, uid=Depends(registered)):
     async with SessionLocal() as s:
         hidden = select(ChatDeletion.chat_id).where(ChatDeletion.user_id == uid)
+        has_messages = select(DirectMessage.chat_id).where(DirectMessage.chat_id == DirectChat.id).exists()
         rows = (await s.scalars(select(DirectChat).where(or_(DirectChat.user_one == uid, DirectChat.user_two == uid),
-            DirectChat.id.not_in(hidden)).order_by(func.coalesce(DirectChat.last_message_at, DirectChat.created_at).desc(), DirectChat.id.desc()).offset(offset).limit(51))).all()
+            DirectChat.id.not_in(hidden), has_messages).order_by(func.coalesce(DirectChat.last_message_at, DirectChat.created_at).desc(), DirectChat.id.desc()).offset(offset).limit(51))).all()
         ids = [c.id for c in rows[:50]]
         if not ids:
             return {'chats': [], 'more': False}
@@ -231,7 +232,14 @@ async def mark_read(chat_id: int, body: ReadBody, uid=Depends(registered)):
 @router.delete('/chats/{chat_id}')
 async def hide_chat(chat_id: int, uid=Depends(registered)):
     async with SessionLocal() as s:
-        await access(s, chat_id, uid)
+        chat, _ = await access(s, chat_id, uid)
+        # Hiding a direct chat is a destructive history action.  Remove the
+        # messages and read cursors so reopening the contact cannot restore
+        # the old conversation from storage.
+        await s.execute(delete(DirectMessage).where(DirectMessage.chat_id == chat_id))
+        await s.execute(delete(DirectRead).where(DirectRead.chat_id == chat_id))
+        chat.last_message_at = None
+        chat.revision = 0
         row = await s.get(ChatDeletion, (chat_id, uid))
         if row: row.deleted_at = now()
         else: s.add(ChatDeletion(chat_id=chat_id, user_id=uid, deleted_at=now()))

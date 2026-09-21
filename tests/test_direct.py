@@ -5,6 +5,7 @@ os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'
 import unittest
 from datetime import timedelta
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy import select, func
 from fastapi import FastAPI
 import httpx
 from app import direct, miniapp
@@ -71,7 +72,10 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
             s.add(MiniAvatar(user_id=2, data='data:image/png;base64,'+base64.b64encode(raw.getvalue()).decode()))
             await s.commit()
         cid = (await self.call('POST', '/chats/with/2'))['chat_id']
-        await self.call('POST', '/chats/with/3')
+        cid3 = (await self.call('POST', '/chats/with/3'))['chat_id']
+        # Contact rows are persisted only after the first message.
+        await self.call('POST', f'/chats/{cid}/messages', {'text': 'hello'})
+        await self.call('POST', f'/chats/{cid3}/messages', {'text': 'hello'})
         statements = []
         def record(conn, cursor, statement, parameters, context, many):
             statements.append(statement)
@@ -124,7 +128,9 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
         await self.call('DELETE',f'/chats/{c}')
         self.assertEqual((await self.call('GET','/chats'))['chats'],[])
         self.uid=2
-        self.assertEqual(len((await self.call('GET','/chats'))['chats']),1)
+        # Deleting a chat removes its shared history, so the other participant
+        # must not retain a stale contact entry either.
+        self.assertEqual((await self.call('GET','/chats'))['chats'],[])
         await self.call('DELETE',f'/chats/{c}')
         self.assertEqual((await self.call('GET','/chats'))['chats'],[])
         await self.call('POST',f'/chats/{c}/messages',{'text':'back'})
@@ -136,6 +142,24 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.call('GET','/chats'))['chats'][0]['id'],c2)
         await self.call('POST',f'/chats/{c}/messages',{'text':'latest'})
         self.assertEqual((await self.call('GET','/chats'))['chats'][0]['id'],c)
+
+    async def test_empty_chat_is_not_listed_and_deleted_history_cannot_return(self):
+        cid = (await self.call('POST', '/chats/with/2'))['chat_id']
+        self.assertEqual((await self.call('GET', '/chats'))['chats'], [])
+        self.assertEqual((await self.call('GET', f'/chats/{cid}/messages'))['messages'], [])
+
+        await self.call('POST', f'/chats/{cid}/messages', {'text': 'old history'})
+        await self.call('DELETE', f'/chats/{cid}')
+        async with self.sessions() as s:
+            from app.direct_models import DirectMessage, DirectRead
+            self.assertEqual(await s.scalar(select(func.count(DirectMessage.id)).where(DirectMessage.chat_id == cid)), 0)
+            self.assertEqual(await s.scalar(select(func.count(DirectRead.chat_id)).where(DirectRead.chat_id == cid)), 0)
+
+        reopened = (await self.call('POST', '/chats/with/2'))['chat_id']
+        self.assertEqual(reopened, cid)
+        reopened_page = await self.call('GET', f'/chats/{reopened}/messages')
+        self.assertEqual(reopened_page['messages'], [])
+        self.assertEqual((await self.call('GET', '/chats'))['chats'], [])
 
     async def test_block_search_unblock_presence(self):
         c=(await self.call('POST','/chats/with/2'))['chat_id']
