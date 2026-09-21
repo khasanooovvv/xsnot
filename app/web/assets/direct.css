@@ -2,6 +2,7 @@
 #dmWindow{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:#0b1220;color:#f3f5ff;height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
 #dmWindow[hidden]{display:none}body.dm-open{overflow:hidden}
 .back-icon{width:28px;height:28px;display:block;object-fit:contain}
+#dmBack .back-icon{transform:translateX(3px)}
 #dmWindow button{color:#eef2ff!important;background:linear-gradient(145deg,#303c50,#222c3e)!important;border:1px solid #3b4963;box-shadow:inset 0 1px #ffffff14,0 5px 14px #0006}
 #dmTop{display:flex;align-items:center;gap:7px;justify-content:center;min-height:58px;padding:4px 10px;border-bottom:1px solid #202c42;box-shadow:0 8px 24px #0008}
 #dmTop>button{width:42px;height:42px;flex:0 0 42px;padding:0;margin:0;border-radius:50%;font-size:23px}
