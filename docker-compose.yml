@@ -6,10 +6,10 @@ services:
       POSTGRES_USER: pvp
       POSTGRES_PASSWORD: pvp
     volumes: [postgres_data:/var/lib/postgresql/data]
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:6379:6379"]
   bot:
     build: .
     command: python -m app.bot
@@ -19,8 +19,9 @@ services:
     build: .
     command: uvicorn app.admin:app --host 0.0.0.0 --port 8000
     env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
     ports: ["8000:8000"]
-    depends_on: [postgres]
+    depends_on: [postgres, redis]
 volumes:
   postgres_data:
-

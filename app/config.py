@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -18,6 +19,9 @@ class Settings(BaseSettings):
         return f"{base}{separator}v={self.webapp_version}"
     database_url: str = "postgresql+asyncpg://pvp:pvp@localhost:5432/pvp_chat"
     redis_url: str = "redis://localhost:6379/0"
+    security_max_concurrent: int = Field(default=100, ge=1)
+    security_max_uploads: int = Field(default=4, ge=1)
+    db_statement_timeout_ms: int = Field(default=5000, ge=1)
     admin_username: str = "admin"
     admin_password: str = "change-this-now"
     public_bot_username: str = "YourBotUsername"

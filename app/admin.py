@@ -16,6 +16,8 @@ from app.bot import router as bot_router
 from app.miniapp import router as mini_router
 
 app = FastAPI(title="PVP Chat Admin", docs_url=None); security = HTTPBasic(); cfg = settings()
+from app.security import SecurityMiddleware
+app.add_middleware(SecurityMiddleware, config=cfg)
 app.include_router(mini_router)
 from app.direct import router as direct_router
 app.include_router(direct_router)

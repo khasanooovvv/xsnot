@@ -29,6 +29,10 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/security-client.js')
+async def security_client_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'security-client.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
+
 @router.get('/assets/direct.js')
 async def direct_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
@@ -120,6 +124,7 @@ def normalize_photo(content):
             if source.width * source.height > 40000000:
                 raise ValueError()
             image = ImageOps.exif_transpose(source).convert('RGB')
+            image.thumbnail((2048, 2048))
             output = io.BytesIO()
             image.save(output, format='PNG', compress_level=1)
             return {'image': 'data:image/png;base64,' + base64.b64encode(output.getvalue()).decode()}
@@ -430,7 +435,7 @@ class Registration(BaseModel):
     birthday: date
     city: str = Field(min_length=2, max_length=100)
     accepted: Literal[True]
-    avatar: str | None = Field(default=None, max_length=160000000)
+    avatar: str | None = Field(default=None, max_length=2000000)
 
 @router.post('/api/register')
 async def register(body: Registration, uid=Depends(identity)):
@@ -442,9 +447,9 @@ async def register(body: Registration, uid=Depends(identity)):
             raw = base64.b64decode(body.avatar.split(',', 1)[1], validate=True)
             with Image.open(io.BytesIO(raw)) as im:
                 if im.width * im.height > 40000000: raise ValueError()
-                im = im.convert('RGB')
-                out = io.BytesIO(); im.save(out, format='PNG', compress_level=1)
-                avatar = 'data:image/png;base64,' + base64.b64encode(out.getvalue()).decode()
+                im = ImageOps.fit(ImageOps.exif_transpose(im).convert('RGB'), (1024, 1024))
+                out = io.BytesIO(); im.save(out, format='JPEG', quality=90)
+                avatar = 'data:image/jpeg;base64,' + base64.b64encode(out.getvalue()).decode()
         except Exception: raise HTTPException(422, 'Rasmni qayta tanlang.')
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730019)'))
@@ -727,6 +732,8 @@ async def image_message(match: int = Form(...), image: UploadFile = File(...), u
         raise HTTPException(422, 'Rasm 10 MB dan kichik bo‘lishi kerak.')
     try:
         with Image.open(io.BytesIO(content)) as source:
+            if source.width * source.height > 40000000:
+                raise ValueError('Image too large')
             source.verify()
     except Exception:
         raise HTTPException(422, 'Rasmni ochib bo‘lmadi.')
