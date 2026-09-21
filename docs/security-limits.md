@@ -60,9 +60,23 @@ limits are weaker and are not shared across replicas. Upload Redis leases expire
 Docker Compose binds database/Redis host ports to loopback; admin connects to Redis over
 the private Compose network. Keep Redis and Postgres inaccessible from the public internet.
 
-Set FORWARDED_ALLOW_IPS only to known reverse-proxy IPs/CIDRs. The app uses the ASGI client
-address and ignores raw forwarded headers. Do not use `*` while the origin is publicly
-reachable; incorrect proxy configuration either shares one IP bucket or enables spoofing.
+Railway documents `X-Real-IP` as the remote client IP:
+https://docs.railway.com/networking/public-networking/specs-and-limits
+When Railway supplies RAILWAY_ENVIRONMENT_ID, the app accepts exactly one valid X-Real-IP
+only from an exact peer in SECURITY_TRUSTED_PROXY_IPS. Defaults are the explicit peers
+observed in this deployment's access logs, not an official Railway IP range. Other
+peers, missing/duplicate/malformed headers fall back to the socket peer. IPv6 and mapped
+IPv4 addresses are normalized. X-Forwarded-For and client-supplied Railway markers do
+not establish trust. Outside Railway, forwarded client IP headers are ignored.
+
+Docker and Compose start Uvicorn with --no-proxy-headers: this is required to preserve
+the original socket peer. Keep that flag in any custom start command; do not replace
+it with FORWARDED_ALLOW_IPS=*. Private-service peers must not be added to the trusted
+list. The deployment relies on Railway replacing X-Real-IP at its edge. Verify that
+assumption with an external forged-header probe after deploy. New Railway proxy peers
+must be verified and added explicitly; an unlisted peer fails closed to socket identity,
+which can weaken per-client limiting and group unrelated clients. No broad private or
+carrier-grade NAT range is implicitly trusted.
 
 Cloudflare/WAF, origin firewall restrictions, external attack alerts, and load testing
 are deployment tasks: they are NOT configured by these code changes. Origin-specific

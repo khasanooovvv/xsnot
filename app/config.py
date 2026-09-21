@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     archive_channel_id: str = "-1004388937618"
     mini_app_url: str = ""
     railway_public_domain: str = ""
+    railway_environment_id: str = ""
+    # Explicit peers observed in this deployment's Railway access logs, not a
+    # claimed provider-wide CIDR. Extend only after verifying new proxy peers.
+    security_trusted_proxy_ips: str = "100.64.0.1,100.64.0.4,100.64.0.5,100.64.0.6,100.64.0.8,100.64.0.10,100.64.0.12,100.64.0.13,100.64.0.16,100.64.0.17,100.64.0.18,100.64.0.19,100.64.0.21"
     webapp_version: str = "20260915-2"
 
     @property

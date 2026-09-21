@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
 import math
@@ -18,6 +19,32 @@ from starlette.responses import JSONResponse
 
 log = logging.getLogger(__name__)
 MB = 1024 * 1024
+
+
+def canonical_ip(value):
+    """Reject lists, ports, zone IDs, hostnames and ambiguous header values."""
+    if '%' in value:
+        raise ValueError('Scoped IP is not a client identity')
+    address = ipaddress.ip_address(value)
+    return str(address.ipv4_mapped or address) if isinstance(address, ipaddress.IPv6Address) else str(address)
+
+
+def client_ip(scope, trusted_peers):
+    # Requires raw socket peers: deployment starts Uvicorn with --no-proxy-headers.
+    peer = (scope.get('client') or ('unknown',))[0]
+    try:
+        peer = canonical_ip(peer)
+    except ValueError:
+        return 'unknown'
+    if peer not in trusted_peers:
+        return peer
+    values = [value for name, value in scope.get('headers', []) if name.lower() == b'x-real-ip']
+    if len(values) != 1:
+        return peer
+    try:
+        return canonical_ip(values[0].decode('ascii').strip())
+    except (ValueError, UnicodeDecodeError):
+        return peer
 
 # Atomic rolling windows: denied attempts do not extend the window.
 WINDOW = """
@@ -162,6 +189,10 @@ class SecurityMiddleware:
         self.store = store or LimitStore(config.redis_url)
         self.active = 0
         self.uploads = 0
+        self.trusted_peers = set()
+        if getattr(config, 'railway_environment_id', ''):
+            self.trusted_peers = {canonical_ip(value.strip()) for value in
+                                  getattr(config, 'security_trusted_proxy_ips', '').split(',') if value.strip()}
 
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
@@ -196,8 +227,7 @@ class SecurityMiddleware:
         started = False
         try:
             headers = dict(scope.get('headers', []))
-            # Uvicorn resolves trusted proxy headers; never trust raw X-Forwarded-For here.
-            ip = (scope.get('client') or ('unknown',))[0]
+            ip = client_ip(scope, self.trusted_peers)
             ip_key = hashlib.sha256(ip.encode()).hexdigest()
             if api:
                 uid = verified_uid(headers.get(b'x-telegram-init-data', b'').decode('latin1'), self.config.bot_token)

@@ -13,6 +13,56 @@ import pytest
 from starlette.responses import JSONResponse
 
 from app.security import LimitStore, SecurityMiddleware, body_limit, policy, verified_uid
+from app.security import client_ip
+
+
+@pytest.mark.parametrize('value', [b'garbage', b'1.2.3.4,5.6.7.8', b'1.2.3.4:80', b'fe80::1%eth0', b'\xff'])
+def test_invalid_real_ip_falls_back_to_peer(value):
+    scope = {'client': ('100.64.0.1', 1234), 'headers': [(b'x-real-ip', value)]}
+    assert client_ip(scope, {'100.64.0.1'}) == '100.64.0.1'
+
+
+def test_real_ip_trust_and_normalization():
+    scope = {'client': ('100.64.0.1', 1234), 'headers': [(b'x-real-ip', b'::ffff:203.0.113.7')]}
+    assert client_ip(scope, {'100.64.0.1'}) == '203.0.113.7'
+    assert client_ip(scope, set()) == '100.64.0.1'
+    scope['headers'].append((b'x-real-ip', b'203.0.113.8'))
+    assert client_ip(scope, {'100.64.0.1'}) == '100.64.0.1'
+    scope['headers'] = [(b'x-forwarded-for', b'203.0.113.7')]
+    assert client_ip(scope, {'100.64.0.1'}) == '100.64.0.1'
+
+
+@pytest.mark.asyncio
+async def test_rotating_trusted_proxies_share_client_budget_without_blocking_other_clients():
+    async def forbidden(*args):
+        pytest.fail('Unsigned request reached app')
+    config = SimpleNamespace(redis_url='', bot_token='test-token', security_max_concurrent=100,
+                             security_max_uploads=4, railway_environment_id='production',
+                             security_trusted_proxy_ips='100.64.0.1,100.64.0.4')
+    app = SecurityMiddleware(forbidden, config, store())
+    for i in range(31):
+        peer = '100.64.0.1' if i % 2 else '100.64.0.4'
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=(peer, 1234)), base_url='http://test') as client:
+            r = await client.get('/api/me', headers={'X-Real-IP': '203.0.113.7'})
+            assert r.status_code == (401 if i < 30 else 429)
+    assert r.headers['Retry-After'] == '300'
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=('100.64.0.1', 1234)), base_url='http://test') as client:
+        assert (await client.get('/api/me', headers={'X-Real-IP': '203.0.113.8'})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_untrusted_client_cannot_rotate_real_ip_to_bypass_limit():
+    app = middleware(echo)
+    app.trusted_peers = {'100.64.0.1'}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=('203.0.113.9', 1234)), base_url='http://test') as client:
+        for i in range(31):
+            r = await client.get('/api/me', headers={'X-Real-IP': f'198.51.100.{i}', 'X-Railway-Edge': 'fake', 'X-Forwarded-For': '100.64.0.1'})
+            assert r.status_code == (401 if i < 30 else 429)
+
+
+def test_proxy_trust_disabled_outside_railway():
+    app = middleware(echo)
+    assert app.trusted_peers == set()
 
 
 def signed(uid=1):
