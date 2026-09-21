@@ -24,6 +24,10 @@
   object-fit: contain;
 }
 
+#chatBack .back-icon {
+  transform: translateX(3px);
+}
+
 body.chat-searching #chatBack {
   display: flex;
 }
