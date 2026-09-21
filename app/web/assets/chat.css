@@ -1,10 +1,11 @@
 #chatBack {
-  display: none;
-  flex: 0 0 42px;
-  width: 42px;
-  height: 42px;
-  margin: 0;
-  padding: 0;
+  display: none !important;
+  flex: 0 0 42px !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border: 1px solid #3b4963;
   border-radius: 50%;
   background: #273142;
