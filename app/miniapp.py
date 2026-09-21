@@ -89,6 +89,10 @@ async def chat_media_styles():
 async def trophy_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'trophy.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/trophy-silver.png')
+async def silver_trophy_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'trophy-silver.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
