@@ -1,7 +1,7 @@
 (() => {
   const el=id=>document.getElementById(id);
   const root=document.createElement('section');root.id='dmWindow';root.hidden=true;
-  root.innerHTML=`<div id="dmTop"><button id="dmBack" aria-label="Orqaga">←</button><div id="dmPartner"></div><button id="dmMenu" aria-label="Chat menyusi">⋮</button></div><div id="dmNotice" role="status" hidden></div><div id="dmMessages" aria-live="polite"></div><div id="dmEditBar" hidden>Tahrirlash <button id="dmCancelEdit" type="button">Bekor qilish</button></div><form id="dmForm"><input id="dmInput" maxlength="2000" placeholder="Xabar yozing…" autocomplete="off" aria-label="Xabar" required><button aria-label="Yuborish"><svg viewBox="0 0 24 24"><path d="M21 3 10.4 13.6M21 3l-6.8 18-3.8-7.4L3 9.8 21 3Z"/></svg></button></form>`;
+  root.innerHTML=`<div id="dmTop"><button id="dmBack" aria-label="Orqaga">${typeof userBackIconMarkup==='function'?userBackIconMarkup():'←'}</button><div id="dmPartner"></div><button id="dmMenu" aria-label="Chat menyusi">⋮</button></div><div id="dmNotice" role="status" hidden></div><div id="dmMessages" aria-live="polite"></div><div id="dmEditBar" hidden>Tahrirlash <button id="dmCancelEdit" type="button">Bekor qilish</button></div><form id="dmForm"><input id="dmInput" maxlength="2000" placeholder="Xabar yozing…" autocomplete="off" aria-label="Xabar" required><button aria-label="Yuborish"><svg viewBox="0 0 24 24"><path d="M21 3 10.4 13.6M21 3l-6.8 18-3.8 7.4L3 9.8 21 3Z"/></svg></button></form>`;
   document.body.append(root);
   const dialog=document.createElement('dialog');dialog.id='dmActions';document.body.append(dialog);
   const list=document.createElement('div');list.id='dmList';
