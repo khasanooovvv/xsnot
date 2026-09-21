@@ -29,22 +29,23 @@ def canonical_ip(value):
     return str(address.ipv4_mapped or address) if isinstance(address, ipaddress.IPv6Address) else str(address)
 
 
-def client_ip(scope, trusted_peers):
-    # Requires raw socket peers: deployment starts Uvicorn with --no-proxy-headers.
+def client_ip(scope, railway_edge=False):
+    # Railway's HTTP edge always overwrites X-Real-IP. This is a deployment
+    # trust boundary, not a header-controlled flag or a guessed proxy subnet.
+    if railway_edge:
+        values = [value for name, value in scope.get('headers', []) if name.lower() == b'x-real-ip']
+        if len(values) != 1:
+            raise ValueError('Missing or duplicate edge client IP')
+        try:
+            return canonical_ip(values[0].decode('ascii').strip())
+        except UnicodeDecodeError as exc:
+            raise ValueError('Invalid edge client IP') from exc
+    # Outside that deployment boundary ignore all client-supplied IP headers.
     peer = (scope.get('client') or ('unknown',))[0]
     try:
-        peer = canonical_ip(peer)
+        return canonical_ip(peer)
     except ValueError:
         return 'unknown'
-    if peer not in trusted_peers:
-        return peer
-    values = [value for name, value in scope.get('headers', []) if name.lower() == b'x-real-ip']
-    if len(values) != 1:
-        return peer
-    try:
-        return canonical_ip(values[0].decode('ascii').strip())
-    except (ValueError, UnicodeDecodeError):
-        return peer
 
 # Atomic rolling windows: denied attempts do not extend the window.
 WINDOW = """
@@ -189,10 +190,11 @@ class SecurityMiddleware:
         self.store = store or LimitStore(config.redis_url)
         self.active = 0
         self.uploads = 0
-        self.trusted_peers = set()
-        if getattr(config, 'railway_environment_id', ''):
-            self.trusted_peers = {canonical_ip(value.strip()) for value in
-                                  getattr(config, 'security_trusted_proxy_ips', '').split(',') if value.strip()}
+        self.railway_edge = bool(getattr(config, 'security_trust_railway_edge', True)
+                                 and getattr(config, 'railway_environment_id', '')
+                                 and getattr(config, 'railway_public_domain', ''))
+        if self.railway_edge and getattr(config, 'railway_tcp_proxy_domain', ''):
+            raise ValueError('Railway HTTP client-IP trust requires no TCP proxy on this service')
 
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
@@ -227,7 +229,10 @@ class SecurityMiddleware:
         started = False
         try:
             headers = dict(scope.get('headers', []))
-            ip = client_ip(scope, self.trusted_peers)
+            try:
+                ip = client_ip(scope, self.railway_edge)
+            except ValueError:
+                return await reject(400, 'So‘rov manzili aniqlanmadi. Qayta urinib ko‘ring.')
             ip_key = hashlib.sha256(ip.encode()).hexdigest()
             if api:
                 uid = verified_uid(headers.get(b'x-telegram-init-data', b'').decode('latin1'), self.config.bot_token)

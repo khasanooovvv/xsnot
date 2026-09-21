@@ -62,21 +62,31 @@ the private Compose network. Keep Redis and Postgres inaccessible from the publi
 
 Railway documents `X-Real-IP` as the remote client IP:
 https://docs.railway.com/networking/public-networking/specs-and-limits
-When Railway supplies RAILWAY_ENVIRONMENT_ID, the app accepts exactly one valid X-Real-IP
-only from an exact peer in SECURITY_TRUSTED_PROXY_IPS. Defaults are the explicit peers
-observed in this deployment's access logs, not an official Railway IP range. Other
-peers, missing/duplicate/malformed headers fall back to the socket peer. IPv6 and mapped
-IPv4 addresses are normalized. X-Forwarded-For and client-supplied Railway markers do
-not establish trust. Outside Railway, forwarded client IP headers are ignored.
+Railway staff confirm that the HTTP proxy always sets/overwrites X-Real-IP and HTTP
+deployments cannot be accessed directly from the internet:
+https://station.railway.com/questions/need-authoritative-railway-client-ip-p-b7a7b4bd
+Railway publishes no stable proxy CIDRs. Trust is therefore based on the managed HTTP
+ingress boundary, not on a guessed network or a snapshot of proxy addresses.
+
+Edge mode activates only with both RAILWAY_ENVIRONMENT_ID and RAILWAY_PUBLIC_DOMAIN
+and SECURITY_TRUST_RAILWAY_EDGE=true (default). A configured RAILWAY_TCP_PROXY_DOMAIN
+causes startup to refuse this mode. Do not add TCP ingress to this service or expose
+its port through another tunnel. All services within the private project network
+must be trusted: the platform's public-edge guarantee does not authenticate private
+callers. Do not enable edge mode for a self-hosted/directly reachable deployment.
+
+In edge mode, exactly one valid X-Real-IP is required for protected routes. Missing,
+duplicate or malformed values produce 400 before rate counters or database access;
+there is no fallback to changing proxy IPs. IPv6/mapped IPv4 are normalized. Outside
+edge mode, all supplied IP headers are ignored and the socket peer is used.
 
 Docker and Compose start Uvicorn with --no-proxy-headers: this is required to preserve
 the original socket peer. Keep that flag in any custom start command; do not replace
-it with FORWARDED_ALLOW_IPS=*. Private-service peers must not be added to the trusted
-list. The deployment relies on Railway replacing X-Real-IP at its edge. Verify that
-assumption with an external forged-header probe after deploy. New Railway proxy peers
-must be verified and added explicitly; an unlisted peer fails closed to socket identity,
-which can weaken per-client limiting and group unrelated clients. No broad private or
-carrier-grade NAT range is implicitly trusted.
+it with FORWARDED_ALLOW_IPS=*. No IP list maintenance is needed when Railway changes
+proxies. SECURITY_TRUST_RAILWAY_EDGE=false disables the platform-specific mode.
+After deploy, verify 30 unsigned requests return 401, the 31st returns 429, and every
+subsequent request (including forged X-Real-IP and X-Forwarded-For values) stays limited.
+These tests do not validate a whole DDoS defense or count as a capacity/load test.
 
 Cloudflare/WAF, origin firewall restrictions, external attack alerts, and load testing
 are deployment tasks: they are NOT configured by these code changes. Origin-specific
