@@ -1,0 +1,48 @@
+#chatBack {
+  display: none;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #3b4963;
+  border-radius: 50%;
+  background: #273142;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 500;
+  align-items: center;
+  justify-content: center;
+}
+
+#chatBack .back-icon,
+#dmBack .back-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+body.chat-searching #chatBack {
+  display: flex;
+}
+
+body.chat-searching #chatSearchHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  margin-bottom: 8px;
+  padding-left: 10px;
+}
+
+body.chat-searching #chatTitle {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+body.chat-fullscreen #chatSearchHeader {
+  display: none;
+}
