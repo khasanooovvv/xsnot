@@ -9,7 +9,7 @@ class HTTPException(Exception):
 
 class VideoReviewTests(unittest.IsolatedAsyncioTestCase):
     def setup_review(self):
-        user=Obj(silver_verified=False,is_verified=False,gold_until='existing gold')
+        user=Obj(silver_verified=False,is_verified=False,gold_until='existing gold',language='uz')
         row=Obj(status='pending',video=b'private video',media_type='video/mp4')
         class Session:
             async def __aenter__(self):return self
@@ -20,26 +20,28 @@ class VideoReviewTests(unittest.IsolatedAsyncioTestCase):
         fn=next(n for n in tree.body if isinstance(n,ast.AsyncFunctionDef) and n.name=='review')
         fn.decorator_list=[]
         for arg in fn.args.args:arg.annotation=None
-        scope=dict(SessionLocal=Session,User='User',VideoVerification='Video',HTTPException=HTTPException,datetime=datetime,UTC=UTC)
+        async def send_result(*args, **kwargs): pass
+        scope=dict(SessionLocal=Session,User='User',VideoVerification='Video',HTTPException=HTTPException,datetime=datetime,UTC=UTC,send_verification_result=send_result)
         exec(compile(ast.Module(body=[fn],type_ignores=[]),'<actual review>','exec'),scope)
         return scope['review'],user,row
 
     async def test_approval_grants_silver_and_erases_video_only(self):
         review,user,row=self.setup_review()
-        self.assertEqual(await review(1,Obj(approved=True,reason='')),{'status':'approved'})
+        request=Obj(app=Obj(state=Obj(bot=None)))
+        self.assertEqual(await review(request,1,Obj(approved=True,reason='')),{'status':'approved'})
         self.assertTrue(user.silver_verified);self.assertFalse(user.is_verified)
         self.assertEqual(user.gold_until,'existing gold');self.assertIsNone(row.video)
-        with self.assertRaises(HTTPException):await review(1,Obj(approved=True,reason=''))
+        with self.assertRaises(HTTPException):await review(request,1,Obj(approved=True,reason=''))
 
     async def test_rejection_preserves_reason_and_erases_video(self):
         review,user,row=self.setup_review()
-        await review(1,Obj(approved=False,reason='Code not audible'))
+        await review(Obj(app=Obj(state=Obj(bot=None))),1,Obj(approved=False,reason='Code not audible'))
         self.assertFalse(user.silver_verified);self.assertIsNone(row.video)
         self.assertEqual(row.reason,'Code not audible');self.assertEqual(row.status,'rejected')
 
     async def test_empty_rejection_reason_is_not_accepted(self):
         review,user,row=self.setup_review()
-        with self.assertRaises(HTTPException):await review(1,Obj(approved=False,reason=' '))
+        with self.assertRaises(HTTPException):await review(Obj(),1,Obj(approved=False,reason=' '))
         self.assertEqual(row.status,'pending');self.assertIsNotNone(row.video)
 
     def test_admin_router_has_auth_dependency(self):
@@ -50,7 +52,7 @@ class VideoReviewTests(unittest.IsolatedAsyncioTestCase):
 
 class DirectVideoUploadTests(unittest.IsolatedAsyncioTestCase):
     async def test_upload_needs_no_code_and_prevents_pending_replacement(self):
-        user=Obj(silver_verified=False)
+        user=Obj(silver_verified=False,archive_consent_at=None)
         records=[]
         class Session:
             async def __aenter__(self):return self
@@ -66,10 +68,10 @@ class DirectVideoUploadTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('code',[a.arg for a in fn.args.args])
         fn.decorator_list=[];fn.args.defaults=[]
         for arg in fn.args.args:arg.annotation=None
-        scope=dict(SessionLocal=Session,User='User',VideoVerification=Obj,HTTPException=HTTPException,datetime=datetime,UTC=UTC,MAX_VIDEO_BYTES=15*1024*1024)
+        scope=dict(SessionLocal=Session,User='User',VideoVerification=Obj,HTTPException=HTTPException,datetime=datetime,UTC=UTC,MAX_VIDEO_BYTES=15*1024*1024,settings=lambda:Obj(archive_channel_id=''))
         exec(compile(ast.Module(body=[fn],type_ignores=[]),'<actual submit>','exec'),scope)
-        self.assertEqual(await scope['submit'](Upload(),True,123),{'status':'pending'})
+        self.assertEqual(await scope['submit'](Obj(),Upload(),True,False,123),{'status':'pending'})
         self.assertTrue(records[0].video)
-        with self.assertRaises(HTTPException):await scope['submit'](Upload(),True,123)
+        with self.assertRaises(HTTPException):await scope['submit'](Obj(),Upload(),True,False,123)
         records[0].status='rejected'
-        self.assertEqual(await scope['submit'](Upload(),True,123),{'status':'pending'})
+        self.assertEqual(await scope['submit'](Obj(),Upload(),True,False,123),{'status':'pending'})

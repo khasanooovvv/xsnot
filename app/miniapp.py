@@ -350,6 +350,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
     if len(name) < 2:
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
     handle = body.app_username.strip().removeprefix('@').lower() if body.app_username is not None else None
+    usernames = getattr(body, 'usernames', None)
     if handle and not re.fullmatch(r'[a-z][a-z0-9_]{0,23}', handle):
         raise HTTPException(422, 'Username 1–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin va harf bilan boshlansin.')
     avatar = None
@@ -366,14 +367,14 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         except Exception:
             raise HTTPException(422, 'Rasm ochilmadi. Boshqa rasm tanlang.')
     async with SessionLocal() as s:
-        handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in body.usernames if x.strip()])) if body.usernames is not None else ([handle] if handle else [])
+        handles = list(dict.fromkeys([x.strip().removeprefix('@').lower() for x in usernames if x.strip()])) if usernames is not None else ([handle] if handle else [])
         if handle and handle not in handles:
             handles.insert(0, handle)
         if handle:
             owner = await s.scalar(select(User.telegram_id).where(User.app_username == handle))
             if owner is not None and owner != uid:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
-        if body.usernames is not None:
+        if usernames is not None:
             primary_taken = (await s.scalars(select(User).where(User.app_username.in_(handles), User.telegram_id != uid))).first()
             if primary_taken:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
@@ -381,7 +382,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             if taken:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
-        if body.usernames is not None:
+        if usernames is not None:
             badges = badge_status(user)
             if not badges['gold'] and not badges['verified'] and any(len(item) == 5 for item in handles):
                 raise HTTPException(422, '5 belgili username faqat Gold bilan ishlaydi.')
@@ -393,7 +394,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
                     raise HTTPException(422, 'Username formati noto‘g‘ri.')
             handle = handles[0] if handles else None
         user.display_name = name
-        if body.usernames is not None:
+        if usernames is not None:
             # Clear the unique primary value before replacing the ordered
             # username set. This makes reordering deterministic even when the
             # new primary username was previously an additional username.
@@ -423,7 +424,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
         data.pop('referrals', None)
         # Return the exact order submitted by the editor immediately.  This
         # keeps the UI authoritative even before a later profile refresh.
-        if body.usernames is not None:
+        if usernames is not None:
             data['app_username'] = handle
             data['usernames'] = handles
         data.update(birthday=user.birth_date, gender=user.gender)
