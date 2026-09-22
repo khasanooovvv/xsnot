@@ -8,9 +8,20 @@
     const target=()=>document.querySelector('#profileEditor form')||document.querySelector('header');
     if(!target())return;
     const button=document.createElement('button');
-    button.className='theme-toggle'; button.type='button'; button.title='Mavzuni almashtirish';
-    const sync=()=>{const dark=body.classList.toggle('theme-dark');localStorage.setItem('pvp-theme',dark?'dark':'light');button.textContent=dark?'☀':'☾';button.setAttribute('aria-label',dark?'Yorug‘ rejimga o‘tish':'Qorong‘u rejimga o‘tish')};
-    button.onclick=sync; button.textContent=initial==='dark'?'☀':'☾';
+    button.className='theme-toggle'; button.type='button'; button.setAttribute('role','switch');
+    const label=document.createElement('span'); label.className='theme-toggle-label';
+    const track=document.createElement('span'); track.className='theme-toggle-track';
+    const knob=document.createElement('span'); knob.className='theme-toggle-knob';
+    track.append(knob); button.append(label,track);
+    const sync=dark=>{
+      body.classList.toggle('theme-dark',dark);
+      localStorage.setItem('pvp-theme',dark?'dark':'light');
+      label.textContent=dark?'Dark mode':'Light mode';
+      button.setAttribute('aria-checked',dark?'true':'false');
+      button.setAttribute('aria-label',dark?'Dark mode yoqilgan':'Light mode yoqilgan');
+    };
+    button.onclick=()=>sync(!body.classList.contains('theme-dark'));
+    sync(initial==='dark');
     const mount=()=>{const host=target();if(host&&button.parentElement!==host)host.append(button)};
     mount();if(!button.parentElement)setTimeout(mount,0);
   }
