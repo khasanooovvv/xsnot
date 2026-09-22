@@ -93,6 +93,14 @@ async def trophy_icon():
 async def silver_trophy_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'trophy-silver.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/lock-gold.png')
+async def gold_lock_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'lock-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/gold-card.png')
+async def gold_card_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'gold-card.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/assets/back-gold.png')
 async def gold_back_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'back-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})

@@ -43,7 +43,7 @@
     } catch (_) {}
     if (current !== generation || !dialog.open) return;
     if (!goldActive) {
-      $('partnerProfileContent').innerHTML = '<p class="gold-lock">🔒 Partner profilini ko‘rish faqat Gold obunachilar uchun mavjud.</p><button id="buyGold" type="button">🥇 Gold sotib olish</button>';
+      $('partnerProfileContent').innerHTML = '<img class="gold-lock-icon" src="/assets/lock-gold.png" alt="Qulflangan"><p class="gold-lock">Partner profilini ko‘rish faqat Gold obunachilar uchun mavjud.</p><button id="buyGold" type="button"><img class="gold-card-icon" src="/assets/gold-card.png" alt="">Gold sotib olish</button>';
       $('buyGold').onclick = () => notice('Gold to‘lov tizimi tez orada qo‘shiladi.');
       return;
     }
