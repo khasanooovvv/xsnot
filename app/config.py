@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     default_avatar_url: str = "https://api.dicebear.com/9.x/initials/png?seed=Player"
     terms_version: str = "2026-09-13"
     min_age: int = 18
-    referral_daily_share_limit: int = 15
-    silver_referral_daily_share_limit: int = 30
+    referral_daily_share_limit: int = 100
+    silver_referral_daily_share_limit: int = 100
     premium_referrals: int = 5
     gold_referrals: int = 50
     reward_days: int = 30
