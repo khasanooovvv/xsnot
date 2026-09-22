@@ -101,6 +101,30 @@ async def gold_back_icon():
 async def silver_back_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'back-silver.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/profile-female.png')
+async def profile_female_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-female.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/profile-female-gold.png')
+async def profile_female_gold_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-female-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/profile-male.png')
+async def profile_male_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-male.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/profile-male-gold.png')
+async def profile_male_gold_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-male-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/dm.png')
+async def dm_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'dm.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/dm-gold.png')
+async def dm_gold_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'dm-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
