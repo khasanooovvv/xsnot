@@ -23,7 +23,7 @@ from app.config import settings
 from app.services.badges import badge_status
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
-from app.models import User, UserUsername, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation
+from app.models import User, UserUsername, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation, RouletteUsage
 from app.services.users import get_or_create, age_on, days_left, apply_referral_reward, referral_count, consume_share
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
@@ -541,6 +541,15 @@ async def search(body: Search, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         user = await s.get(User, uid, with_for_update=True)
+        if body.roulette and not badge_status(user)['gold']:
+            today = datetime.now(UTC).date()
+            usage = (await s.scalars(select(RouletteUsage).where(RouletteUsage.user_id == uid, RouletteUsage.usage_day == today).with_for_update())).first()
+            if usage and usage.count >= 10:
+                raise HTTPException(429, 'Oddiy foydalanuvchi uchun kunlik 10 ta roulette limiti tugadi. Gold obunaga o‘ting.')
+            if usage:
+                usage.count += 1
+            else:
+                s.add(RouletteUsage(user_id=uid, usage_day=today, count=1))
         if settings().archive_channel_id and not user.archive_consent_at and not body.archive_consent:
             raise HTTPException(422, 'Chat qoidalariga rozilik bering.')
         if body.archive_consent and not user.archive_consent_at:

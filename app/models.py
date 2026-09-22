@@ -90,6 +90,14 @@ class ReferralShare(Base):
     share_day: Mapped[date] = mapped_column(Date)
     count: Mapped[int] = mapped_column(Integer, default=0)
 
+class RouletteUsage(Base):
+    __tablename__ = "roulette_usage"
+    __table_args__ = (UniqueConstraint("user_id", "usage_day", name="daily_roulette_usage"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True)
+    usage_day: Mapped[date] = mapped_column(Date)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+
 class ReferralHistory(Base):
     __tablename__ = "referral_history"
     __table_args__ = (UniqueConstraint("referrer_id", "referred_id", name="unique_referral_history"),)

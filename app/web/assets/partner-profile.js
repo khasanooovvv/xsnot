@@ -35,6 +35,18 @@
     $('partnerProfileContent').textContent = 'Profil yuklanmoqda…';
     document.activeElement?.blur();
     dialog.showModal();
+    let goldActive = Number(me?.gold) > 0;
+    try {
+      const gold = await api('me/gold');
+      const now = Date.parse(gold.server_now || new Date().toISOString());
+      goldActive = Boolean(gold.gold_until && Date.parse(gold.gold_until) > now);
+    } catch (_) {}
+    if (current !== generation || !dialog.open) return;
+    if (!goldActive) {
+      $('partnerProfileContent').innerHTML = '<p class="gold-lock">🔒 Partner profilini ko‘rish faqat Gold obunachilar uchun mavjud.</p><button id="buyGold" type="button">🥇 Gold sotib olish</button>';
+      $('buyGold').onclick = () => notice('Gold to‘lov tizimi tez orada qo‘shiladi.');
+      return;
+    }
     try {
       const result = await api('chat/partner?match_id=' + encodeURIComponent(id));
       if (current !== generation || match !== id || !dialog.open || result.match !== id) return;

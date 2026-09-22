@@ -208,6 +208,7 @@ let userSearchTimer=null,userSearchRequest=0;async function searchUsers(){const 
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   const version=++navVersion, page=b.dataset.page;
+  if(page==='instagram'&&Number(me?.gold)<=0){notice('🔒 DM chat faqat Gold obunachilar uchun mavjud.');return}
   if(page==='profile'&&me)renderProfile();
   show(page==='home'&&match?'chat':page);
   if(page==='profile'){
