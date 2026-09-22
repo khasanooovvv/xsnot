@@ -29,6 +29,13 @@ class DirectMessage(Base):
     is_edited: Mapped[bool] = mapped_column(Boolean, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
+class DirectMessageDeletion(Base):
+    __tablename__ = 'direct_message_deletions'
+    __table_args__ = (UniqueConstraint('message_id', 'user_id'),)
+    message_id: Mapped[int] = mapped_column(ForeignKey('direct_messages.id', ondelete='CASCADE'), primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), primary_key=True)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
 
 class DirectRead(Base):
     __tablename__ = 'direct_chat_reads'

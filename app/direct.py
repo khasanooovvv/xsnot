@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, delete, func, or_, text
 from app.database import SessionLocal
 from app.models import User, MiniAvatar
-from app.direct_models import DirectChat, DirectMessage, DirectRead, ChatDeletion, BlockedUser, UserPresence
+from app.direct_models import DirectChat, DirectMessage, DirectRead, ChatDeletion, BlockedUser, UserPresence, DirectMessageDeletion
 from app.miniapp import registered
 from app.services.badges import badge_status
 from app.services.direct_notifications import notify_direct_message
@@ -151,7 +151,8 @@ async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0),
     if since_revision is not None and before_id is not None: raise HTTPException(422, 'Bitta kursor yuboring.')
     async with SessionLocal() as s:
         c, other = await access(s, chat_id, uid)
-        query = select(DirectMessage).where(DirectMessage.chat_id == chat_id)
+        hidden_messages = select(DirectMessageDeletion.message_id).where(DirectMessageDeletion.message_id == DirectMessage.id, DirectMessageDeletion.user_id == uid)
+        query = select(DirectMessage).where(DirectMessage.chat_id == chat_id, DirectMessage.id.not_in(hidden_messages))
         if since_revision is not None:
             query = query.where(DirectMessage.revision > since_revision).order_by(DirectMessage.revision)
         else:
@@ -213,8 +214,16 @@ async def edit(chat_id: int, message_id: int, body: TextBody, uid=Depends(regist
     return await change_message(chat_id, message_id, uid, body.text)
 
 @router.delete('/chats/{chat_id}/messages/{message_id}')
-async def remove_message(chat_id: int, message_id: int, uid=Depends(registered)):
-    return await change_message(chat_id, message_id, uid)
+async def remove_message(chat_id: int, message_id: int, scope: str = Query('both', pattern='^(self|both)$'), uid=Depends(registered)):
+    if scope == 'both': return await change_message(chat_id, message_id, uid)
+    async with SessionLocal() as s:
+        c, _ = await access(s, chat_id, uid)
+        m = await s.get(DirectMessage, message_id)
+        if not m or m.chat_id != chat_id: raise HTTPException(404, 'Xabar topilmadi.')
+        s.add(DirectMessageDeletion(message_id=message_id, user_id=uid, deleted_at=now()))
+        c.revision += 1; m.revision, m.updated_at = c.revision, now()
+        await s.commit()
+        return message_data(m, uid)
 
 @router.post('/chats/{chat_id}/read')
 async def mark_read(chat_id: int, body: ReadBody, uid=Depends(registered)):
@@ -230,16 +239,13 @@ async def mark_read(chat_id: int, body: ReadBody, uid=Depends(registered)):
     return {'ok': True}
 
 @router.delete('/chats/{chat_id}')
-async def hide_chat(chat_id: int, uid=Depends(registered)):
+async def hide_chat(chat_id: int, scope: str = Query('both', pattern='^(self|both)$'), uid=Depends(registered)):
     async with SessionLocal() as s:
         chat, _ = await access(s, chat_id, uid)
-        # Hiding a direct chat is a destructive history action.  Remove the
-        # messages and read cursors so reopening the contact cannot restore
-        # the old conversation from storage.
-        await s.execute(delete(DirectMessage).where(DirectMessage.chat_id == chat_id))
-        await s.execute(delete(DirectRead).where(DirectRead.chat_id == chat_id))
-        chat.last_message_at = None
-        chat.revision = 0
+        if scope == 'both':
+            await s.execute(delete(DirectMessage).where(DirectMessage.chat_id == chat_id))
+            await s.execute(delete(DirectRead).where(DirectRead.chat_id == chat_id))
+            chat.last_message_at = None; chat.revision = 0
         row = await s.get(ChatDeletion, (chat_id, uid))
         if row: row.deleted_at = now()
         else: s.add(ChatDeletion(chat_id=chat_id, user_id=uid, deleted_at=now()))
