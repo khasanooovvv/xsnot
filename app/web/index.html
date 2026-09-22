@@ -41,8 +41,8 @@ nav#nav .nav-depth{fill:var(--icon-edge);stroke:var(--icon-edge);stroke-width:1.
 nav#nav .nav-face{stroke:var(--icon-light);stroke-width:.8}
 nav#nav .nav-detail{fill:none;stroke:#26334f;stroke-width:1.8;filter:drop-shadow(0 1px 0 #ffffff70)}
 nav#nav button.selected{--icon-light:#f0ddff;--icon-dark:#9e67ed;--icon-edge:#6436a0;background:linear-gradient(145deg,#3d305a,#251d3d);box-shadow:inset 0 1px 0 #b992e538,0 3px 7px #0004}
-nav#nav button:hover{background:#29233e}nav#nav button:hover svg,nav#nav button:hover .nav-trophy,nav#nav button:hover .nav-profile-icon,nav#nav button:hover .nav-direct-icon{transform:translateY(-2px)}
-nav#nav button:active svg,nav#nav button:active .nav-trophy,nav#nav button:active .nav-profile-icon,nav#nav button:active .nav-direct-icon{transform:translateY(1px) scale(.96)}
+nav#nav button:hover{background:#29233e}nav#nav button:hover svg,nav#nav button:hover .nav-trophy,nav#nav button:hover .nav-profile-icon,nav#nav button:hover .nav-direct-icon,nav#nav button:hover .nav-roulette-icon{transform:translateY(-2px)}
+nav#nav button:active svg,nav#nav button:active .nav-trophy,nav#nav button:active .nav-profile-icon,nav#nav button:active .nav-direct-icon,nav#nav button:active .nav-roulette-icon{transform:translateY(1px) scale(.96)}
 nav#nav button:focus-visible{outline:2px solid #bda0ff;outline-offset:2px}
 #registration .registration-rules,#registration .registration-consent{display:none!important}
 #pickPhoto.photo-ready{background:#248a58;color:#fff}
@@ -73,7 +73,8 @@ const muteStyle=document.createElement('style');muteStyle.textContent='.mute-ban
 const muteBanner=document.createElement('div');muteBanner.id='muteBanner';muteBanner.className='mute-banner';muteBanner.setAttribute('role','status');muteBanner.hidden=true;$('notice').after(muteBanner);
 const muteOnly=document.createElement('section');muteOnly.id='muteOnly';muteOnly.hidden=true;muteOnly.innerHTML='<div class="mute-card"><h1>🔇 Mute faol</h1><p id="muteOnlyText"></p></div>';document.querySelector('main').append(muteOnly);
 const muteDuration=ms=>{let total=Math.max(0,Math.ceil(ms/1000)),days=Math.floor(total/86400);total%=86400;let hours=Math.floor(total/3600);total%=3600;let minutes=Math.floor(total/60),seconds=total%60;return (days?days+' kun ':'')+(hours?hours+' soat ':'')+(minutes?minutes+' daqiqa ':'')+seconds+' soniya'};
-function syncLeaderboardIcon(){const icon=document.querySelector('nav button[data-page="leaders"] .nav-trophy');if(icon)icon.src=me?.gold?'/assets/trophy.png':'/assets/trophy-silver.png';syncDirectIcon()}
+function syncRouletteIcon(){const button=document.querySelector('nav button[data-page="home"]');if(!button)return;button.innerHTML='<img class="nav-roulette-icon" alt="" src="/assets/roulette'+(Number(me?.gold)>0?'-gold':'')+'.png">'}
+function syncLeaderboardIcon(){const icon=document.querySelector('nav button[data-page="leaders"] .nav-trophy');if(icon)icon.src=me?.gold?'/assets/trophy.png':'/assets/trophy-silver.png';syncDirectIcon();syncRouletteIcon()}
 function syncDirectIcon(){const button=document.querySelector('nav button[data-page="instagram"]');if(!button)return;const gold=Number(me?.gold)>0;button.setAttribute('aria-label','DM');button.title=gold?'Gold DM':'DM';button.innerHTML='<img class="nav-direct-icon" alt="" src="/assets/dm'+(gold?'-gold':'')+'.png">'}
 function syncProfileIcon(){const button=document.querySelector('nav button[data-page="profile"]');if(!button)return;const female=me?.gender==='female',gold=Number(me?.gold)>0;const kind=female?'female':'male';const src='/assets/profile-'+kind+(gold?'-gold':'')+'.png';button.setAttribute('aria-label',female?'Ayol profili':'Erkak profili');button.title=gold?'Gold '+(female?'ayol':'erkak')+' profili':(female?'Ayol':'Erkak')+' profili';button.innerHTML='<img class="nav-profile-icon" alt="" src="'+src+'">'}
 function syncBackIcons(){const src=Number(me?.gold)>0?'/assets/back-gold.png':'/assets/back-silver.png';document.querySelectorAll('.back-icon').forEach(icon=>{icon.src=src})}

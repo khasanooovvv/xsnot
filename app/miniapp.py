@@ -125,6 +125,14 @@ async def dm_icon():
 async def dm_gold_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'dm-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/roulette.png')
+async def roulette_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/roulette-gold.png')
+async def roulette_gold_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'roulette-gold.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/')
 async def index():
     return FileResponse(Path(__file__).parent / 'web' / 'index.html', headers={'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'})
