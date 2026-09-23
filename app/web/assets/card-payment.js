@@ -8,6 +8,10 @@
     const tier = sheet.querySelector('.premium-tier.active');
     if (!plan || !tier) return;
     const price = plan.querySelector('.gold-price').textContent.trim().replace(/(\d)\s+(?=\d)/g, '$1.');
+    const cardData = {
+      UZCARD: {number: '5614 6818 8591 8346', plain: '5614681885918346'},
+      HUMO: {number: '9860 3566 4537 9963', plain: '9860356645379963'}
+    };
     const dialog = document.createElement('dialog');
     dialog.className = 'card-payment';
     dialog.setAttribute('aria-labelledby', 'cardPaymentTitle');
@@ -37,6 +41,11 @@
       choices.hidden = true;
       change.setAttribute('aria-expanded', 'false');
       change.focus();
+      const transferCard = dialog.querySelector('.card-transfer');
+      if (transferCard) {
+        transferCard.querySelector('[data-card-number]').textContent = cardData[event.target.value].number;
+        transferCard.querySelector('[data-card-owner]').textContent = event.target.value + ' · XASANOV SHERZOD';
+      }
     };
     const initialBody = dialog.querySelector('.card-payment-body');
     const footerButton = dialog.querySelector('footer button');
@@ -52,7 +61,7 @@
         <p class="card-transfer-plan"></p>
         <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount">Summani nusxalash</button></div>
         <div class="card-transfer-time"><span>To‘lov uchun vaqt</span><b>5:00</b><progress max="300" value="300" aria-label="Qolgan vaqt"></progress></div>
-        <div class="card-transfer-bank"><small>Qabul qiluvchi karta raqami</small><strong>5614 6818 8591 8346</strong><span>UZCARD · XASANOV SHERZOD</span><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
+        <div class="card-transfer-bank"><small>Qabul qiluvchi karta raqami</small><strong data-card-number>5614 6818 8591 8346</strong><span data-card-owner>UZCARD · XASANOV SHERZOD</span><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
         <h3>TO‘LOV QOIDALARI</h3><ol><li>Ko‘rsatilgan summani aniq o‘tkazing</li><li>5 daqiqa ichida to‘lang</li><li>To‘lov chekini saqlang</li></ol>
         <p class="card-transfer-status" role="status">To‘lov kutilmoqda</p><p class="card-copy-status" role="status"></p>`;
       transfer.querySelector('.card-transfer-plan').textContent = initialBody.querySelector('.card-payment-plan').textContent;
@@ -75,7 +84,7 @@
       transfer.addEventListener('click', async event => {
         const copy = event.target.closest('[data-copy]');
         if (!copy) return;
-        const value = copy.dataset.copy === 'card' ? '5614681885918346' : price.replace(/\D/g, '');
+        const value = copy.dataset.copy === 'card' ? cardData[dialog.querySelector('.card-payment-network').textContent].plain : price.replace(/\D/g, '');
         const feedback = transfer.querySelector('.card-copy-status');
         try {
           await navigator.clipboard.writeText(value);
@@ -95,6 +104,12 @@
           else window.open('https://t.me/xssupport', '_blank', 'noopener,noreferrer');
         };
       };
+      const updateTransferCard = network => {
+        const card = cardData[network];
+        transfer.querySelector('[data-card-number]').textContent = card.number;
+        transfer.querySelector('[data-card-owner]').textContent = network + ' · XASANOV SHERZOD';
+      };
+      updateTransferCard(dialog.querySelector('.card-payment-network').textContent);
       back.onclick = () => {
         clearInterval(timer);
         transfer.remove();
