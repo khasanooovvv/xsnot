@@ -46,6 +46,14 @@ async def card_transfer_styles():
 async def premium_crown_icon():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'premium-crown.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/humo-logo.png')
+async def humo_logo():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'humo-logo.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+@router.get('/assets/uzcard-logo.jpg')
+async def uzcard_logo():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'uzcard-logo.jpg', media_type='image/jpeg', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/assets/security-client.js')
 async def security_client_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'security-client.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
