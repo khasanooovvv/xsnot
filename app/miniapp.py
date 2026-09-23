@@ -42,6 +42,10 @@ async def card_payment_styles():
 async def card_transfer_styles():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'card-transfer.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
 
+@router.get('/assets/premium-crown.png')
+async def premium_crown_icon():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'premium-crown.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/assets/security-client.js')
 async def security_client_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'security-client.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
