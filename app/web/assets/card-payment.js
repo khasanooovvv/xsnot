@@ -19,7 +19,6 @@
       <header class="card-payment-header"><button type="button" class="card-payment-back" aria-label="Orqaga">‹</button><h2 id="cardPaymentTitle">Obuna uchun to‘lov</h2></header>
       <div class="card-payment-body">
         <div class="card-payment-methods" role="radiogroup" aria-label="Karta turi"><button type="button" class="card-network-choice active" data-network="UZCARD"><img src="/assets/uzcard-logo.jpg" alt="UZCARD"><strong>UZCARD</strong></button><button type="button" class="card-network-choice" data-network="HUMO"><img src="/assets/humo-logo.png" alt="HUMO"><strong>HUMO</strong></button></div>
-        <div class="card-payment-method"><span class="card-payment-logo">UZCARD</span><div><strong class="card-payment-network">UZCARD</strong></div></div>
         <fieldset class="card-payment-choices" hidden><legend>To‘lov usuli</legend><label><input type="radio" name="paymentNetwork" value="UZCARD" checked> Uzcard</label><label><input type="radio" name="paymentNetwork" value="HUMO"> Humo</label></fieldset>
         <p class="card-payment-plan"></p><label for="cardPaymentAmount">To‘lov summasi</label><input id="cardPaymentAmount" readonly aria-readonly="true">
         <h3>TO‘LOV BOSQICHLARI</h3><ol><li>Obuna turi, muddati va summani tekshiring</li><li>Uzcard yoki Humo kartasini tanlang</li><li>To‘lov tasdiqlangach obunangiz faollashadi</li></ol>
@@ -40,8 +39,6 @@
         button.classList.toggle('active', button.dataset.network === network);
         button.setAttribute('aria-checked', String(button.dataset.network === network));
       });
-      dialog.querySelector('.card-payment-logo').textContent = network;
-      dialog.querySelector('.card-payment-network').textContent = network;
       const transferCard = dialog.querySelector('.card-transfer');
       if (transferCard) {
         transferCard.querySelector('[data-card-number]').textContent = cardData[network].number;
