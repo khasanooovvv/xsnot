@@ -29,6 +29,18 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/card-payment.js')
+async def card_payment_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'card-payment.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
+
+@router.get('/assets/card-payment.css')
+async def card_payment_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'card-payment.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
+
+@router.get('/assets/card-transfer.css')
+async def card_transfer_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'card-transfer.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
+
 @router.get('/assets/security-client.js')
 async def security_client_script():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'security-client.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
