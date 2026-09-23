@@ -39,3 +39,24 @@ button:active{transform:translateY(4px);box-shadow:inset 0 2px 4px #0007,0 1px 0
 button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .premium-sheet .premium-tier.active,.premium-sheet .premium-plan.active{border-color:#d8aa43!important;box-shadow:inset 0 1px #fff5,inset 0 0 0 1px #d8aa43,inset 0 -3px #4e3a12,0 5px 0 #3a2b0d,0 10px 20px #0008!important}
 .premium-sheet .premium-tier.active:hover,.premium-sheet .premium-plan.active:hover{box-shadow:inset 0 1px #fff7,inset 0 0 0 1px #e9c45d,inset 0 -3px #4e3a12,0 6px 0 #3a2b0d,0 12px 24px #0009!important}
+.card-payment{background:rgba(11,18,32,.78)!important;color:#f3f6fb!important;border:1px solid #ffffff26!important;box-shadow:inset 0 1px #ffffff20,0 18px 60px #000b!important;backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%)}
+.card-payment .card-payment-header,.card-payment footer{background:rgba(11,18,32,.56)!important;color:#f3f6fb!important;border-color:#ffffff1c!important}
+.card-payment .card-payment-header h2,.card-payment .card-payment-back{color:#f3f6fb!important}
+.card-payment-body{color:#f3f6fb}
+.card-payment-method{background:rgba(255,255,255,.09)!important;border-color:#ffffff30!important;box-shadow:inset 0 1px #ffffff25,0 8px 20px #0005}
+.card-payment-logo,.card-payment-network,.card-payment label,.card-payment-note{color:#f3f6fb!important}
+.card-payment #cardPaymentAmount{background:rgba(255,255,255,.11)!important;color:#fff!important;border-color:#ffffff2b!important;font-size:21px!important;font-weight:700}
+.card-payment-plan{color:#d7e0eb}
+.card-payment h3{color:#c3d0df}
+.card-payment ol{background:rgba(255,255,255,.08)!important;border-color:#ffffff24!important}
+.card-payment li{color:#e8eef5}
+.card-payment li+li{border-color:#ffffff1c}
+.card-payment li:before{background:#ffffff20;color:#e8eef5}
+.card-payment-note{color:#c3d0df!important}
+.card-payment .card-payment-primary{color:#fff!important;background:linear-gradient(145deg,rgba(100,126,145,.72),rgba(38,55,70,.9))!important}
+.card-payment .card-transfer-amount{background:rgba(255,255,255,.10)!important;border-color:#ffffff2b!important;color:#fff}
+.card-payment .card-transfer-time{background:rgba(255,255,255,.08)!important;color:#eef3f8}
+.card-payment .card-transfer-status{color:#e7bc52}
+.card-payment .card-copy-status{color:#c3d0df}
+.card-payment .card-network-choice{border-color:#ffffff30!important;background:rgba(255,255,255,.09)!important;color:#f3f6fb!important;box-shadow:inset 0 1px #ffffff25,0 5px 14px #0005!important}
+.card-payment .card-network-choice.active{border-color:#d8aa43!important;box-shadow:inset 0 1px #fff5,inset 0 0 0 1px #d8aa43,0 5px 14px #d8aa4355!important}
