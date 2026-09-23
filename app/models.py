@@ -30,6 +30,7 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    gold_plus_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_hidden_username: Mapped[str | None] = mapped_column(String(24))
     gold_hidden_username_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     referred_by_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))

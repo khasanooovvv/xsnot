@@ -15,20 +15,25 @@ if (typeof document !== 'undefined') (() => {
   if (!entry) return;
   const card = document.createElement('div');
   card.id='goldStatus';card.className='card';card.hidden=true;
-  card.innerHTML='<strong id="goldExpiry"></strong><p id="goldCountdown"></p>';
+  card.innerHTML='<strong id="goldExpiry"></strong><p id="goldCountdown"></p><p id="savedGold"></p>';
   entry.after(card);
   const style=document.createElement('style');
   style.textContent='#goldStatus{background:#151b2b;border:1px solid #5b1f2a;text-align:center;padding:20px}#goldStatus strong{display:block;font-size:18px;color:#f3f5ff}#goldStatus p{font-size:13px;color:#a4adc5;margin:7px 0 0}';
   document.head.append(style);
-  let owner=null, deadline=null, serverTime=0, sampledAt=0, lastSync=-Infinity, pending=false;
+  let owner=null, deadline=null, plusDeadline=null, serverTime=0, sampledAt=0, lastSync=-Infinity, pending=false;
   const visible=()=>!document.hidden&&!document.getElementById('profile').hidden&&me?.registered;
   function paint(){
     if(owner!==me?.id){card.hidden=true;return}
     if(!deadline){card.hidden=true;return}
     const now=serverTime+(performance.now()-sampledAt);
-    const left=goldRemaining(deadline,now);
+    const plus=plusDeadline && plusDeadline>now;
+    const activeDeadline=plus?plusDeadline:deadline;
+    const left=goldRemaining(activeDeadline,now);
     card.hidden=false;
-    document.getElementById('goldExpiry').textContent=left.seconds?goldExpiryLabel(deadline):'Gold muddati tugadi';
+    document.getElementById('goldExpiry').textContent=left.seconds?goldExpiryLabel(activeDeadline).replace('Gold',plus?'Gold Plus':'Gold'):'Gold muddati tugadi';
+    const saved=plus?goldRemaining(deadline,plusDeadline):null;
+    document.getElementById('savedGold').textContent=saved?.seconds?`Saqlangan Gold: ${saved.days} kun ${saved.hours} soat ${saved.minutes} daqiqa`:'';
+    if(Boolean(me.gold_plus)!==Boolean(plus)){me.gold_plus=Boolean(plus);lastSync=-Infinity}
     document.getElementById('goldCountdown').textContent=left.seconds?(left.seconds<60?`${left.seconds} soniya qoldi`:`${left.days} kun ${left.hours} soat ${left.minutes} daqiqa qoldi`):'Gold hozir faol emas';
     card.title='Tugash vaqti: '+new Intl.DateTimeFormat('uz-UZ',{timeZone:'Asia/Tashkent',dateStyle:'long',timeStyle:'short'}).format(new Date(deadline))+' (Toshkent)';
     if(!left.seconds&&me.gold){me.gold=0;renderProfile()}
@@ -43,6 +48,7 @@ if (typeof document !== 'undefined') (() => {
       if(me?.id!==id)return;
       sampledAt=performance.now();serverTime=Date.parse(data.server_now)+(sampledAt-started)/2;
       deadline=data.gold_until?Date.parse(data.gold_until):null;
+      plusDeadline=data.gold_plus_until?Date.parse(data.gold_plus_until):null;
       const days=deadline?Math.ceil(Math.max(0,deadline-serverTime)/86400000):0;
       if(me.gold!==days){me.gold=days;if(visible())renderProfile()}
       paint();

@@ -22,7 +22,7 @@ class DirectTests(unittest.IsolatedAsyncioTestCase):
         self.old_direct, self.old_mini = direct.SessionLocal, miniapp.SessionLocal
         direct.SessionLocal = miniapp.SessionLocal = self.sessions
         async with self.sessions() as s:
-            s.add_all([User(telegram_id=i, display_name=f'User {i}', app_username=f'user{i}', is_registered=True) for i in (1,2,3)])
+            s.add_all([User(telegram_id=i, display_name=f'User {i}', app_username=f'user{i}', is_registered=True, gold_until=direct.now()+timedelta(days=30)) for i in (1,2,3)])
             s.add(UserUsername(user_id=1, username='aliasone', position=1))
             await s.commit()
         app = FastAPI()

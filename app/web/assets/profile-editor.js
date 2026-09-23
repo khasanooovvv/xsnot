@@ -166,7 +166,7 @@
     dialog.showModal();
   };
   $('cancelProfileEdit').onclick = () => { if (!saving) dialog.close(); };
-  $('addUsername').onclick = () => { const field=$('editUsername'); const limit=me?.verified?999:Number(me?.gold)>0?3:me?.silver?2:1; const count=field.value.split(/\s+/).filter(Boolean).length; if(count>=limit){error('Siz ko‘pi bilan '+limit+' ta username qo‘ya olasiz.');return} field.value=field.value.trim()+(field.value.trim()?'\n':'')+'@'; field.focus(); };
+  $('addUsername').onclick = () => { const field=$('editUsername'); const limit=me?.verified?999:me?.gold_plus?5:Number(me?.gold)>0?2:me?.silver?2:1; const count=field.value.split(/\s+/).filter(Boolean).length; if(count>=limit){error('Siz ko‘pi bilan '+limit+' ta username qo‘ya olasiz.');return} field.value=field.value.trim()+(field.value.trim()?'\n':'')+'@'; field.focus(); };
   $('pickEditAvatar').onclick = () => $('editAvatar').click();
   $('profileEditForm').addEventListener('input', () => error(''));
   dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
@@ -203,8 +203,8 @@
     const data = {name:$('editName').value.trim(), app_username:usernames[0]||'', usernames, bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    const minimumUsernameLength = me?.verified ? 1 : Number(me?.short_username_min_length) || (Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1);
-    const usernameLimit = me?.verified ? 999 : Number(me?.gold) > 0 ? 3 : me?.silver ? 2 : 1;
+    const minimumUsernameLength = me?.verified ? 1 : Number(me?.gold) > 0 ? 5 : Number(me?.short_username_min_length) || (me?.silver ? 2 : 1);
+    const usernameLimit = me?.verified ? 999 : me?.gold_plus ? 5 : Number(me?.gold) > 0 ? 2 : me?.silver ? 2 : 1;
     if (usernames.length > usernameLimit) return error('Siz ko‘pi bilan '+usernameLimit+' ta username qo‘ya olasiz.');
     if (usernames.some(x=>x.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
     if (!me?.gold && !me?.verified && usernames.some(x=>x.length===5)) return error('5 belgili username faqat Gold bilan ishlaydi.');

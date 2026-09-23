@@ -50,6 +50,7 @@ async def init_db() -> None:
             await connection.execute(text("ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS is_edited BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS silver_verified BOOLEAN NOT NULL DEFAULT FALSE"))
+            await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gold_plus_until TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(16)"))
             await connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS app_username VARCHAR(24)"))

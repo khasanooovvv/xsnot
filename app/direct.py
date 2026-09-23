@@ -13,6 +13,7 @@ from app.direct_models import DirectChat, DirectMessage, DirectRead, ChatDeletio
 from app.miniapp import registered
 from app.services.badges import badge_status
 from app.services.direct_notifications import notify_direct_message
+from app.services.direct_quota import direct_permission, require_direct_permission
 
 router = APIRouter(prefix='/api/direct')
 
@@ -164,9 +165,11 @@ async def messages(chat_id: int, since_revision: int | None = Query(None, ge=0),
         cursor = rows[-1].revision if since_revision is not None and more else c.revision
         if since_revision is None: rows.reverse()
         mine_block = await s.get(BlockedUser, (uid, other))
+        permission = await direct_permission(s, await s.get(User, uid), other)
         result = {'messages': [message_data(m, uid) for m in rows], 'revision': cursor, 'more': more,
                   'before_id': rows[0].id if rows else None, 'partner': await person(s, other, include_avatar),
-                  'blocked_by_me': bool(mine_block), 'can_send': not await blocked(s, uid, other)}
+                  'blocked_by_me': bool(mine_block), 'can_send': permission['allowed'] and not await blocked(s, uid, other),
+                  'send_limit': permission}
         return result
 
 @router.post('/chats/{chat_id}/messages')
@@ -179,6 +182,7 @@ async def send(chat_id: int, body: TextBody, request: Request, background_tasks:
         recipient = await user_exists(s, other)
         if user.muted_until and aware(user.muted_until)>now(): raise HTTPException(423, 'Mute faol.')
         if await blocked(s, uid, other): raise HTTPException(403, 'Foydalanuvchi bloklangan.')
+        await require_direct_permission(s, user, other)
         c.revision += 1
         c.last_message_at = now()
         m = DirectMessage(chat_id=chat_id, sender_id=uid, text=value, created_at=c.last_message_at, updated_at=c.last_message_at, revision=c.revision)
@@ -201,6 +205,7 @@ async def change_message(chat_id, message_id, uid, value=None):
             user = await user_exists(s, uid)
             if user.muted_until and aware(user.muted_until)>now(): raise HTTPException(423, 'Mute faol.')
             if await blocked(s, uid, other): raise HTTPException(403, 'Foydalanuvchi bloklangan.')
+            await require_direct_permission(s, user, other)
             m.text, m.is_edited = value.strip(), True
         else:
             m.text, m.is_deleted = '', True

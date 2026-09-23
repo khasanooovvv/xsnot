@@ -34,7 +34,7 @@ from app.verification import router as verification_router, admin_router as veri
 app.include_router(verification_router)
 app.include_router(verification_admin_router, dependencies=[Depends(admin)])
 
-class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(gold)$")
+class Grant(BaseModel): days: int = Field(ge=1, le=365); kind: str = Field(pattern="^(gold|plus)$")
 class Moderation(BaseModel): banned: bool
 class Verification(BaseModel): verified: bool = True
 class WarningNotice(BaseModel):
@@ -186,8 +186,9 @@ async def grant(user_id: int, body: Grant):
     async with SessionLocal() as s:
         u = await s.get(User, user_id, with_for_update=True)
         if not u: raise HTTPException(404, "User not found")
-        now = datetime.now(UTC); field = "gold_until"
-        setattr(u, field, max(getattr(u, field) or now, now) + timedelta(days=body.days)); await s.commit()
+        from app.services.subscriptions import grant_subscription
+        grant_subscription(u, body.kind, body.days)
+        await s.commit()
     return {"ok": True, "kind": body.kind, "days": body.days}
 
 @app.post("/users/{user_id}/gold/revoke", dependencies=[Depends(admin)])
@@ -197,6 +198,7 @@ async def revoke_gold(user_id: int):
         if not u:
             raise HTTPException(404, "User not found")
         u.gold_until = None
+        u.gold_plus_until = None
         await s.commit()
     return {"ok": True, "gold": 0}
 

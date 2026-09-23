@@ -62,3 +62,10 @@ class UserPresence(Base):
     __tablename__ = 'user_presence'
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), primary_key=True)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class DirectQuota(Base):
+    __tablename__ = 'direct_quotas'
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    recipients: Mapped[str] = mapped_column(Text, default='[]')

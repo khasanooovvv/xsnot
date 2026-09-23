@@ -21,6 +21,7 @@ register_heif_opener()
 from sqlalchemy import select, func, delete, update, text as sql, or_
 from app.config import settings
 from app.services.badges import badge_status
+from app.services.subscriptions import subscription, limits
 from app.services.referral_notifications import send_invite_link
 from app.database import SessionLocal
 from app.models import User, UserUsername, Match, MatchQueue, MiniAvatar, MiniMessage, Report, ReferralShare, ReferralHistory, VideoVerification, ChatInvitation, RouletteUsage
@@ -347,7 +348,7 @@ async def my_gold(uid=Depends(registered)):
         until = user.gold_until
         if until and until.tzinfo is None:
             until = until.replace(tzinfo=UTC)
-        return {'gold_until': until, 'server_now': datetime.now(UTC)}
+        return {**subscription(user), 'server_now': datetime.now(UTC)}
 
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):
@@ -375,6 +376,7 @@ async def delete_account(uid=Depends(identity)):
         # referral again after deleting and recreating its profile.
         await s.execute(update(ReferralHistory).where(ReferralHistory.referrer_id == uid).values(active=False))
         user.gold_until = None
+        user.gold_plus_until = None
         user.premium_until = None
         if user.referral_rewarded and user.referred_by_id:
             history = await s.scalar(select(ReferralHistory).where(ReferralHistory.referrer_id == user.referred_by_id, ReferralHistory.referred_id == uid))
@@ -398,7 +400,7 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
     async with SessionLocal() as s:
         user = await s.get(User, uid, with_for_update=True)
         badges = badge_status(user)
-        minimum_username_length = 1 if badges['verified'] else (user.short_username_min_length or (3 if badges['gold'] else 2 if badges['silver'] else 1))
+        minimum_username_length = limits(user)['username_min']
         if handle and len(handle) < minimum_username_length:
             raise HTTPException(422, f'Username kamida {minimum_username_length} ta belgidan iborat bo‘lsin.')
         user.display_name = name
@@ -454,13 +456,17 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             badges = badge_status(user)
             if not badges['gold'] and not badges['verified'] and any(len(item) == 5 for item in handles):
                 raise HTTPException(422, '5 belgili username faqat Gold bilan ishlaydi.')
-            username_limit = 999 if badges['verified'] else (3 if badges['gold'] else 2 if badges['silver'] else 1)
+            username_limit = limits(user)['usernames']
             if len(handles) > username_limit:
                 raise HTTPException(422, 'Username limiti oshib ketdi.')
             for item in handles:
                 if not re.fullmatch(r'[a-z][a-z0-9_]{0,23}', item):
                     raise HTTPException(422, 'Username formati noto‘g‘ri.')
             handle = handles[0] if handles else None
+        if usernames is not None or handle is not None:
+            minimum = limits(user)['username_min']
+            if any(len(item) < minimum for item in handles):
+                raise HTTPException(422, f'Username {minimum}–24 belgili bo‘lsin.')
         user.display_name = name
         if usernames is not None:
             # Clear the unique primary value before replacing the ordered
@@ -561,15 +567,6 @@ async def search(body: Search, uid=Depends(registered)):
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730020)'))
         user = await s.get(User, uid, with_for_update=True)
-        if body.roulette and not badge_status(user)['gold']:
-            today = datetime.now(UTC).date()
-            usage = (await s.scalars(select(RouletteUsage).where(RouletteUsage.user_id == uid, RouletteUsage.usage_day == today).with_for_update())).first()
-            if usage and usage.count >= 10:
-                raise HTTPException(429, 'Oddiy foydalanuvchi uchun kunlik 10 ta roulette limiti tugadi. Gold obunaga o‘ting.')
-            if usage:
-                usage.count += 1
-            else:
-                s.add(RouletteUsage(user_id=uid, usage_day=today, count=1))
         if settings().archive_channel_id and not user.archive_consent_at and not body.archive_consent:
             raise HTTPException(422, 'Chat qoidalariga rozilik bering.')
         if body.archive_consent and not user.archive_consent_at:
@@ -634,6 +631,12 @@ async def roulette_spin(uid=Depends(registered)):
         if await pending_invitation(s, uid):
             raise HTTPException(409, 'Avval joriy taklifga javob bering yoki uni bekor qiling.')
         own.queued_at = datetime.now(UTC)
+        user = await s.get(User, uid, with_for_update=True)
+        today = (datetime.now(UTC) + timedelta(hours=5)).date()
+        usage = await s.scalar(select(RouletteUsage).where(RouletteUsage.user_id == uid, RouletteUsage.usage_day == today))
+        daily_limit = limits(user)['roulette']
+        if usage and usage.count >= daily_limit:
+            raise HTTPException(429, f'Kunlik {daily_limit} ta roulette limiti tugadi.')
         candidates = [c for c in await roulette_candidates(s, uid) if not settings().archive_channel_id or (own.archive_consent and c.archive_consent)]
         secrets.SystemRandom().shuffle(candidates)
         candidates = candidates[:12]
@@ -645,6 +648,11 @@ async def roulette_spin(uid=Depends(registered)):
                 item = {k: p[k] for k in ('name', 'avatar')}
                 item['anonymous'] = False
             items.append(item)
+        if items:
+            if usage:
+                usage.count += 1
+            else:
+                s.add(RouletteUsage(user_id=uid, usage_day=today, count=1))
         await s.commit()
         return {'items': items, 'selected': 0 if items else None,
                 'ticket': roulette_ticket(uid, candidates[0], int(time.time()) + 90) if items else None}
