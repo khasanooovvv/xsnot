@@ -64,8 +64,10 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment #cardPaymentAmount{margin:7px 0 16px;padding:12px 14px;font-size:20px!important;border-radius:13px}
 .card-payment h3{margin:0 0 7px;font-size:10px;letter-spacing:.8px}
 .card-payment ol{margin:7px 0 12px;padding:0 12px;border-radius:14px}
-.card-payment li{gap:9px;padding:10px 0;line-height:1.25;font-size:12px}
-.card-payment li:before{flex:0 0 24px;height:24px;border-radius:7px}
+.card-payment li{gap:8px;padding:7px 0;line-height:1.18;font-size:11px}
+.card-payment li:before{flex:0 0 22px;height:22px;border-radius:7px;background:rgba(100,126,145,.72)!important;color:#f3f6fb!important}
 .card-payment .card-payment-note{margin:0 0 8px;font-size:12px;line-height:1.35}
 .card-payment footer{padding:9px 16px}
-.card-payment footer button{padding:12px;font-size:14px}
+.card-payment footer button{padding:10px;font-size:13px}
+.card-payment ol{margin:5px 0 9px;padding:0 10px}
+.card-payment .card-payment-note{margin:0 0 5px;font-size:11px}
