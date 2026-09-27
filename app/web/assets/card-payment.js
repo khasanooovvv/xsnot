@@ -26,15 +26,29 @@
       </div><footer><button type="button" class="card-payment-primary">Davom etish</button></footer>`;
     dialog.querySelector('.card-payment-plan').textContent = tier.textContent.trim() + ' · ' + plan.querySelector('b').textContent.trim();
     dialog.querySelector('#cardPaymentAmount').value = price;
+    const toast = document.createElement('div');
+    toast.className = 'card-copy-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    dialog.prepend(toast);
+    let toastTimer;
+    const notifyCopy = message => {
+      if (!dialog.isConnected) return;
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('visible');
+      toastTimer = setTimeout(() => { toast.classList.remove('visible'); toast.textContent = ''; }, 3000);
+    };
     let timer;
-    const close = () => { clearInterval(timer); dialog.close(); dialog.remove(); trigger.focus(); };
+    const close = () => { clearInterval(timer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus(); };
     dialog.querySelector('.card-payment-back').onclick = close;
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
     const choices = dialog.querySelector('.card-payment-choices');
-    const change = dialog.querySelector('.card-payment-change');
+    let selectedNetwork = 'UZCARD';
     const networkButtons = [...dialog.querySelectorAll('.card-network-choice')];
     const selectNetwork = network => {
+      selectedNetwork = network;
       networkButtons.forEach(button => {
         button.classList.toggle('active', button.dataset.network === network);
         button.setAttribute('aria-checked', String(button.dataset.network === network));
@@ -60,7 +74,7 @@
       const transfer = document.createElement('div');
       transfer.className = 'card-payment-body card-transfer';
       transfer.innerHTML = `
-        <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer">Support · @xssupport ↗</a>
+        <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☏</span><span>Yordam <small>@xssupport</small></span><span aria-hidden="true">↗</span></a>
         <p class="card-transfer-plan"></p>
         <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount">Summani nusxalash</button></div>
         <div class="card-transfer-time"><span>To‘lov uchun vaqt</span><b>5:00</b><progress max="300" value="300" aria-label="Qolgan vaqt"></progress></div>
@@ -87,13 +101,12 @@
       transfer.addEventListener('click', async event => {
         const copy = event.target.closest('[data-copy]');
         if (!copy) return;
-        const value = copy.dataset.copy === 'card' ? cardData[dialog.querySelector('.card-payment-network').textContent].plain : price.replace(/\D/g, '');
-        const feedback = transfer.querySelector('.card-copy-status');
+        const value = copy.dataset.copy === 'card' ? cardData[selectedNetwork].plain : price.replace(/\D/g, '');
         try {
           await navigator.clipboard.writeText(value);
-          feedback.textContent = 'Nusxa olindi';
+          notifyCopy(copy.dataset.copy === 'card' ? 'Karta raqami nusxalandi' : 'Summa nusxalandi');
         } catch {
-          feedback.textContent = 'Nusxalab bo‘lmadi. Matnni belgilab nusxa oling: ' + value;
+          notifyCopy('Nusxalab bo‘lmadi. Qayta urinib ko‘ring.');
         }
       });
       footerButton.textContent = 'To‘lovni amalga oshirdim';
@@ -112,7 +125,7 @@
         transfer.querySelector('[data-card-number]').textContent = card.number;
         transfer.querySelector('[data-card-owner]').textContent = network + ' · XASANOV SHERZOD';
       };
-      updateTransferCard(dialog.querySelector('.card-payment-network').textContent);
+      updateTransferCard(selectedNetwork);
       back.onclick = () => {
         clearInterval(timer);
         transfer.remove();
