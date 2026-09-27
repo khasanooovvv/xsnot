@@ -40,7 +40,8 @@
       toastTimer = setTimeout(() => { toast.classList.remove('visible'); toast.textContent = ''; }, 3000);
     };
     let timer;
-    const close = () => { clearInterval(timer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus(); };
+    let pollTimer;
+    const close = () => { clearInterval(timer); clearTimeout(pollTimer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus(); };
     dialog.querySelector('.card-payment-back').onclick = close;
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
@@ -68,7 +69,31 @@
     const footerButton = dialog.querySelector('footer button');
     const back = dialog.querySelector('.card-payment-back');
     const heading = dialog.querySelector('#cardPaymentTitle');
-    const showTransfer = () => {
+    const requestOrder = async (id, body) => {
+      const response = await fetch('/api/card-orders' + (id ? '/' + id : ''), {
+        method: body ? 'POST' : 'GET', cache: 'no-store',
+        headers: {'Content-Type': 'application/json', 'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData || ''},
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if (!response.ok) throw new Error('To‘lov holatini tekshirib bo‘lmadi. Qayta urinib ko‘ring.');
+      return response.json();
+    };
+    const showTransfer = async (switchNetwork = false) => {
+      footerButton.disabled = true;
+      let order;
+      try {
+        order = await requestOrder(null, {network: selectedNetwork, tier: tier.dataset.tier, days: Number(plan.dataset.days), switch: switchNetwork === true});
+      } catch (error) {
+        notifyCopy(error.message);
+        footerButton.disabled = false;
+        footerButton.textContent = 'Davom etish';
+        footerButton.onclick = showTransfer;
+        return;
+      }
+      if (!dialog.isConnected) return;
+      selectedNetwork = order.network;
+      const orderPrice = order.amount.toLocaleString('uz-UZ') + ' so‘m';
+      footerButton.disabled = false;
       initialBody.hidden = true;
       heading.textContent = 'To‘lov';
       const transfer = document.createElement('div');
@@ -81,19 +106,20 @@
         <div class="card-transfer-bank"><small>Qabul qiluvchi karta raqami</small><strong data-card-number>5614 6818 8591 8346</strong><span data-card-owner>UZCARD · XASANOV SHERZOD</span><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
         <h3>TO‘LOV QOIDALARI</h3><ol><li>Ko‘rsatilgan summani aniq o‘tkazing</li><li>5 daqiqa ichida to‘lang</li><li>To‘lov chekini saqlang</li></ol>
         <p class="card-transfer-status" role="status">To‘lov kutilmoqda</p><p class="card-copy-status" role="status"></p>`;
-      transfer.querySelector('.card-transfer-plan').textContent = initialBody.querySelector('.card-payment-plan').textContent;
-      transfer.querySelector('.card-transfer-amount strong').textContent = price;
+      transfer.querySelector('.card-transfer-plan').textContent = (order.tier === 'plus' ? 'Gold Plus' : 'Gold') + ' · ' + order.days + ' kun';
+      transfer.querySelector('.card-transfer-amount strong').textContent = orderPrice;
       initialBody.after(transfer);
       dialog.scrollTop = 0;
       const status = transfer.querySelector('.card-transfer-status');
-      const deadline = Date.now() + 300000;
+      let deadline = Date.now() + order.remaining * 1000;
       const tick = () => {
         const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         transfer.querySelector('.card-transfer-time b').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
         transfer.querySelector('progress').value = seconds;
         if (!seconds) {
-          clearInterval(timer);
-          status.textContent = 'Vaqt tugadi. To‘lagan bo‘lsangiz, chek bilan @xssupport ga murojaat qiling.';
+          if (order.status === 'active') {
+            status.textContent = 'To‘lov vaqti tugadi. Agar to‘lov qilgan bo‘lsangiz, supportga murojaat qiling.';
+          }
         }
       };
       tick();
@@ -101,7 +127,7 @@
       transfer.addEventListener('click', async event => {
         const copy = event.target.closest('[data-copy]');
         if (!copy) return;
-        const value = copy.dataset.copy === 'card' ? cardData[selectedNetwork].plain : price.replace(/\D/g, '');
+        const value = copy.dataset.copy === 'card' ? cardData[selectedNetwork].plain : String(order.amount);
         try {
           await navigator.clipboard.writeText(value);
           notifyCopy(copy.dataset.copy === 'card' ? 'Karta raqami nusxalandi' : 'Summa nusxalandi');
@@ -109,17 +135,56 @@
           notifyCopy('Nusxalab bo‘lmadi. Qayta urinib ko‘ring.');
         }
       });
-      footerButton.textContent = 'To‘lovni amalga oshirdim';
-      footerButton.onclick = () => {
-        clearInterval(timer);
-        status.textContent = 'To‘lov chekini @xssupport ga yuboring. Obuna to‘lov tasdiqlangach faollashadi.';
-        status.scrollIntoView({block:'center'});
-        footerButton.textContent = 'Support’ga yozish';
-        footerButton.onclick = () => {
-          if (window.Telegram?.WebApp?.openTelegramLink) window.Telegram.WebApp.openTelegramLink('https://t.me/xssupport');
-          else window.open('https://t.me/xssupport', '_blank', 'noopener,noreferrer');
-        };
+      const support = transfer.querySelector('.card-support').cloneNode(true);
+      support.hidden = true;
+      status.after(support);
+      const renderOrder = () => {
+        const active = order.status === 'active';
+        transfer.querySelectorAll('.card-transfer-amount,.card-transfer-bank,.card-transfer-time,h3,ol').forEach(el => { el.hidden = !active; });
+        support.hidden = !['expired', 'cancelled'].includes(order.status);
+        footerButton.disabled = false;
+        if (order.status === 'queued') {
+          status.textContent = 'Kutish rejimi. Navbat: ' + order.position + '. Hozircha pul yubormang.' + (order.alternative ? ' ' + order.alternative + ' bo‘sh — foydalanishingiz mumkin.' : '');
+          footerButton.textContent = order.alternative ? order.alternative + ' orqali to‘lash' : 'Navbat kutilmoqda';
+          footerButton.disabled = !order.alternative;
+          footerButton.onclick = async () => {
+            selectedNetwork = order.alternative;
+            clearInterval(timer); clearTimeout(pollTimer);
+            transfer.remove(); initialBody.hidden = false;
+            await showTransfer(true);
+          };
+        } else if (active) {
+          status.textContent = 'To‘lov kutilmoqda. Avtomatik tekshirilmoqda.';
+          footerButton.textContent = 'To‘lovni tekshirish';
+          footerButton.onclick = () => pollOrder();
+        } else if (order.status === 'paid') {
+          status.textContent = 'To‘lov tasdiqlandi! Obunangiz faollashtirildi.';
+          footerButton.textContent = 'Yopish'; footerButton.onclick = close;
+        } else {
+          status.textContent = order.status === 'expired' ? 'To‘lov vaqti tugadi. Agar to‘lov qilgan bo‘lsangiz, supportga murojaat qiling.' : 'Navbat bekor qilindi. Qayta buyurtma ochishingiz mumkin.';
+          footerButton.textContent = 'Support’ga yozish';
+          footerButton.onclick = () => support.click();
+        }
+        if (!['active', 'queued'].includes(order.status)) { clearInterval(timer); clearTimeout(pollTimer); }
       };
+      let checking = false;
+      const pollOrder = async () => {
+        if (checking || !transfer.isConnected) return;
+        checking = true; clearTimeout(pollTimer);
+        try {
+          const latest = await requestOrder(order.id);
+          if (!transfer.isConnected) return;
+          order = latest;
+          deadline = Date.now() + order.remaining * 1000;
+          renderOrder(); tick();
+        } catch (error) { if (transfer.isConnected) status.textContent = error.message; }
+        finally {
+          checking = false;
+          if (transfer.isConnected && ['active', 'queued'].includes(order.status)) pollTimer = setTimeout(pollOrder, 3000);
+        }
+      };
+      renderOrder();
+      if (['active', 'queued'].includes(order.status)) pollTimer = setTimeout(pollOrder, 3000);
       const updateTransferCard = network => {
         const card = cardData[network];
         transfer.querySelector('[data-card-number]').textContent = card.number;
@@ -128,10 +193,12 @@
       updateTransferCard(selectedNetwork);
       back.onclick = () => {
         clearInterval(timer);
+        clearTimeout(pollTimer);
         transfer.remove();
         initialBody.hidden = false;
         heading.textContent = 'Obuna uchun to‘lov';
         footerButton.textContent = 'Davom etish';
+        footerButton.disabled = false;
         footerButton.onclick = showTransfer;
         back.onclick = close;
         dialog.scrollTop = 0;

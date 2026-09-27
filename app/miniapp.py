@@ -199,6 +199,30 @@ async def registered(uid=Depends(identity)):
         if not u.is_registered: raise HTTPException(403, 'Avval profilni to‘ldiring.')
     return uid
 
+class CardOrderRequest(BaseModel):
+    network: Literal['UZCARD', 'HUMO']
+    tier: Literal['gold', 'plus']
+    days: Literal[7, 30, 90]
+    switch: bool = False
+
+
+@router.post('/api/card-orders')
+async def create_card_order(body: CardOrderRequest, uid=Depends(registered)):
+    from app.services.card_orders import order_state
+    async with SessionLocal() as s:
+        return await order_state(s, uid, **body.model_dump())
+
+
+@router.get('/api/card-orders/{order_id}')
+async def get_card_order(order_id: str, uid=Depends(registered)):
+    from app.services.card_orders import order_state
+    async with SessionLocal() as s:
+        try:
+            return await order_state(s, uid, order_id=order_id)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc))
+
+
 def normalize_photo(content):
     try:
         with Image.open(io.BytesIO(content)) as source:

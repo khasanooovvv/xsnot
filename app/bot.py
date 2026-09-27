@@ -18,6 +18,13 @@ from app.services.referral_notifications import send_referral_started
 
 router = Router(); cfg = settings()
 
+@router.channel_post(F.chat.id == cfg.payment_channel_id)
+async def card_payment_received(message: Message):
+    from app.services.card_orders import receive
+    async with SessionLocal() as s:
+        await receive(s, message.chat.id, message.message_id,
+                      message.text or message.caption or '', message.date)
+
 class Register(StatesGroup):
     terms = State(); birthday = State(); city = State(); photo = State()
 class Filter(StatesGroup):
