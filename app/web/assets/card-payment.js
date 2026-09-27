@@ -74,7 +74,7 @@
       const transfer = document.createElement('div');
       transfer.className = 'card-payment-body card-transfer';
       transfer.innerHTML = `
-        <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☏</span><span>Yordam <small>@xssupport</small></span><span aria-hidden="true">↗</span></a>
+        <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer"><svg class="card-support-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-3a8 8 0 0 1 16 0v3M20 17v1a3 3 0 0 1-3 3h-3"/><rect x="2" y="10" width="4" height="8" rx="2"/><rect x="18" y="10" width="4" height="8" rx="2"/><path d="M11 21h3"/></svg><span><strong>Support</strong><small>24/7 yordam</small></span></a>
         <p class="card-transfer-plan"></p>
         <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount">Summani nusxalash</button></div>
         <div class="card-transfer-time"><span>To‘lov uchun vaqt</span><b>5:00</b><progress max="300" value="300" aria-label="Qolgan vaqt"></progress></div>
