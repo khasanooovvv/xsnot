@@ -22,8 +22,14 @@ router = Router(); cfg = settings()
 async def card_payment_received(message: Message):
     from app.services.card_orders import receive
     async with SessionLocal() as s:
-        await receive(s, message.chat.id, message.message_id,
-                      message.text or message.caption or '', message.date)
+        matched = await receive(s, message.chat.id, message.message_id,
+                                message.text or message.caption or '', message.date)
+    if matched:
+        await message.bot.send_message(
+            matched,
+            '✅ To‘lovingiz tasdiqlandi! Gold obunangiz faollashtirildi. '
+            'Mini App’ni yangilang — yangi imkoniyatlardan foydalanishingiz mumkin.'
+        )
 
 class Register(StatesGroup):
     terms = State(); birthday = State(); city = State(); photo = State()
