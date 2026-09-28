@@ -143,6 +143,15 @@ async def receive(s, channel, message_id, body, posted, now=None):
                 o.status = 'paid'
                 receipt.status = 'paid'
                 receipt.order_id = o.id
+                next_order = await s.scalar(
+                    select(CardOrder)
+                    .where(CardOrder.network == network, CardOrder.status == 'queued')
+                    .order_by(CardOrder.created, CardOrder.id)
+                )
+                if next_order:
+                    next_order.status = 'active'
+                    next_order.started = now
+                    next_order.expires = now + timedelta(minutes=5)
                 matched = o.user_id
     await s.commit()
     return matched
