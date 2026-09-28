@@ -50,6 +50,10 @@ async def premium_crown_icon():
 async def humo_logo():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'humo-logo.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
+@router.get('/assets/payment-card.png')
+async def payment_card_image():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'payment-card.png', media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
 @router.get('/assets/uzcard-logo.jpg')
 async def uzcard_logo():
     return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'uzcard-logo.jpg', media_type='image/jpeg', headers={'Cache-Control': 'public, max-age=86400'})
