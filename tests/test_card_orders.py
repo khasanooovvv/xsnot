@@ -84,7 +84,21 @@ class CardOrderTests(unittest.IsolatedAsyncioTestCase):
             await self.state(2, a['id'])
         b = await self.create(2, 'HUMO', switch=True)
         self.assertEqual((b['network'], b['status']), ('HUMO', 'active'))
-        self.assertEqual((await self.create(1, 'HUMO', switch=True))['network'], 'UZCARD')
+        switched = await self.create(1, 'HUMO', switch=True)
+        self.assertEqual((switched['network'], switched['status']), ('HUMO', 'queued'))
+        self.assertEqual((await self.state(1, a['id']))['status'], 'cancelled')
+        self.assertEqual((await self.create(1, 'HUMO', switch=True))['id'], switched['id'])
+
+    async def test_active_switch_updates_card_and_preserves_same_card_timer(self):
+        old = await self.create()
+        new = await self.create(1, 'HUMO', switch=True)
+        self.assertEqual((new['network'], new['card']), ('HUMO', '9860356645379963'))
+        self.assertEqual((await self.state(1, old['id']))['status'], 'cancelled')
+        reopened = await self.create(1, 'HUMO', switch=True)
+        self.assertEqual(reopened['id'], new['id'])
+        self.assertLessEqual(reopened['remaining'], new['remaining'])
+        self.assertIsNone(await self.credit())
+        self.assertEqual(await self.credit(self.body(card='9963'), 2), 1)
 
     async def test_old_receipt_not_granted(self):
         await self.create()

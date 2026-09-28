@@ -65,7 +65,9 @@ async def order_state(s, uid, network=None, tier=None, days=None, order_id=None,
             raise ValueError('Buyurtma topilmadi')
     else:
         o = next((x for x in orders if x.user_id == uid and x.status in ('active', 'queued')), None)
-        if o and switch and o.status == 'queued':
+        if o and switch and o.network != network:
+            if network not in CARDS or tier not in PRICES or days not in PRICES[tier]:
+                raise ValueError('Noto‘g‘ri tarif')
             o.status = 'cancelled'
             o = None
         if not o:
