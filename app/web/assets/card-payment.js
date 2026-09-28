@@ -117,6 +117,7 @@
         transfer.querySelector('.card-transfer-time b').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
         transfer.querySelector('progress').value = seconds;
         if (!seconds) {
+          clearTimeout(pollTimer);
           if (order.status === 'active') {
             status.textContent = 'To‘lov vaqti tugadi. Agar to‘lov qilgan bo‘lsangiz, supportga murojaat qiling.';
           }
@@ -180,11 +181,12 @@
         } catch (error) { if (transfer.isConnected) status.textContent = error.message; }
         finally {
           checking = false;
-          if (transfer.isConnected && ['active', 'queued'].includes(order.status)) pollTimer = setTimeout(pollOrder, 3000);
+          if (transfer.isConnected && ['active', 'queued'].includes(order.status) && Date.now() < deadline) {
+            pollTimer = setTimeout(pollOrder, 3000);
+          }
         }
       };
       renderOrder();
-      if (['active', 'queued'].includes(order.status)) pollTimer = setTimeout(pollOrder, 3000);
       const updateTransferCard = network => {
         const card = cardData[network];
         transfer.querySelector('[data-card-number]').textContent = card.number;
