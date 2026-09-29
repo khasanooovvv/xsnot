@@ -272,8 +272,8 @@ function preloadRouletteAvatars(people){
   loadNext();
 }
 async function loadRoulettePeople(){
-  try{const cached=JSON.parse(localStorage.getItem(rouletteCacheKey)||'null');if(Array.isArray(cached)&&cached.length){window.roulettePeople=cached;preloadRouletteAvatars(cached)}}catch{}
-  try{const fresh=await api('roulette/people');if(Array.isArray(fresh)){window.roulettePeople=fresh;localStorage.setItem(rouletteCacheKey,JSON.stringify(fresh));preloadRouletteAvatars(fresh)}}catch{}
+  try{const cached=JSON.parse(localStorage.getItem(rouletteCacheKey)||'null');if(Array.isArray(cached)&&cached.length){window.roulettePeople=cached;preloadRouletteAvatars(cached);window.chatRoulette?.setPeople(cached)}}catch{}
+  try{const fresh=await api('roulette/people');if(Array.isArray(fresh)){window.roulettePeople=fresh;localStorage.setItem(rouletteCacheKey,JSON.stringify(fresh));preloadRouletteAvatars(fresh);window.chatRoulette?.setPeople(fresh)}}catch{}
 }
 run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');window.roulettePeopleReady=loadRoulettePeople();syncLeaderboardIcon();syncProfileIcon();syncBackIcons();syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered)poll();else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);

@@ -13,6 +13,13 @@
     started=0;clearTimeout(timer);animation?.cancel();animation=null;
     panel.hidden=true;track.replaceChildren();landing=null;signature='';
   }
+  function setPeople(people){
+    if(!started||!Array.isArray(people)||!people.length)return;
+    [...track.children].forEach((node,i)=>{
+      const person=people[i%people.length];
+      node.innerHTML=avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>';
+    });
+  }
   function start(){
     if(started)return;
     document.body.classList.add('chat-searching');
@@ -34,7 +41,7 @@
     ],{duration:matchMedia('(prefers-reduced-motion: reduce)').matches?0:3000,fill:'forwards'});
     timer=setTimeout(()=>{status.textContent='Suhbatdosh kutilmoqda…'},3000);
   }
-  window.chatRoulette={reset,start,hold(person){
+  window.chatRoulette={reset,start,setPeople,hold(person){
     if(!started)return false;
     const next=JSON.stringify(person);
     if(signature!==next&&landing){signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+badgeMarkup(person)+'</strong>'}
