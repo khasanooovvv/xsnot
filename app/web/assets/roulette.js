@@ -18,16 +18,9 @@
     document.body.classList.add('chat-searching');
     started=performance.now()||1;panel.hidden=false;
     status.textContent='Ruletka aylanmoqda…';
-    const localPeople=location.search.includes('local=1')?[
-      {name:'Madina',avatar:'/assets/profile-female.png'},
-      {name:'Azizbek',avatar:'/assets/profile-male.png'},
-      {name:'Nilufar',avatar:'/assets/profile-female.png'},
-      {name:'Sherzod',avatar:'/assets/profile-male.png'}
-    ]:[];
     for(let i=0;i<28;i++){
       const node=document.createElement('div');node.className='roulette-card';
-      const person=localPeople.length?localPeople[i%localPeople.length]:{name:'?',anonymous:true};
-      node.innerHTML=avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+'</strong>';
+      node.innerHTML=avatar({name:'?',anonymous:true})+'<strong>Suhbatdosh</strong>';
       track.append(node);if(i===24)landing=node;
     }
     const from=viewport.clientWidth/2-66,to=from-24*132;
