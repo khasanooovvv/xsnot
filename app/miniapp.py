@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 from fastapi import UploadFile
+from aiogram import Bot
 from starlette.concurrency import run_in_threadpool
 register_heif_opener()
 from sqlalchemy import select, func, delete, update, text as sql, or_
@@ -29,6 +30,32 @@ from app.services.users import get_or_create, age_on, days_left, apply_referral_
 from app.services.matching import active_match, find_or_queue, end_match, leave_queue, is_anonymous, set_anonymous
 
 router = APIRouter()
+
+async def _ensure_cached_avatar(session, user_id: int, avatar: MiniAvatar | None = None):
+    """Return a cached avatar, importing the Telegram profile photo when needed."""
+    avatar = avatar or await session.get(MiniAvatar, user_id)
+    if avatar:
+        return avatar
+    user = await session.get(User, user_id)
+    file_id = user.avatar_file_id if user else None
+    if not file_id or (user and user.avatar_is_default):
+        return None
+    bot = Bot(settings().bot_token)
+    try:
+        telegram_file = await bot.get_file(file_id)
+        if not telegram_file.file_path:
+            return None
+        buffer = io.BytesIO()
+        await bot.download_file(telegram_file.file_path, destination=buffer)
+        encoded = base64.b64encode(buffer.getvalue()).decode('ascii')
+        avatar = MiniAvatar(user_id=user_id, data=f'data:image/jpeg;base64,{encoded}')
+        session.add(avatar)
+        await session.flush()
+        return avatar
+    except Exception:
+        return None
+    finally:
+        await bot.session.close()
 
 @router.get('/assets/card-payment.js')
 async def card_payment_script():
@@ -374,7 +401,7 @@ async def roulette_people(uid=Depends(registered)):
         ).order_by(func.random()).limit(32))).all()
         result = []
         for user in users:
-            avatar = await s.get(MiniAvatar, user.telegram_id)
+            avatar = await _ensure_cached_avatar(s, user.telegram_id)
             version = hashlib.sha256(avatar.data.encode()).hexdigest()[:12] if avatar else 'default'
             result.append(dict(id=user.telegram_id, name=user.display_name or 'Foydalanuvchi',
                                avatar=f'/api/avatar/{user.telegram_id}?v={version}' if avatar else None,
@@ -406,7 +433,7 @@ async def my_avatar(version: str = '', uid=Depends(identity)):
 @router.get('/api/avatar/{user_id}')
 async def get_user_avatar(user_id: int):
     async with SessionLocal() as s:
-        avatar = await s.get(MiniAvatar, user_id)
+        avatar = await _ensure_cached_avatar(s, user_id)
         if not avatar:
             raise HTTPException(404, 'Avatar not found')
         try:
@@ -415,8 +442,9 @@ async def get_user_avatar(user_id: int):
             payload = base64.b64decode(encoded)
         except (ValueError, TypeError, base64.binascii.Error):
             raise HTTPException(500, 'Avatar format invalid')
+        await s.commit()
         return Response(content=payload, media_type=media_type,
-                        headers={'Cache-Control': 'public, max-age=86400'})
+                        headers={'Cache-Control': 'public, max-age=31536000, immutable'})
 
 @router.get('/api/me/gold')
 async def my_gold(uid=Depends(registered)):
