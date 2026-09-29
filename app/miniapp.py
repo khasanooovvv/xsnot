@@ -362,7 +362,7 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             results.append(dict(id=user.telegram_id, name=user.display_name,
                 app_username=matched_handle,
                 city=user.city, age=age_on(user.birth_date) if user.birth_date else None,
-                avatar=f'/api/avatar/{user.telegram_id}',
+                avatar=f'/api/avatar/{user.telegram_id}?v=avatars-2',
                 **badge_status(user)))
         return results
 
