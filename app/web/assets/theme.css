@@ -83,12 +83,81 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment .card-copy-toast.visible{height:auto;margin-bottom:-44px;padding:12px;border:1px solid #ffffff38;border-radius:12px;background:#182334;box-shadow:0 5px 16px #0006;opacity:1}
 .card-payment .card-transfer [hidden]{display:none!important}
 .card-payment .card-transfer-bank{padding:0;margin-bottom:14px;background:none;border-radius:16px;overflow:hidden}
-.card-payment .payment-card-face{position:relative;aspect-ratio:1.69;background:#191919 url('/assets/payment-card.png') center/106% 120% no-repeat;border:0;border-radius:16px;overflow:hidden;color:#fff}
+.card-payment .payment-card-face{position:relative;aspect-ratio:1.69;background:#191919 url('/assets/payment-card.png?v=top-logo-2') center/100% 100% no-repeat;border:0;border-radius:16px;overflow:hidden;color:#fff}
 .card-payment .payment-card-face small{position:absolute;top:10%;left:7%;font-size:10px;color:#ddd}
 .card-payment .payment-card-face strong{position:absolute;top:57%;left:7%;margin:0;font-size:clamp(16px,5vw,22px);letter-spacing:1px;white-space:nowrap;text-shadow:0 2px 4px #000}
-.card-payment .payment-card-face span{position:absolute;top:76%;left:7%;max-width:61%;font-size:9px;line-height:1.4;text-shadow:0 2px 4px #000}
-.card-payment .payment-card-face[data-network="UZCARD"]{background-image:url('/assets/payment-card-uzcard.png');background-size:100% 100%}
+.card-payment .payment-card-face span{position:absolute;top:76%;left:7%;max-width:61%;font-size:clamp(11px,3.2vw,13px);line-height:1.4;text-shadow:0 2px 4px #000}
+.card-payment .payment-card-face[data-network="UZCARD"]{background-image:url('/assets/payment-card-uzcard.png?v=top-logo-2');background-size:100% 100%}
 .card-payment .card-transfer-bank button[data-copy]{margin:8px 0 0;width:100%}
 .card-payment .payment-card-face [data-card-number],.card-payment .payment-card-face [data-card-owner]{font-family:'Courier New',Courier,monospace;font-weight:700;font-variant-numeric:tabular-nums;text-transform:uppercase;text-shadow:0 1px 0 #ffffff40,0 2px 3px #000}
 .card-payment .payment-card-face [data-card-number]{letter-spacing:1.1px}
 .card-payment .payment-card-face [data-card-owner]{letter-spacing:.7px}
+.card-payment .payment-card-face [data-card-owner]{top:calc(76% + 8px)!important}
+.card-payment .payment-card-face [data-card-owner]{top:59%!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy]::before,.card-payment .card-transfer .card-transfer-amount button[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 5px)!important}
+.card-payment .card-transfer-bank .payment-card-face{overflow:visible!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
+.card-payment .card-help-row{display:flex;align-items:stretch;gap:10px}
+.card-payment .card-help-row .card-support{flex:1;min-width:0}
+.card-payment .card-rules-button{flex:1;min-width:0;padding:11px 13px;border:1px solid #ffffff26!important;border-radius:12px!important;background:#ffffff09!important;color:#f3f6fb!important;font-size:14px}
+.card-payment .card-rules-dialog{box-sizing:border-box;width:calc(100vw - 24px);max-width:420px;max-height:85dvh;padding:24px;border:1px solid #ffffff30;border-radius:18px;background:#182334;color:#f3f6fb;box-shadow:none;overflow:auto}
+.card-payment .card-rules-dialog::backdrop{background:#0009}
+.card-payment .card-rules-dialog h2{font-size:18px;color:#fff;margin:0 0 16px}
+.card-payment .card-rules-dialog ol{background:transparent!important;border:0!important;padding:0;margin:0 0 20px}
+.card-payment .card-rules-dialog li{font-size:15px;line-height:1.6;padding:14px 0}
+.card-payment .card-rules-dialog li::before{background:#2b3946!important;border:0!important;box-shadow:none!important}
+.card-payment .card-rules-dialog button{width:100%;margin-top:8px;padding:12px;border:1px solid #ffffff30;border-radius:10px}
+.card-payment .card-rules-button,.card-payment .card-rules-dialog button{box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none}
+.card-payment .card-rules-dialog button{background:#2b3946!important;font-size:15px}
+.card-payment .card-rules-button::before,.card-payment .card-rules-dialog button::before{content:none!important}
+.card-payment .card-rules-button{display:flex;align-items:center;justify-content:flex-start;gap:10px;font-weight:700}
+.card-payment .payment-card-face .card-number-row{position:absolute;top:51%;left:7%;right:5%;display:flex;align-items:center;gap:6px}
+.card-payment .payment-card-face .card-number-row{top:47%}
+.card-payment .card-transfer-bank button.card-number-copy[data-copy]{position:absolute;top:61%;left:7%;width:42%!important;height:24px!important;min-height:24px!important;margin:0!important;padding:3px 6px!important;border:1px solid #ffffff45!important;border-radius:6px!important;background:#ffffff12!important;color:#fff!important;font-size:9px!important;line-height:1!important}
+.card-payment .card-transfer-bank{padding:0!important;margin-bottom:14px;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible}
+.card-payment .card-transfer-bank .payment-card-face{border-radius:16px!important}
+.card-payment .payment-card-face .card-number-row strong{position:static;flex:1;min-width:0;font-size:clamp(14px,4.5vw,20px);letter-spacing:.7px}
+.card-payment .card-transfer-bank button.card-number-copy[data-copy],.card-payment .card-transfer-bank button.card-number-copy[data-copy]:hover,.card-payment .card-transfer-bank button.card-number-copy[data-copy]:active,.card-payment .card-transfer-bank button.card-number-copy[data-copy]:focus{display:grid;place-items:center;flex:0 0 32px;width:32px;height:36px;min-height:36px;margin:0;padding:5px;border:0!important;background:transparent!important;border-radius:6px!important}
+.card-payment .card-transfer-bank button.card-number-copy[data-copy]{display:block;width:100%;height:34px;min-height:34px;margin:8px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px}
+.card-payment .card-transfer-bank .card-number-copy[data-copy]::after{content:none!important}
+.card-payment .card-number-copy svg{width:20px;height:20px}
+.card-payment .card-transfer .card-number-copy[data-copy],.card-payment .card-transfer .card-number-copy[data-copy]:hover,.card-payment .card-transfer .card-number-copy[data-copy]:active{animation:none!important;transition:none!important;transform:none!important;filter:none!important;box-shadow:none!important;background:transparent!important;border:0!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.card-payment .card-number-copy svg{animation:none!important;transition:none!important;transform:none!important}
+.card-payment .card-transfer button[data-copy]{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;-webkit-tap-highlight-color:transparent}
+.card-payment .card-transfer-amount{display:grid;grid-template-columns:minmax(0,1fr) 36px;column-gap:10px;row-gap:5px;align-items:center;padding:12px 14px;text-align:left;border-radius:14px}
+.card-payment .card-transfer-amount small{grid-column:1;font-size:11px;line-height:1.4}
+.card-payment .card-transfer-amount strong{grid-column:1;margin:0;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.card-payment .card-transfer .card-transfer-amount button[data-copy],.card-payment .card-transfer .card-transfer-amount button[data-copy]:hover,.card-payment .card-transfer .card-transfer-amount button[data-copy]:active{grid-column:2;grid-row:1 / 3;display:grid;place-items:center;width:36px;height:36px;margin:0;padding:7px;border:0!important;background:transparent!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy]::after{content:none!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy]{grid-column:1 / -1!important;grid-row:3!important;display:block!important;width:100%!important;height:32px!important;margin:3px 0 0!important;padding:6px 10px!important;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy] svg{display:none!important}
+.card-payment .card-transfer .card-transfer-amount button[data-copy]::before{content:'Summani nusxalash';font-size:12px}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{display:block!important;position:absolute!important;top:60%!important;left:7%!important;width:58%!important;height:30px!important;min-height:30px!important;margin:0!important;padding:6px 10px!important;font-size:10px!important;line-height:1!important;white-space:nowrap!important;overflow:visible!important;text-align:center!important;color:#fff!important;background:#ffffff12!important;border:1px solid #ffffff45!important;border-radius:9px!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::before{content:'Karta raqamini nusxalash'!important;font-size:9px!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::before{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{width:58%!important;height:32px!important;min-height:32px!important;padding:6px 10px!important;border-radius:9px!important;font-size:12px!important;line-height:1!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{background:transparent!important;box-shadow:none!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy] svg{display:block!important;flex:0 0 auto!important;vertical-align:middle!important}
+.card-payment .card-transfer-amount button[data-copy]{display:none!important}
+.card-payment .card-transfer-amount button[data-copy]{display:block!important;grid-column:1 / -1;grid-row:3;width:100%;height:32px;margin:3px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
+.card-payment .card-transfer-amount button[data-copy]::before{content:'Summani nusxalash';font-size:12px}
+.card-payment .card-transfer-amount button svg{width:20px;height:20px}
+.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
+.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::before,.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-amount button.amount-copy-icon[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
+.card-payment .card-transfer-amount{grid-template-columns:max-content 30px!important;column-gap:4px!important}
+.card-payment .card-transfer-amount small{grid-column:1 / -1!important}
+.card-payment .card-transfer-amount strong{grid-column:1!important;grid-row:2!important}
+.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]{grid-column:2!important;grid-row:2!important;width:30px!important;height:30px!important;min-height:30px!important;padding:4px!important}
+.card-payment .card-payment-back svg{display:block!important;width:20px!important;height:20px!important}
+.card-payment .card-payment-back,.card-payment .card-payment-back:hover,.card-payment .card-payment-back:active,.card-payment .card-payment-back:focus{display:flex!important;align-items:center!important;justify-content:center!important;width:34px!important;height:34px!important;padding:0!important;background:transparent!important;border:1px solid #ffffff45!important;border-radius:8px!important;box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none!important}
+.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}

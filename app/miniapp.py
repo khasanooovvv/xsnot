@@ -231,6 +231,16 @@ async def get_card_order(order_id: str, uid=Depends(registered)):
             raise HTTPException(404, str(exc))
 
 
+@router.post('/api/card-orders/{order_id}/cancel')
+async def cancel_card_order(order_id: str, uid=Depends(registered)):
+    from app.services.card_orders import cancel_order
+    async with SessionLocal() as s:
+        try:
+            return await cancel_order(s, uid, order_id)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc))
+
+
 def normalize_photo(content):
     try:
         with Image.open(io.BytesIO(content)) as source:

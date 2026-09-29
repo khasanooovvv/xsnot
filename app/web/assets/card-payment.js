@@ -16,7 +16,7 @@
     dialog.className = 'card-payment';
     dialog.setAttribute('aria-labelledby', 'cardPaymentTitle');
     dialog.innerHTML = `
-      <header class="card-payment-header"><button type="button" class="card-payment-back" aria-label="Orqaga">‹</button><h2 id="cardPaymentTitle">Obuna uchun to‘lov</h2></header>
+      <header class="card-payment-header"><button type="button" class="card-payment-back" aria-label="Orqaga"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><h2 id="cardPaymentTitle">Obuna uchun to‘lov</h2></header>
       <div class="card-payment-body">
         <div class="card-payment-methods" role="radiogroup" aria-label="Karta turi"><button type="button" class="card-network-choice active" data-network="UZCARD"><img src="/assets/uzcard-logo.jpg" alt="UZCARD"><strong>UZCARD</strong></button><button type="button" class="card-network-choice" data-network="HUMO"><img src="/assets/humo-logo.png" alt="HUMO"><strong>HUMO</strong></button></div>
         <fieldset class="card-payment-choices" hidden><legend>To‘lov usuli</legend><label><input type="radio" name="paymentNetwork" value="UZCARD" checked> Uzcard</label><label><input type="radio" name="paymentNetwork" value="HUMO"> Humo</label></fieldset>
@@ -41,7 +41,20 @@
     };
     let timer;
     let pollTimer;
-    const close = () => { clearInterval(timer); clearTimeout(pollTimer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus(); };
+    let activeOrderId = null;
+    const cancelActiveOrder = () => {
+      if (!activeOrderId) return;
+      fetch('/api/card-orders/' + activeOrderId + '/cancel', {
+        method: 'POST', keepalive: true,
+        headers: {'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData || ''}
+      }).catch(() => {});
+      activeOrderId = null;
+    };
+    const close = () => {
+      cancelActiveOrder();
+      clearInterval(timer); clearTimeout(pollTimer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus();
+    };
+    window.addEventListener('pagehide', cancelActiveOrder, {once: true});
     dialog.querySelector('.card-payment-back').onclick = close;
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
@@ -83,6 +96,7 @@
       let order;
       try {
         order = await requestOrder(null, {network: selectedNetwork, tier: tier.dataset.tier, days: Number(plan.dataset.days), switch: true});
+        activeOrderId = order.id;
       } catch (error) {
         notifyCopy(error.message);
         footerButton.disabled = false;
@@ -101,14 +115,41 @@
       transfer.innerHTML = `
         <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer"><svg class="card-support-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-3a8 8 0 0 1 16 0v3M20 17v1a3 3 0 0 1-3 3h-3"/><rect x="2" y="10" width="4" height="8" rx="2"/><rect x="18" y="10" width="4" height="8" rx="2"/><path d="M11 21h3"/></svg><span><strong>Support</strong><small>24/7 yordam</small></span></a>
         <p class="card-transfer-plan"></p>
-        <div class="card-transfer-bank"><div class="payment-card-face"><strong data-card-number></strong><span data-card-owner>XASANOV SHERZOD</span></div><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
-        <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount">Summani nusxalash</button></div>
+        <div class="card-transfer-bank"><div class="payment-card-face"><div class="card-number-row"><strong data-card-number></strong><button type="button" class="card-number-copy" data-copy="card" aria-label="Karta raqamini nusxalash" title="Karta raqamini nusxalash"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg></button></div><span data-card-owner>XASANOV SHERZOD</span></div></div>
+        <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount" aria-label="Summani nusxalash" title="Summani nusxalash"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg></button></div>
         <div class="card-transfer-time"><span>To‘lov uchun vaqt</span><b>5:00</b><progress max="300" value="300" aria-label="Qolgan vaqt"></progress></div>
-        <h3>TO‘LOV QOIDALARI</h3><ol><li>Ko‘rsatilgan summani aniq o‘tkazing</li><li>5 daqiqa ichida to‘lang</li><li>To‘lov chekini saqlang</li></ol>
         <p class="card-transfer-status" role="status">To‘lov kutilmoqda</p><p class="card-copy-status" role="status"></p>`;
       transfer.querySelector('.card-transfer-plan').textContent = (order.tier === 'plus' ? 'Gold Plus' : 'Gold') + ' · ' + order.days + ' kun';
       transfer.querySelector('.card-transfer-amount strong').textContent = orderPrice;
+      const amountCopyButton = transfer.querySelector('.card-transfer-amount [data-copy="amount"]');
       initialBody.after(transfer);
+      amountCopyButton.classList.add('amount-copy-icon');
+      const cardCopyButton = transfer.querySelector('.card-number-copy');
+      cardCopyButton.prepend(document.createTextNode('Karta raqamini nusxalash'));
+      transfer.querySelector('.payment-card-face').append(cardCopyButton);
+      const helpRow = document.createElement('div');
+      helpRow.className = 'card-help-row';
+      const supportLink = transfer.querySelector('.card-support');
+      supportLink.before(helpRow);
+      helpRow.append(supportLink);
+      const rulesButton = document.createElement('button');
+      rulesButton.type = 'button';
+      rulesButton.className = 'card-rules-button';
+      rulesButton.innerHTML = '<svg class="card-support-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg><span>Qoidalar</span>';
+      rulesButton.setAttribute('aria-haspopup', 'dialog');
+      helpRow.append(rulesButton);
+      const rulesDialog = document.createElement('dialog');
+      rulesDialog.className = 'card-rules-dialog';
+      rulesDialog.setAttribute('aria-label', 'To‘lov qoidalari');
+      rulesDialog.innerHTML = '<h2>To‘lov qoidalari</h2><ol><li>Ko‘rsatilgan summani aniq o‘tkazing</li><li>5 daqiqa ichida to‘lang</li><li>To‘lov chekini saqlang</li></ol><button type="button" autofocus>Tushunarli</button>';
+      transfer.append(rulesDialog);
+      rulesButton.onclick = () => rulesDialog.showModal();
+      rulesDialog.querySelector('button').onclick = () => rulesDialog.close();
+      rulesDialog.addEventListener('cancel', event => event.stopPropagation());
+      rulesDialog.addEventListener('click', event => {
+        event.stopPropagation();
+        if (event.target === rulesDialog) rulesDialog.close();
+      });
       dialog.scrollTop = 0;
       const status = transfer.querySelector('.card-transfer-status');
       let deadline = Date.now() + order.remaining * 1000;
@@ -141,7 +182,7 @@
       status.after(support);
       const renderOrder = () => {
         const active = order.status === 'active';
-        transfer.querySelectorAll('.card-transfer-amount,.card-transfer-bank,.card-transfer-time,h3,ol').forEach(el => { el.hidden = !active; });
+        transfer.querySelectorAll('.card-transfer-amount,.card-transfer-bank,.card-transfer-time').forEach(el => { el.hidden = !active; });
         support.hidden = !['expired', 'cancelled'].includes(order.status);
         footerButton.disabled = false;
         if (order.status === 'queued') {
@@ -155,10 +196,11 @@
             await showTransfer(true);
           };
         } else if (active) {
-          status.textContent = 'To‘lov kutilmoqda. Avtomatik tekshirilmoqda.';
+          status.textContent = 'To‘lov kutilmoqda';
           footerButton.textContent = 'To‘lovni tekshirish';
           footerButton.onclick = () => pollOrder();
         } else if (order.status === 'paid') {
+          activeOrderId = null;
           status.textContent = 'To‘lov tasdiqlandi! Obunangiz faollashtirildi.';
           footerButton.textContent = 'Yopish'; footerButton.onclick = close;
         } else {

@@ -94,6 +94,19 @@ async def order_state(s, uid, network=None, tier=None, days=None, order_id=None,
     return result
 
 
+async def cancel_order(s, uid, order_id):
+    await lock(s)
+    now = datetime.now(UTC)
+    await refresh(s, now)
+    o = await s.get(CardOrder, order_id)
+    if not o or o.user_id != uid:
+        raise ValueError('Buyurtma topilmadi')
+    if o.status in ('active', 'queued'):
+        o.status = 'cancelled'
+    await s.commit()
+    return {'ok': True, 'status': o.status}
+
+
 def parse_receipt(body):
     # Only incoming credits; never parse the balance line as the paid amount.
     amount = re.search(r'(?:\+|➕)\s*(\d[\d .,\u00a0]*[.,]\d{2})\s*UZS', body, re.I)
