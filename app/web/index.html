@@ -265,7 +265,11 @@ async function loadCachedAvatar(){
 const rouletteCacheKey='chatruletka-roulette-people-v1';
 function preloadRouletteAvatars(people){
   if(!Array.isArray(people))return;
-  people.forEach(person=>{if(person?.avatar){const image=new Image();image.decoding='async';image.src=person.avatar}});
+  const preload=(person,priority)=>{if(!person?.avatar)return;const image=new Image();image.decoding='async';image.fetchPriority=priority;image.src=person.avatar};
+  people.slice(0,8).forEach(person=>preload(person,'high'));
+  const rest=people.slice(8);let index=0;
+  const loadNext=()=>{const end=Math.min(index+4,rest.length);for(;index<end;index++)preload(rest[index],'low');if(index<rest.length)(window.requestIdleCallback||((cb)=>setTimeout(cb,80)))(loadNext)};
+  loadNext();
 }
 async function loadRoulettePeople(){
   try{const cached=JSON.parse(localStorage.getItem(rouletteCacheKey)||'null');if(Array.isArray(cached)&&cached.length){window.roulettePeople=cached;preloadRouletteAvatars(cached)}}catch{}

@@ -13,9 +13,8 @@
     started=0;clearTimeout(timer);animation?.cancel();animation=null;
     panel.hidden=true;track.replaceChildren();landing=null;signature='';
   }
-  async function start(){
+  function start(){
     if(started)return;
-    if((!Array.isArray(window.roulettePeople)||!window.roulettePeople.length)&&window.roulettePeopleReady)await window.roulettePeopleReady;
     document.body.classList.add('chat-searching');
     started=performance.now()||1;panel.hidden=false;
     status.textContent='Ruletka aylanmoqda…';
