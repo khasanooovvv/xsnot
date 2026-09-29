@@ -21,10 +21,12 @@ class Session:
         self.matches = []
         self.commit = AsyncMock()
         self.execute = AsyncMock()
+        self.scalar = AsyncMock(return_value=None)
     async def __aenter__(self): return self
     async def __aexit__(self, *args): pass
     async def get(self, model, uid): return self.own
-    def add(self, match): self.matches.append(match)
+    def add(self, match):
+        if match.__class__.__name__ != 'Usage': self.matches.append(match)
 
 
 class RouletteTests(unittest.IsolatedAsyncioTestCase):
@@ -32,10 +34,15 @@ class RouletteTests(unittest.IsolatedAsyncioTestCase):
         self.own = Obj(user_id=10, mode='mini_ro', archive_consent=True)
         self.partner = Obj(user_id=20, mode='mini_ra', archive_consent=True)
         self.session = Session(self.own)
+        class Usage:
+            user_id=Query(); usage_day=Query()
+            def __init__(self, **kwargs): self.__dict__.update(kwargs)
         self.ns = dict(hmac=hmac, hashlib=hashlib, time=time, secrets=secrets,
                        datetime=datetime, UTC=UTC, timedelta=timedelta, HTTPException=HttpError,
                        settings=lambda: Obj(bot_token='test-secret', archive_channel_id=123),
                        SessionLocal=lambda: self.session, MatchQueue=object, User=object,
+                       select=lambda *args:Query(), RouletteUsage=Usage,
+                       limits=lambda user:{'roulette':20},
                        Match=lambda **kwargs: Obj(**kwargs), sql=lambda x:x,
                        active_match=AsyncMock(return_value=None),
                        pending_invitation=AsyncMock(return_value=None),

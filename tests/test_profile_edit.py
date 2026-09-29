@@ -18,7 +18,8 @@ class ProfileEditTests(unittest.IsolatedAsyncioTestCase):
         self.session.scalar = AsyncMock(return_value=None)
         self.ns = dict(HTTPException=HttpError, re=re, sql=lambda s:s, select=lambda *args:Query(),
                        SessionLocal=lambda:self.session, User=Obj(telegram_id=Query(),app_username=Query()), MiniAvatar=object,
-                       profile=AsyncMock(return_value={'name':'New','avatar':None}), base64=base64, io=io, Image=Image, ImageOps=ImageOps)
+                       profile=AsyncMock(return_value={'name':'New','avatar':None}), base64=base64, io=io, Image=Image, ImageOps=ImageOps,
+                       limits=lambda user:{'usernames':2,'username_min':1})
         self.edit = load_function('app/miniapp.py', 'edit_profile', self.ns)
         self.body = Obj(name=' New ', app_username='@New_User', bio=' Hello! ', avatar=None)
 

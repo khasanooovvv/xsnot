@@ -262,7 +262,12 @@ async function loadCachedAvatar(){
     await avatarCacheStore('put',id,{avatar:data.avatar,version:data.version});
   }catch{/* Keep the cached image when offline. */}
 }
-run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');syncLeaderboardIcon();syncProfileIcon();syncBackIcons();syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered)poll();else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
+const rouletteCacheKey='chatruletka-roulette-people-v1';
+async function loadRoulettePeople(){
+  try{const cached=JSON.parse(localStorage.getItem(rouletteCacheKey)||'null');if(Array.isArray(cached)&&cached.length)window.roulettePeople=cached}catch{}
+  try{const fresh=await api('roulette/people');if(Array.isArray(fresh)){window.roulettePeople=fresh;localStorage.setItem(rouletteCacheKey,JSON.stringify(fresh))}}catch{}
+}
+run(async()=>{tg?.ready();tg?.expand();if(!tg?.initData){show('outside');return}me=await api('me?include_avatar=false');loadRoulettePeople();syncLeaderboardIcon();syncProfileIcon();syncBackIcons();syncArchiveConsent();syncMuteState(me);applyLanguage(me.language);if(me.registered){loadCachedAvatar();}if(!muteOnlyActive){$('nav').hidden=!me.registered;show(me.registered?'home':'registration')}if(me.registered)poll();else{setInterval(()=>{if(me?.registered)poll()},1000)}}).then(()=>{if(!$('loading').hidden&&!muteOnlyActive){show('errorState')}});
 const deleteButton=document.createElement('button');deleteButton.id='deleteAccount';deleteButton.type='button';deleteButton.className='danger';deleteButton.style.cssText='margin-top:24px;width:100%;';deleteButton.textContent='Accountni o‘chirish';$('profile').append(deleteButton);
 document.addEventListener('click',e=>{if(e.target.id!=='deleteAccount')return;if(!confirm('Account o\u2018chiriladi. Gold muddati va taklif qilingan do\u2018stlaringiz statistikasi ham o\u2018chadi. Bu amalni tasdiqlaysizmi?'))return;run(async()=>{await api('delete-account',{});++avatarCacheEpoch;await avatarCacheStore('delete',me.id);await avatarCacheStore('delete','dm-list:'+me.id);verificationCamera?.cancel();me=null;match=null;$('nav').hidden=true;show('outside');notice('Account o‘chirildi. Botda /start bosib yangi profil yarating.')})});
 function setupRegistrationPicker(){

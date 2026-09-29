@@ -18,9 +18,11 @@
     document.body.classList.add('chat-searching');
     started=performance.now()||1;panel.hidden=false;
     status.textContent='Ruletka aylanmoqda…';
+    const people=Array.isArray(window.roulettePeople)?window.roulettePeople:[];
     for(let i=0;i<28;i++){
       const node=document.createElement('div');node.className='roulette-card';
-      node.innerHTML=avatar({name:'?',anonymous:true})+'<strong>Suhbatdosh</strong>';
+      const person=people.length?people[i%people.length]:{name:'?',anonymous:true};
+      node.innerHTML=avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>';
       track.append(node);if(i===24)landing=node;
     }
     const from=viewport.clientWidth/2-66,to=from-24*132;
@@ -35,7 +37,7 @@
   window.chatRoulette={reset,start,hold(person){
     if(!started)return false;
     const next=JSON.stringify(person);
-    if(signature!==next&&landing){signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+'</strong>'}
+    if(signature!==next&&landing){signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+badgeMarkup(person)+'</strong>'}
     return performance.now()-started<3000;
   },async ready(person){
     if(!this.hold(person))return;

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qsl
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
@@ -362,8 +362,24 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
             results.append(dict(id=user.telegram_id, name=user.display_name,
                 app_username=matched_handle,
                 city=user.city, age=age_on(user.birth_date) if user.birth_date else None,
+                avatar=f'/api/avatar/{user.telegram_id}',
                 **badge_status(user)))
         return results
+
+@router.get('/api/roulette/people')
+async def roulette_people(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        users = (await s.scalars(select(User).where(
+            User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid
+        ).order_by(func.random()).limit(32))).all()
+        result = []
+        for user in users:
+            avatar = await s.get(MiniAvatar, user.telegram_id)
+            version = hashlib.sha256(avatar.data.encode()).hexdigest()[:12] if avatar else 'default'
+            result.append(dict(id=user.telegram_id, name=user.display_name or 'Foydalanuvchi',
+                               avatar=f'/api/avatar/{user.telegram_id}?v={version}',
+                               **badge_status(user)))
+        return result
 
 @router.get('/api/me')
 async def me(include_avatar: bool = True, uid=Depends(identity)):
@@ -393,7 +409,14 @@ async def get_user_avatar(user_id: int):
         avatar = await s.get(MiniAvatar, user_id)
         if not avatar:
             raise HTTPException(404, 'Avatar not found')
-        return {'avatar': avatar.data}
+        try:
+            header, encoded = avatar.data.split(',', 1)
+            media_type = header.split(';', 1)[0].removeprefix('data:') or 'image/jpeg'
+            payload = base64.b64decode(encoded)
+        except (ValueError, TypeError, base64.binascii.Error):
+            raise HTTPException(500, 'Avatar format invalid')
+        return Response(content=payload, media_type=media_type,
+                        headers={'Cache-Control': 'public, max-age=86400'})
 
 @router.get('/api/me/gold')
 async def my_gold(uid=Depends(registered)):
@@ -409,7 +432,7 @@ async def delete_account(uid=Depends(identity)):
     """Permanently erase every record owned by the authenticated account."""
     async with SessionLocal() as s:
         await s.execute(sql('SELECT pg_advisory_xact_lock(730022)'))
-        user = await s.get(User, uid, with_for_update=True)
+        user = await s.get(User, uid)
         if not user:
             return {'ok': True, 'deleted': False}
         current = await active_match(s, uid)
@@ -685,7 +708,7 @@ async def roulette_spin(uid=Depends(registered)):
         if await pending_invitation(s, uid):
             raise HTTPException(409, 'Avval joriy taklifga javob bering yoki uni bekor qiling.')
         own.queued_at = datetime.now(UTC)
-        user = await s.get(User, uid, with_for_update=True)
+        user = await s.get(User, uid)
         today = (datetime.now(UTC) + timedelta(hours=5)).date()
         usage = await s.scalar(select(RouletteUsage).where(RouletteUsage.user_id == uid, RouletteUsage.usage_day == today))
         daily_limit = limits(user)['roulette']

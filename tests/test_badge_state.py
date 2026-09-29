@@ -22,12 +22,12 @@ class BadgeStateTests(unittest.TestCase):
 
     def test_legacy_premium_does_not_grant_video_silver(self):
         user=SimpleNamespace(premium_until=self.now+timedelta(days=20),gold_until=None,is_verified=False)
-        self.assertEqual(badge_status(user),dict(silver=False,gold=0,verified=False))
+        self.assertEqual(badge_status(user),dict(silver=False,gold=0,gold_plus=False,verified=False))
 
     def test_admin_verification_survives_subscription_expiry(self):
         user=SimpleNamespace(premium_until=self.now,gold_until=self.now,is_verified=True)
-        self.assertEqual(badge_status(user),dict(silver=0,gold=0,verified=True))
+        self.assertEqual(badge_status(user),dict(silver=False,gold=0,gold_plus=False,verified=True))
 
     def test_video_approval_grants_permanent_silver_without_blue(self):
         user=SimpleNamespace(premium_until=None,gold_until=None,is_verified=False,silver_verified=True)
-        self.assertEqual(badge_status(user),dict(silver=True,gold=0,verified=False))
+        self.assertEqual(badge_status(user),dict(silver=True,gold=0,gold_plus=False,verified=False))
