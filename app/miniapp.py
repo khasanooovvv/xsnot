@@ -377,7 +377,7 @@ async def roulette_people(uid=Depends(registered)):
             avatar = await s.get(MiniAvatar, user.telegram_id)
             version = hashlib.sha256(avatar.data.encode()).hexdigest()[:12] if avatar else 'default'
             result.append(dict(id=user.telegram_id, name=user.display_name or 'Foydalanuvchi',
-                               avatar=f'/api/avatar/{user.telegram_id}?v={version}',
+                               avatar=f'/api/avatar/{user.telegram_id}?v={version}' if avatar else None,
                                **badge_status(user)))
         return result
 
