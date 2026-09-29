@@ -101,7 +101,7 @@
       transfer.innerHTML = `
         <a class="card-support" href="https://t.me/xssupport" target="_blank" rel="noopener noreferrer"><svg class="card-support-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-3a8 8 0 0 1 16 0v3M20 17v1a3 3 0 0 1-3 3h-3"/><rect x="2" y="10" width="4" height="8" rx="2"/><rect x="18" y="10" width="4" height="8" rx="2"/><path d="M11 21h3"/></svg><span><strong>Support</strong><small>24/7 yordam</small></span></a>
         <p class="card-transfer-plan"></p>
-        <div class="card-transfer-bank"><div class="payment-card-face"><strong data-card-number></strong><span data-card-owner>XASANOV SHERZOD</span><b class="payment-card-network"></b></div><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
+        <div class="card-transfer-bank"><div class="payment-card-face"><strong data-card-number></strong><span data-card-owner>XASANOV SHERZOD</span></div><button type="button" data-copy="card">Karta raqamini nusxalash</button></div>
         <div class="card-transfer-amount"><small>Aynan shu summani o‘tkazing</small><strong></strong><button type="button" data-copy="amount">Summani nusxalash</button></div>
         <div class="card-transfer-time"><span>To‘lov uchun vaqt</span><b>5:00</b><progress max="300" value="300" aria-label="Qolgan vaqt"></progress></div>
         <h3>TO‘LOV QOIDALARI</h3><ol><li>Ko‘rsatilgan summani aniq o‘tkazing</li><li>5 daqiqa ichida to‘lang</li><li>To‘lov chekini saqlang</li></ol>
@@ -189,8 +189,7 @@
       renderOrder();
       const updateTransferCard = network => {
         const card = cardData[network];
-        transfer.querySelector('.payment-card-network').textContent = network;
-        transfer.querySelector('.payment-card-network').hidden = network === 'HUMO';
+        transfer.querySelector('.payment-card-face').dataset.network = network;
         transfer.querySelector('[data-card-number]').textContent = card.number;
         transfer.querySelector('[data-card-owner]').textContent = 'XASANOV SHERZOD';
       };

@@ -87,7 +87,7 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment .payment-card-face small{position:absolute;top:10%;left:7%;font-size:10px;color:#ddd}
 .card-payment .payment-card-face strong{position:absolute;top:57%;left:7%;margin:0;font-size:clamp(16px,5vw,22px);letter-spacing:1px;white-space:nowrap;text-shadow:0 2px 4px #000}
 .card-payment .payment-card-face span{position:absolute;top:76%;left:7%;max-width:61%;font-size:9px;line-height:1.4;text-shadow:0 2px 4px #000}
-.card-payment .payment-card-network{position:absolute;right:6%;bottom:12%;width:24%;height:20%;display:grid;place-items:center;border-radius:8px;background:#172b3d;color:#eed37c;font-size:clamp(12px,4vw,17px);box-shadow:inset 0 0 0 1px #ffffff50}
+.card-payment .payment-card-face[data-network="UZCARD"]{background-image:url('/assets/payment-card-uzcard.png');background-size:100% 100%}
 .card-payment .card-transfer-bank button[data-copy]{margin:8px 0 0;width:100%}
 .card-payment .payment-card-face [data-card-number],.card-payment .payment-card-face [data-card-owner]{font-family:'Courier New',Courier,monospace;font-weight:700;font-variant-numeric:tabular-nums;text-transform:uppercase;text-shadow:0 1px 0 #ffffff40,0 2px 3px #000}
 .card-payment .payment-card-face [data-card-number]{letter-spacing:1.1px}
