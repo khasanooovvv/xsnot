@@ -28,6 +28,9 @@ class SubscriptionTests(unittest.TestCase):
     def test_all_tiers(self):
         u = User(is_verified=False, silver_verified=False, short_username_min_length=0)
         self.assertEqual(limits(u)['roulette'], 10)
+        u.silver_verified = True
+        self.assertEqual(limits(u)['roulette'], 15)
+        self.assertEqual(limits(u)['usernames'], 2)
         grant_subscription(u, 'gold', 7)
         self.assertEqual(limits(u), {'roulette':20, 'usernames':2, 'username_min':5})
         grant_subscription(u, 'plus', 7)
@@ -65,6 +68,22 @@ class QuotaTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(denied['allowed'])
         self.assertEqual(denied['resets_at'], self.now+timedelta(days=7))
         self.assertTrue((await self.permission(5, offset=7))['allowed'])
+
+    async def test_silver_one_partner_and_week_reset(self):
+        async with self.sessions() as s:
+            u = await s.get(User, 1)
+            u.gold_until = None
+            u.silver_verified = True
+            await s.commit()
+        self.assertTrue((await self.permission(2, False))['allowed'])
+        self.assertTrue((await self.permission(3))['allowed'])
+        self.assertTrue((await self.permission(3))['allowed'])
+        denied = await self.permission(2)
+        self.assertFalse(denied['allowed'])
+        self.assertEqual(denied['partner_limit'], 1)
+        self.assertEqual(denied['resets_at'], self.now + timedelta(days=7))
+        self.assertTrue((await self.permission(2, offset=7))['allowed'])
+        self.assertFalse((await self.permission(3, offset=7))['allowed'])
 
     async def test_plus_unlimited_and_downgrade_preserves_gold_window(self):
         for other in [2, 3, 4]:

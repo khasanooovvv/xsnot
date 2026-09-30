@@ -16,12 +16,13 @@ async def direct_permission(session, user, other, consume=False, now=None):
     tier = subscription(user, now)['tier']
     if tier == 'plus' or user.is_verified:
         return {'allowed': True, 'reason': None, 'resets_at': None}
-    if tier == 'free':
+    if tier == 'free' and not user.silver_verified:
         return {'allowed': False, 'reason': 'gold_required', 'resets_at': None}
+    partner_limit = 3 if tier == 'gold' else 1
     row = await session.get(DirectQuota, user.telegram_id)
     active = row and aware(row.started_at) + timedelta(days=7) > now
     recipients = json.loads(row.recipients) if active else []
-    allowed = other in recipients or len(recipients) < 3
+    allowed = other in recipients or len(recipients) < partner_limit
     if allowed and consume and other not in recipients:
         if not active:
             if row is None:
@@ -31,6 +32,7 @@ async def direct_permission(session, user, other, consume=False, now=None):
         recipients.append(other)
         row.recipients = json.dumps(recipients)
     return {'allowed': allowed, 'reason': None if allowed else 'weekly_dm_limit',
+            'partner_limit': partner_limit,
             'resets_at': aware(row.started_at) + timedelta(days=7) if row and (active or consume) else None}
 
 

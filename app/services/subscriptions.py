@@ -34,7 +34,7 @@ def limits(user):
     tier = subscription(user)['tier']
     verified = bool(user.is_verified)
     return {
-        'roulette': 100 if tier == 'plus' else 20 if tier == 'gold' else 10,
+        'roulette': 100 if tier == 'plus' else 20 if tier == 'gold' else 15 if user.silver_verified else 10,
         'usernames': 999 if verified else 5 if tier == 'plus' else 2 if tier == 'gold' or user.silver_verified else 1,
         'username_min': 1 if verified else 5 if tier != 'free' else (user.short_username_min_length or (2 if user.silver_verified else 1)),
     }

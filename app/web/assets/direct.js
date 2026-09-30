@@ -29,7 +29,7 @@
   function partner(data){data.partner=mergePerson(data.partner);current.partner=data.partner;current.blocked=data.blocked_by_me;current.canSend=data.can_send;const signature=JSON.stringify(data.partner);if(el('dmPartner').dataset.signature!==signature){el('dmPartner').dataset.signature=signature;el('dmPartner').innerHTML=avatar(data.partner)+'<div class="dm-person"><strong>'+esc(data.partner.name)+badgeMarkup(data.partner)+'</strong><small><i class="'+(data.partner.online?'online':'')+'"></i>'+(data.partner.online?'Online':'Offline')+'</small></div>';}el('dmInput').disabled=!data.can_send;el('dmForm').querySelector('button').disabled=!data.can_send||busy;if(!data.can_send){
  const box=el('dmNotice');box.replaceChildren();box.hidden=false;
  const reason=data.send_limit?.reason;
- box.textContent=reason==='weekly_dm_limit'?'Haftalik 3 ta suhbatdosh limitiga yetdingiz.':reason==='gold_required'?'DM uchun Gold obuna kerak.':'Bloklash sababli xabar yuborish o‘chirilgan.';
+ box.textContent=reason==='weekly_dm_limit'?'Har 7 kunda '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limitiga yetdingiz.':reason==='gold_required'?'DM uchun Silver verifikatsiya yoki Gold obuna kerak.':'Bloklash sababli xabar yuborish o‘chirilgan.';
  if(reason){
    if(data.send_limit.resets_at)box.append(' Limit '+new Date(data.send_limit.resets_at).toLocaleString('uz-UZ')+' da yangilanadi. ');
    const upgrade=document.createElement('button');upgrade.type='button';
