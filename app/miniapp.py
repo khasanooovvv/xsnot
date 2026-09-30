@@ -423,7 +423,7 @@ async def get_user_avatar(user_id: int):
             raise HTTPException(500, 'Avatar format invalid')
         await s.commit()
         return Response(content=payload, media_type=media_type,
-                        headers={'Cache-Control': 'private, max-age=86400', 'Vary': 'X-Telegram-Init-Data'})
+                        headers={'Cache-Control': 'private, max-age=2592000, immutable', 'Vary': 'X-Telegram-Init-Data'})
 
 @router.get('/api/me/gold')
 async def my_gold(uid=Depends(registered)):
