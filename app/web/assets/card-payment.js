@@ -52,6 +52,7 @@
     };
     const close = () => {
       cancelActiveOrder();
+      window.removeEventListener('pagehide', cancelActiveOrder);
       clearInterval(timer); clearTimeout(pollTimer); clearTimeout(toastTimer); dialog.close(); dialog.remove(); trigger.focus();
     };
     window.addEventListener('pagehide', cancelActiveOrder, {once: true});
@@ -157,15 +158,11 @@
         const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         transfer.querySelector('.card-transfer-time b').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
         transfer.querySelector('progress').value = seconds;
-        if (!seconds) {
-          clearTimeout(pollTimer);
-          if (order.status === 'active') {
-            status.textContent = 'To‘lov vaqti tugadi. Agar to‘lov qilgan bo‘lsangiz, supportga murojaat qiling.';
-          }
-        }
+        if (!seconds && order.status === 'active') close();
       };
-      tick();
       timer = setInterval(tick, 1000);
+      tick();
+      if (!dialog.isConnected) return;
       transfer.addEventListener('click', async event => {
         const copy = event.target.closest('[data-copy]');
         if (!copy) return;
@@ -181,6 +178,11 @@
       support.hidden = true;
       status.after(support);
       const renderOrder = () => {
+        if (order.status === 'expired') {
+          activeOrderId = null;
+          close();
+          return;
+        }
         const active = order.status === 'active';
         transfer.querySelectorAll('.card-transfer-amount,.card-transfer-bank,.card-transfer-time').forEach(el => { el.hidden = !active; });
         support.hidden = !['expired', 'cancelled'].includes(order.status);
