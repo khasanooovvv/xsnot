@@ -32,6 +32,7 @@
  box.textContent=reason==='weekly_dm_limit'?'Har 7 kunda '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limitiga yetdingiz.':reason==='gold_required'?'':'Bloklash sababli xabar yuborish o‘chirilgan.';
  if(reason){
    box.classList.add('dm-limit-card');box.replaceChildren();
+   if(reason==='gold_required'){const title=document.createElement('strong');title.className='dm-limit-title';title.textContent='DM';box.append(title)}
    if(reason==='weekly_dm_limit'){
      const title=document.createElement('strong');title.className='dm-limit-title';title.textContent='DM limitingiz tugadi';
      const description=document.createElement('p');description.className='dm-limit-description';description.textContent='Bu hafta '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limiti ishlatildi. Avvalgi suhbatlaringizni davom ettirishingiz mumkin.';
