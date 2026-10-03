@@ -29,12 +29,14 @@
   function partner(data){data.partner=mergePerson(data.partner);current.partner=data.partner;current.blocked=data.blocked_by_me;current.canSend=data.can_send;const signature=JSON.stringify(data.partner);if(el('dmPartner').dataset.signature!==signature){el('dmPartner').dataset.signature=signature;el('dmPartner').innerHTML=avatar(data.partner)+'<div class="dm-person"><strong>'+esc(data.partner.name)+badgeMarkup(data.partner)+'</strong><small><i class="'+(data.partner.online?'online':'')+'"></i>'+(data.partner.online?'Online':'Offline')+'</small></div>';}el('dmInput').disabled=!data.can_send;el('dmForm').querySelector('button').disabled=!data.can_send||busy;if(!data.can_send){
  const box=el('dmNotice');box.replaceChildren();box.hidden=false;box.classList.remove('dm-limit-card');
  const reason=data.send_limit?.reason;
- box.textContent=reason==='weekly_dm_limit'?'Har 7 kunda '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limitiga yetdingiz.':reason==='gold_required'?'DM uchun Silver verifikatsiya yoki Gold obuna kerak.':'Bloklash sababli xabar yuborish o‘chirilgan.';
+ box.textContent=reason==='weekly_dm_limit'?'Har 7 kunda '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limitiga yetdingiz.':reason==='gold_required'?'':'Bloklash sababli xabar yuborish o‘chirilgan.';
  if(reason){
    box.classList.add('dm-limit-card');box.replaceChildren();
-   const title=document.createElement('strong');title.className='dm-limit-title';title.textContent=reason==='weekly_dm_limit'?'DM limitingiz tugadi':'DM orqali suhbatlashing';
-   const description=document.createElement('p');description.className='dm-limit-description';description.textContent=reason==='weekly_dm_limit'?'Bu hafta '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limiti ishlatildi. Avvalgi suhbatlaringizni davom ettirishingiz mumkin.':'DM uchun Silver verifikatsiya yoki Gold obuna kerak.';
-   box.append(title,description);
+   if(reason==='weekly_dm_limit'){
+     const title=document.createElement('strong');title.className='dm-limit-title';title.textContent='DM limitingiz tugadi';
+     const description=document.createElement('p');description.className='dm-limit-description';description.textContent='Bu hafta '+(data.send_limit.partner_limit||3)+' ta suhbatdosh limiti ishlatildi. Avvalgi suhbatlaringizni davom ettirishingiz mumkin.';
+     box.append(title,description);
+   }
    const hint=document.createElement('p');hint.className='dm-limit-hint';hint.textContent=reason==='gold_required'?'Limitingizni oshiring yoki verifikatsiyadan o‘ting':'Limitingizni oshiring';box.append(hint);
    if(data.send_limit.resets_at){const reset=document.createElement('div');reset.className='dm-limit-reset';const label=document.createElement('span');label.textContent='Limit yangilanadi';const date=document.createElement('strong');const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tashkent',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(data.send_limit.resets_at));const part=type=>parts.find(p=>p.type===type)?.value;const months=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];date.textContent=part('day')+'-'+months[Number(part('month'))-1]+', '+part('hour')+':'+part('minute');reset.append(label,date);box.append(reset)}
    const upgrade=document.createElement('button');upgrade.type='button';
