@@ -661,6 +661,16 @@ async def search(body: Search, uid=Depends(registered)):
         if existing and existing.mode.startswith('mini_'):
             set_anonymous(existing, uid, body.mode == 'anonymous')
         elif not existing:
+            if body.roulette:
+                today = (datetime.now(UTC) + timedelta(hours=5)).date()
+                usage = await s.scalar(select(RouletteUsage).where(RouletteUsage.user_id == uid, RouletteUsage.usage_day == today))
+                daily_limit = limits(user)['roulette']
+                if usage and usage.count >= daily_limit:
+                    raise HTTPException(429, f'Kunlik {daily_limit} ta roulette limiti tugadi.')
+                if usage:
+                    usage.count += 1
+                else:
+                    s.add(RouletteUsage(user_id=uid, usage_day=today, count=1))
             await find_or_queue(s, user, 'mini_' + body.mode, None, None, None, archive_consent=archive_consent)
         await s.commit()
     return {'ok': True}

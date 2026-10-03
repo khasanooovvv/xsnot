@@ -137,7 +137,7 @@ $('anonymousMode').onchange=()=>{
 $('searchForm').onsubmit=e=>{e.preventDefault();chatAction(async()=>{
   searchOptions={mode:$('anonymousMode').checked?'anonymous':'open',accepted:true,roulette:true,archive_consent:Boolean(me?.archive_consent||$('chatTerms').checked)};
   clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');show('chat');document.body.classList.add('chat-searching');window.chatRoulette?.start();
-  await api('search',searchOptions);document.body.classList.add('chat-searching');if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
+  try{await api('search',searchOptions)}catch(error){clearChatView();show('home');const limit=/Kunlik (\d+) ta roulette limiti tugadi\./.exec(error.message);if(limit&&window.showRouletteLimit){window.showRouletteLimit(Number(limit[1]));return}throw error}document.body.classList.add('chat-searching');if(searchOptions.archive_consent){me.archive_consent=true;syncArchiveConsent()}
 })};
 async function poll(){
   if(document.hidden||polling||chatBusy||(typeof muteOnlyActive!=='undefined'&&muteOnlyActive)||!me?.registered)return;
@@ -206,7 +206,7 @@ $('stop').onclick=()=>chatAction(async()=>{clearChatView();show('home');await ap
 $('next').onclick=()=>chatAction(async()=>{
   clearChatView();$('chatTitle').textContent=t('Sherik qidirilmoqda…');
   await api('stop',{});
-  if(searchOptions){searchOptions.mode=$('anonymousMode').checked?'anonymous':'open';await api('search',searchOptions);show('chat')}else show('home');
+  if(searchOptions){searchOptions.mode=$('anonymousMode').checked?'anonymous':'open';try{await api('search',searchOptions);show('chat')}catch(error){show('home');const limit=/Kunlik (\d+) ta roulette limiti tugadi\./.exec(error.message);if(limit&&window.showRouletteLimit){window.showRouletteLimit(Number(limit[1]));return}throw error}}else show('home');
 });
 $('report').onclick=()=>{const reason=prompt(t('Shikoyat sababini yozing:'));if(reason?.trim())chatAction(async()=>{
   clearChatView();show('home');await api('stop',{reason});notice(t('Shikoyat administratorga yuborildi.'));
