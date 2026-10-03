@@ -240,3 +240,8 @@ html body .card-payment button.card-network-choice:not(#flatOverride):not(#flatO
 html body nav#nav button img,html body nav#nav button svg{filter:none!important;transform:none!important}
 html body nav#nav .nav-depth{display:none!important}
 @media(prefers-reduced-motion:reduce){html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride){transition:none!important;transform:none!important}}
+.direct-locked>:not(.direct-gold-lock){display:none!important}
+#instagram:not(.direct-locked)>.direct-gold-lock{display:none!important}
+.direct-access-actions{display:flex;gap:10px}
+.direct-access-actions button{flex:1;min-width:0;white-space:normal}
+@media(max-width:380px){.direct-access-actions{flex-direction:column}}
