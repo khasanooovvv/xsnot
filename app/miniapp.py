@@ -975,8 +975,23 @@ async def stop(body: StopBody, uid=Depends(registered)):
 @router.get('/api/leaders')
 async def leaders(uid=Depends(registered)):
     async with SessionLocal() as s:
-        rows = (await s.execute(select(User, func.count(ReferralHistory.id)).join(ReferralHistory, ReferralHistory.referrer_id == User.telegram_id).where(ReferralHistory.active.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(ReferralHistory.id).desc(), User.telegram_id).limit(10))).all()
-        return [{'name':u.display_name, 'count':count, **badge_status(u)} for u, count in rows]
+        rows = (await s.execute(select(User, func.count(ReferralHistory.id)).join(ReferralHistory, ReferralHistory.referrer_id == User.telegram_id).where(ReferralHistory.active.is_(True)).group_by(User.telegram_id, User.display_name).order_by(func.count(ReferralHistory.id).desc(), User.telegram_id).limit(150))).all()
+        result = []
+        for u, count in rows:
+            source = await s.get(MiniAvatar, u.telegram_id)
+            version = int(source.updated_at.timestamp()) if source and source.updated_at else 0
+            result.append({'id': u.telegram_id, 'name': u.display_name, 'count': count,
+                           'avatar': f'/api/avatar/{u.telegram_id}?v={version}' if source else None,
+                           **badge_status(u)})
+        return result
+
+@router.get('/assets/leaders.js')
+async def leaders_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'leaders.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
+
+@router.get('/assets/leaders.css')
+async def leaders_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'leaders.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
 
 @router.post('/api/invite')
 async def invite(request: Request, uid=Depends(registered)):
