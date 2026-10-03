@@ -96,6 +96,33 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment .payment-card-face [data-card-owner]{top:59%!important}
 .card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}
 
+/* Important layered declarations outrank older unlayered 3D overrides. */
+@layer flat-controls{
+  button,input[type="button"],input[type="submit"]{
+    background:#343434!important;background-image:none!important;
+    box-shadow:none!important;text-shadow:none!important;filter:none!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+    transform:none!important;border-color:#494949!important;
+    transition:background-color .16s ease,transform .12s ease!important;
+  }
+  button::before,button::after{content:none!important;display:none!important}
+  button:hover{background:#414141!important;box-shadow:none!important;filter:none!important;transform:none!important}
+  button:active{background:#292929!important;transform:scale(.98)!important;box-shadow:none!important}
+  button:focus-visible{outline:2px solid #bbb!important;outline-offset:3px!important}
+  button:disabled{transform:none!important;filter:none!important}
+  nav#nav button{background:#222!important}
+  nav#nav button.selected{background:#3b3b3b!important;border-color:#777!important}
+  nav#nav button:hover{background:#333!important}
+  nav#nav button svg,nav#nav button img{filter:none!important;transform:none!important}
+  nav#nav .nav-depth{display:none!important}
+  nav#nav .nav-detail{filter:none!important}
+  .premium-sheet .premium-tier.active,.premium-sheet .premium-plan.active,
+  .card-payment .card-network-choice.active{background:#30291d!important;border-color:#d8aa43!important}
+  .card-payment .card-payment-back,.chat-menu-toggle,#messageForm #attachImage,
+  #dmListTools button{background:transparent!important}
+  @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active{transform:none!important}}
+}
+
 /* Neutral Mini App palette. Status badges and payment artwork keep their colors. */
 :root{--page:#101010;--surface:#1a1a1a;--surface-2:#262626;--text:#f1f1f1;--muted:#aaa;--border:#393939;--accent:#444;--nav:#171717f2;background:#101010;color-scheme:dark}
 body.theme-dark{--page:#101010;--surface:#1a1a1a;--surface-2:#262626;--text:#f1f1f1;--muted:#aaa;--border:#393939;--accent:#444;--nav:#171717f2}
