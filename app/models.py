@@ -30,6 +30,7 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    channel_bonus_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_plus_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gold_hidden_username: Mapped[str | None] = mapped_column(String(24))
     gold_hidden_username_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -37,6 +38,13 @@ class User(Base):
     referral_rewarded: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     referrer: Mapped["User | None"] = relationship(remote_side=[telegram_id])
+
+class ChannelBonusClaim(Base):
+    __tablename__ = 'channel_bonus_claims'
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 class UserUsername(Base):
     __tablename__ = "user_usernames"

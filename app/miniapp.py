@@ -284,7 +284,7 @@ async def profile(s, u, include_avatar=True, include_referrals=True):
 async def normalize_gold_usernames(s, u):
     """Hide exactly five-character usernames for three days after Gold expires."""
     now = datetime.now(UTC)
-    gold_active = bool(u.gold_until and (u.gold_until.replace(tzinfo=UTC) if u.gold_until.tzinfo is None else u.gold_until) > now)
+    gold_active = subscription(u, now)['tier'] != 'free'
     # Users who never had Gold keep their normal usernames untouched.
     if u.gold_until is None and not u.gold_hidden_username:
         return
@@ -433,6 +433,37 @@ async def my_gold(uid=Depends(registered)):
         if until and until.tzinfo is None:
             until = until.replace(tzinfo=UTC)
         return {**subscription(user), 'server_now': datetime.now(UTC)}
+
+@router.get('/api/channel-bonus')
+async def channel_bonus_status(request: Request, uid=Depends(registered)):
+    from app.models import ChannelBonusClaim
+    from app.services.channel_bonus import CHANNEL_ID, CHANNEL_URL, is_member, revoke_bonus
+    async with SessionLocal() as s:
+        claim = await s.get(ChannelBonusClaim, uid)
+        claimed = bool(claim)
+        revoked = bool(claim and claim.revoked_at)
+    if claimed and not revoked:
+        try:
+            member = await request.app.state.bot.get_chat_member(CHANNEL_ID, uid)
+        except Exception:
+            raise HTTPException(503, 'Kanal a’zoligini tekshirib bo‘lmadi. Qayta urinib ko‘ring.')
+        if not is_member(member):
+            await revoke_bonus(request.app.state.bot, uid)
+    return {'claimed': claimed, 'url': CHANNEL_URL}
+
+@router.post('/api/channel-bonus/claim')
+async def channel_bonus_claim(request: Request, uid=Depends(registered)):
+    from app.services.channel_bonus import CHANNEL_ID, claim_bonus, is_member, revoke_bonus
+    try:
+        member = await request.app.state.bot.get_chat_member(CHANNEL_ID, uid)
+    except Exception:
+        raise HTTPException(503, 'Kanal a’zoligini tekshirib bo‘lmadi. Qayta urinib ko‘ring.')
+    if not is_member(member):
+        await revoke_bonus(request.app.state.bot, uid)
+        raise HTTPException(403, 'Avval kanalga a’zo bo‘ling, keyin qayta tekshiring.')
+    async with SessionLocal() as s:
+        granted = await claim_bonus(s, uid)
+    return {'claimed': True, 'granted': granted}
 
 @router.post('/api/delete-account')
 async def delete_account(uid=Depends(identity)):

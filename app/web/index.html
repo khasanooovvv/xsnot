@@ -230,7 +230,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   if(page==='profile'&&me)renderProfile();
   show(page==='home'&&match?'chat':page);
   if(page==='profile'){
-    if(!profileRefresh)profileRefresh=Promise.all([api('me?include_avatar=false'),loadVerification()]).then(([fresh])=>{me={...fresh,avatar:me?.avatar};syncArchiveConsent();syncMuteState(fresh);}).finally(()=>profileRefresh=null);
+    if(!profileRefresh)profileRefresh=Promise.all([loadChannelBonus(),loadVerification()]).then(()=>api('me?include_avatar=false')).then(fresh=>{me={...fresh,avatar:me?.avatar};syncArchiveConsent();syncMuteState(fresh);}).finally(()=>profileRefresh=null);
     profileRefresh.then(()=>{if(version===navVersion)renderProfile()}).catch(e=>{if(version===navVersion)notice(e.message)});
   }
   if(page==='leaders'){
@@ -390,6 +390,12 @@ const verificationCard=$('videoForm').parentElement;
 const verificationEntry=document.createElement('button');
 verificationEntry.id='verificationEntry';verificationEntry.type='button';verificationEntry.textContent='Verifikatsiyadan o‘tish';
 verificationCard.before(verificationEntry);
+const channelBonus=document.createElement('div');channelBonus.id='channelBonus';channelBonus.className='card';channelBonus.hidden=true;
+channelBonus.innerHTML='<h2>1 kun Gold — sovg‘a</h2><p>Kanalimizga a’zo bo‘ling va bir martalik bonus oling.</p><small>Kanalni tark etsangiz, bonus bekor qilinadi. Qayta berilmaydi.</small><div class="channel-bonus-actions"><button id="joinBonusChannel" type="button">Kanalga o‘tish</button><button id="claimChannelBonus" type="button">Tekshirish va bonus olish</button></div><p id="channelBonusStatus" role="status"></p>';
+verificationEntry.after(channelBonus);
+$('joinBonusChannel').onclick=()=>{if(tg?.openTelegramLink)tg.openTelegramLink('https://t.me/xsbotnews');else window.open('https://t.me/xsbotnews','_blank','noopener')};
+async function loadChannelBonus(){try{const data=await api('channel-bonus');channelBonus.hidden=data.claimed}catch(error){channelBonus.hidden=false;$('channelBonusStatus').textContent=error.message}}
+$('claimChannelBonus').onclick=async()=>{const button=$('claimChannelBonus');button.disabled=true;$('channelBonusStatus').textContent='A’zolik tekshirilmoqda…';try{const result=await api('channel-bonus/claim',{});channelBonus.hidden=result.claimed;const fresh=await api('me?include_avatar=false');me={...fresh,avatar:me?.avatar};renderProfile();syncLeaderboardIcon();syncProfileIcon();notice(result.granted?'1 kunlik Gold bonusi berildi!':'Bu bonus avval olingan.')}catch(error){$('channelBonusStatus').textContent=error.message}finally{button.disabled=false}};
 verificationDialog.append(verificationCard);
 verificationCard.querySelector('h2').remove();
 const verificationRules=verificationCard.querySelector('p:not(#verificationStatus)');

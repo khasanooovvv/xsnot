@@ -25,6 +25,7 @@ _bot = None
 _dispatcher = None
 _polling_task = None
 _archive_task = None
+_bonus_task = None
 
 def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
@@ -44,7 +45,7 @@ class WarningNotice(BaseModel):
 @app.on_event("startup")
 async def startup():
     """Start the HTTP dashboard and Telegram polling in the same Railway service."""
-    global _bot, _dispatcher, _polling_task, _archive_task
+    global _bot, _dispatcher, _polling_task, _archive_task, _bonus_task
 
     await init_db()
     from aiogram import Bot, Dispatcher
@@ -53,6 +54,8 @@ async def startup():
     app.state.bot = _bot
     from app.services.archive import archive_worker
     _archive_task = asyncio.create_task(archive_worker(_bot), name='archive-delivery')
+    from app.services.channel_bonus import bonus_worker
+    _bonus_task = asyncio.create_task(bonus_worker(_bot), name='channel-bonus')
     if cfg.webapp_url:
         from aiogram.types import MenuButtonWebApp, WebAppInfo
         try:
@@ -75,6 +78,9 @@ async def shutdown():
     if _archive_task is not None:
         _archive_task.cancel()
         await asyncio.gather(_archive_task, return_exceptions=True)
+    if _bonus_task is not None:
+        _bonus_task.cancel()
+        await asyncio.gather(_bonus_task, return_exceptions=True)
 
     if _dispatcher is not None:
         await _dispatcher.stop_polling()

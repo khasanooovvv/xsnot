@@ -18,6 +18,12 @@ from app.services.referral_notifications import send_referral_started
 
 router = Router(); cfg = settings()
 
+@router.chat_member(F.chat.id == -1003995756842)
+async def bonus_membership_changed(event):
+    from app.services.channel_bonus import is_member, revoke_bonus
+    if not is_member(event.new_chat_member):
+        await revoke_bonus(event.bot, event.new_chat_member.user.id)
+
 @router.channel_post(F.chat.id == cfg.payment_channel_id)
 async def card_payment_received(message: Message):
     from app.services.card_orders import receive
@@ -162,8 +168,10 @@ async def rules(q: CallbackQuery):
 async def profile(q: CallbackQuery):
     async with SessionLocal() as s:
         u = await s.get(User, q.from_user.id); refs = await referral_count(s, u.telegram_id)
-    badges = (" 🔵✓" if u.is_verified else "") + (" 🟡✓" if days_left(u.gold_until) else " ⚪✓" if u.silver_verified else "")
-    text = f"👤 <b>{u.display_name}</b>{badges}\n🏙 {u.city}\n🎂 {age_on(u.birth_date)} yosh\n💎 Silver: {'Abadiy' if u.silver_verified else 'Tasdiqlanmagan'}\n🥇 Gold: {days_left(u.gold_until)} kun\n🎁 Referral: {refs}"
+    from app.services.subscriptions import subscription
+    gold_days = days_left(subscription(u)['gold_until'])
+    badges = (" 🔵✓" if u.is_verified else "") + (" 🟡✓" if gold_days else " ⚪✓" if u.silver_verified else "")
+    text = f"👤 <b>{u.display_name}</b>{badges}\n🏙 {u.city}\n🎂 {age_on(u.birth_date)} yosh\n💎 Silver: {'Abadiy' if u.silver_verified else 'Tasdiqlanmagan'}\n🥇 Gold: {gold_days} kun\n🎁 Referral: {refs}"
     await q.message.edit_text(text, parse_mode="HTML", reply_markup=main_menu(u.language))
 
 @router.callback_query(F.data == "invite")

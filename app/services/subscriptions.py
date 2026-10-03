@@ -9,6 +9,8 @@ def aware(value):
 def subscription(user, now=None):
     now = now or datetime.now(UTC)
     gold = aware(getattr(user, 'gold_until', None))
+    bonus = aware(getattr(user, 'channel_bonus_until', None))
+    gold = max(gold, bonus) if gold and bonus else gold or bonus
     plus = aware(getattr(user, 'gold_plus_until', None))
     is_plus = bool(plus and plus > now)
     return {

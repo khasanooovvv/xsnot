@@ -15,7 +15,7 @@ def days_left(until: datetime | None) -> int:
 def badge_status(user) -> dict:
     return {
         'silver': bool(getattr(user, 'silver_verified', False)),
-        'gold': days_left(user.gold_until),
+        'gold': days_left(subscription(user)['gold_until']),
         'gold_plus': subscription(user)['tier'] == 'plus',
         'verified': bool(user.is_verified),
     }
