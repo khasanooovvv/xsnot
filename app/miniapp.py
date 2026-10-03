@@ -113,11 +113,11 @@ async def badge_styles():
 
 @router.get('/assets/theme.css')
 async def theme_styles():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.css', media_type='text/css')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/theme.js')
 async def theme_script():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.js', media_type='application/javascript')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'theme.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/chat-media.css')
 async def chat_media_styles():
