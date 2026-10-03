@@ -31,6 +31,11 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+class StarsInvoiceBody(BaseModel):
+    tier: Literal['gold', 'plus']
+    days: Literal[7, 30, 90]
+
+
 async def _ensure_cached_avatar(session, user_id: int, avatar: MiniAvatar | None = None):
     """Return only a photo uploaded and stored by the Mini App."""
     return avatar or await session.get(MiniAvatar, user_id)
@@ -971,6 +976,25 @@ async def stop(body: StopBody, uid=Depends(registered)):
             await end_match(s, m)
         await s.commit()
     return {'ok': True}
+
+@router.post('/api/stars/invoice')
+async def stars_invoice(body: StarsInvoiceBody, request: Request, uid=Depends(registered)):
+    from aiogram.types import LabeledPrice
+    from app.services.stars_orders import create
+    async with SessionLocal() as session:
+        order = await create(session, uid, body.tier, body.days)
+    title = 'Gold Plus' if body.tier == 'plus' else 'Gold'
+    link = await request.app.state.bot.create_invoice_link(
+        title=f'{title} · {body.days} kun',
+        description=f'{title} obunasi, {body.days} kun. Bir martalik to‘lov.',
+        payload=order.id, provider_token='', currency='XTR',
+        prices=[LabeledPrice(label=title, amount=order.amount)])
+    return {'url': link, 'amount': order.amount}
+
+@router.get('/assets/stars-payment.js')
+async def stars_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'stars-payment.js',
+                        media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/api/leaders')
 async def leaders(uid=Depends(registered)):

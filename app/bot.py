@@ -18,6 +18,32 @@ from app.services.referral_notifications import send_referral_started
 
 router = Router(); cfg = settings()
 
+@router.pre_checkout_query()
+async def stars_checkout(query):
+    from app.services.stars_orders import StarsOrder, valid
+    async with SessionLocal() as session:
+        order = await session.get(StarsOrder, query.invoice_payload)
+        user = await session.get(User, query.from_user.id)
+        ok = valid(order, query.from_user.id, query.currency, query.total_amount)
+        ok = bool(ok and not order.charge_id and user and user.is_registered and not user.is_banned)
+    await query.answer(ok=ok, **({} if ok else {'error_message': 'To‘lov yaroqsiz yoki avval to‘langan. Yangi invoice oching.'}))
+
+@router.message(F.successful_payment)
+async def stars_paid(message: Message):
+    from app.services.stars_orders import fulfill
+    payment = message.successful_payment
+    async with SessionLocal() as session:
+        granted = await fulfill(session, payment.invoice_payload, message.from_user.id,
+                                payment.currency, payment.total_amount,
+                                payment.telegram_payment_charge_id)
+    if granted:
+        await message.answer('⭐ To‘lov qabul qilindi! Obunangiz faollashtirildi.')
+
+@router.message(Command('paysupport'))
+async def stars_support(message: Message):
+    await message.answer('To‘lov bo‘yicha yordam: @' + cfg.admin_username.lstrip('@') +
+                         '\nTo‘lov chekini va muammo tavsifini yuboring. Telegram support bu xaridni boshqarmaydi.')
+
 @router.chat_member(F.chat.id == -1003995756842)
 async def bonus_membership_changed(event):
     from app.services.channel_bonus import is_member, revoke_bonus
