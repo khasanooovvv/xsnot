@@ -979,7 +979,7 @@ async def leaders(uid=Depends(registered)):
         result = []
         for u, count in rows:
             source = await s.get(MiniAvatar, u.telegram_id)
-            version = int(source.updated_at.timestamp()) if source and source.updated_at else 0
+            version = hashlib.sha256(source.data.encode()).hexdigest()[:12] if source else 'default'
             result.append({'id': u.telegram_id, 'name': u.display_name, 'count': count,
                            'avatar': f'/api/avatar/{u.telegram_id}?v={version}' if source else None,
                            **badge_status(u)})
