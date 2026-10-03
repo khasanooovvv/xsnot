@@ -2,7 +2,8 @@
   const entry = document.createElement('button');
   entry.id = 'editProfile';
   entry.type = 'button';
-  entry.textContent = 'Profilni tahrirlash';
+  entry.setAttribute('aria-label', 'Profilni tahrirlash');
+  entry.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" style="display:block" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
   $('profileInfo').after(entry);
   const dialog = document.createElement('dialog');
   dialog.id = 'profileEditor';
