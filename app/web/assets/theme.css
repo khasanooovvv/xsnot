@@ -225,3 +225,18 @@ body.theme-dark .direct-result.dm-search-hit,body.theme-dark .direct-result.dm-s
 .card-payment .card-payment-back svg{display:block!important;width:20px!important;height:20px!important}
 .card-payment .card-payment-back,.card-payment .card-payment-back:hover,.card-payment .card-payment-back:active,.card-payment .card-payment-back:focus{display:flex!important;align-items:center!important;justify-content:center!important;width:34px!important;height:34px!important;padding:0!important;background:transparent!important;border:1px solid #ffffff45!important;border-radius:8px!important;box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none!important}
 .card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}
+
+/* Legacy WebViews without cascade layers: reserved IDs raise specificity over
+   the existing page/DM/payment overrides without changing button markup. */
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride){background:#343434!important;background-image:none!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;border-color:#494949!important;transition:background-color .16s ease,transform .12s ease!important}
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride)::before,
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride)::after{display:none!important;content:none!important}
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):hover{background:#414141!important}
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):active{background:#292929!important;transform:scale(.98)!important}
+html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):disabled{transform:none!important}
+html body nav#nav button:not(#flatOverride):not(#flatOverride):not(#flatOverride).selected{background:#3b3b3b!important;border-color:#777!important}
+html body .premium-sheet button:not(#flatOverride):not(#flatOverride):not(#flatOverride).active,
+html body .card-payment button.card-network-choice:not(#flatOverride):not(#flatOverride):not(#flatOverride).active{background:#30291d!important;border-color:#d8aa43!important}
+html body nav#nav button img,html body nav#nav button svg{filter:none!important;transform:none!important}
+html body nav#nav .nav-depth{display:none!important}
+@media(prefers-reduced-motion:reduce){html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride){transition:none!important;transform:none!important}}
