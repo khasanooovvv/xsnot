@@ -136,7 +136,8 @@ body.theme-dark nav#nav button.selected{background:#3b3b3b!important;color:#fff!
 body.theme-dark nav#nav .nav-detail{stroke:#333}
 body.theme-dark .pill{background:#262626!important;border-color:#494949!important;color:#ddd!important}
 body.theme-dark .avatar{background:linear-gradient(135deg,#555,#292929)}
-body.theme-dark a,body.theme-dark .stat,body.theme-dark .vs strong,body.theme-dark .profile-username,body.theme-dark .partner-handle,body.theme-dark .profile-primary-username,body.theme-dark .profile-extra-usernames span,body.theme-dark .direct-result-copy small{color:#ccc!important}
+body.theme-dark a,body.theme-dark .stat,body.theme-dark .vs strong{color:#ccc!important}
+body.theme-dark .profile-username,body.theme-dark .partner-handle,body.theme-dark .profile-primary-username,body.theme-dark .profile-extra-usernames span:not(.profile-usernames-label),body.theme-dark .direct-result-copy small{color:#2aabee!important}
 body.theme-dark main>header b span{color:#ddd!important}
 body.theme-dark .direct-search-field,body.theme-dark .direct-result,body.theme-dark .direct-chat-row,body.theme-dark .direct-gold-lock{background:#262626!important;border-color:#393939!important}
 body.theme-dark .direct-search-field input{background:transparent!important}
