@@ -3,12 +3,16 @@
   function update(sheet){
     const payments=sheet.querySelector('.premium-payments');
     if(!payments)return;
-    let button=payments.querySelector('[data-stars-pay]');
-    if(!button){button=document.createElement('button');button.type='button';button.dataset.starsPay='1';payments.append(button)}
+    const button=payments.querySelector('button:nth-child(2)');
+    if(!button)return;
+    if(!button.dataset.starsPay)button.dataset.starsPay='1';
     const tier=sheet.querySelector('.premium-tier.active')?.dataset.tier||'gold';
-    const days=Number(sheet.querySelector('.premium-plan.active')?.dataset.days);
-    const text='⭐ Stars bilan to‘lash · '+prices[tier]?.[days]+' ⭐';
-    if(button.textContent!==text)button.textContent=text;
+    sheet.querySelectorAll('.premium-plan').forEach(plan=>{
+      let label=plan.querySelector('.stars-price');
+      if(!label){label=document.createElement('small');label.className='stars-price';label.style.cssText='display:block;margin-top:5px;color:#dfc16d;font-size:13px';plan.querySelector('.gold-price').after(label)}
+      const text=prices[tier][Number(plan.dataset.days)]+' ⭐';
+      if(label.textContent!==text)label.textContent=text;
+    });
   }
   new MutationObserver(()=>{const sheet=document.querySelector('#premiumSheet');if(sheet)update(sheet)}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',async event=>{
