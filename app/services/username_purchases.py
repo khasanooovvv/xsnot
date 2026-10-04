@@ -1,7 +1,7 @@
 """Explicit username-bound purchases; NULL expiry means permanent."""
 from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, or_
-from app.models import UsernamePurchase, UserUsername
+from app.models import UsernamePurchase, UserUsername, User
 from app.services.subscriptions import aware, limits
 
 
@@ -29,10 +29,13 @@ async def normalize(session, user, now=None):
     policy = limits(user)
     count = 0
     kept = []
-    expired_purchases = {row.username for row in (await session.scalars(select(UsernamePurchase).where(
+    expired_purchases = {row.username: aware(row.expires_at) for row in (await session.scalars(select(UsernamePurchase).where(
         UsernamePurchase.user_id == user.telegram_id, UsernamePurchase.expires_at <= now))).all()}
     for row in rows:
         deadline = aware(row.hidden_until)
+        if row.username in expired_purchases:
+            deadline = expired_purchases[row.username] + timedelta(days=3)
+            row.hidden_until = deadline
         if deadline and deadline <= now and row.username not in bought:
             if row in session:
                 await session.delete(row)
@@ -65,3 +68,39 @@ async def normalize(session, user, now=None):
     await session.flush()
     user.app_username = new_primary.username if new_primary else None
     await session.flush()
+
+
+async def reconcile_usernames(sessions=None, now=None, batch_size=100):
+    """Reconcile assignments without requiring owners to open their profiles."""
+    from app.database import SessionLocal
+    sessions = sessions or SessionLocal
+    now = now or datetime.now(UTC)
+    cursor = None
+    while True:
+        async with sessions() as session:
+            query = select(User.telegram_id).where(or_(
+                User.app_username.is_not(None), User.gold_hidden_username.is_not(None),
+                User.telegram_id.in_(select(UserUsername.user_id))))
+            if cursor is not None:
+                query = query.where(User.telegram_id > cursor)
+            ids = list((await session.scalars(query.order_by(User.telegram_id).limit(batch_size))).all())
+        if not ids:
+            return
+        for uid in ids:
+            async with sessions() as session:
+                user = await session.get(User, uid, with_for_update=True)
+                if user:
+                    await normalize(session, user, now)
+                    await session.commit()
+        cursor = ids[-1]
+
+
+async def username_worker():
+    import asyncio
+    import logging
+    while True:
+        try:
+            await reconcile_usernames()
+        except Exception:
+            logging.getLogger(__name__).exception('Username reconciliation failed')
+        await asyncio.sleep(60)

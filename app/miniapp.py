@@ -304,6 +304,7 @@ async def normalize_gold_usernames(s, u):
 @router.get('/api/users/search')
 async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
     from app.direct_models import BlockedUser
+    from app.models import UsernamePurchase
     from sqlalchemy import literal, union_all, and_, not_, case
     handle = q.strip().removeprefix('@').lower()
     if not handle:
@@ -338,6 +339,10 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
                 order_by=(case((func.lower(ranked.c.handle) == handle, 0), else_=1), ranked.c.handle)
             ).label('user_rank')).join(ranked, ranked.c.owner == User.telegram_id).where(
                 ranked.c.ownership_rank == 1, not_(hidden_unclaimed_expired),
+                ~select(UsernamePurchase.username).where(
+                    UsernamePurchase.user_id == User.telegram_id,
+                    UsernamePurchase.username == ranked.c.handle,
+                    UsernamePurchase.expires_at <= now).correlate(User, ranked).exists(),
                 User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid,
                 User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid))
             ).subquery()
@@ -552,7 +557,7 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
         if handles:
-            from app.models import UsernamePurchase, UserUsername
+            from app.models import UsernamePurchase
             from app.services.subscriptions import aware
             reservations = (await s.scalars(select(UsernamePurchase).where(
                 UsernamePurchase.username.in_(handles), UsernamePurchase.user_id != uid))).all()

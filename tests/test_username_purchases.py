@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.models import Base, User, UserUsername, UsernamePurchase
-from app.services.username_purchases import normalize
+from app.services.username_purchases import normalize, reconcile_usernames
 
 
 class PurchaseTests(unittest.IsolatedAsyncioTestCase):
@@ -47,4 +47,21 @@ class PurchaseTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(u.app_username)
             self.assertEqual(len((await s.scalars(select(UserUsername))).all()),1)
             await normalize(s,u,self.now+timedelta(days=4))
+            self.assertEqual((await s.scalars(select(UserUsername))).all(),[])
+
+    async def test_background_expiry_without_profile_visit(self):
+        async with self.sessions() as s:
+            s.add(User(telegram_id=42, app_username='a', is_verified=False,
+                       silver_verified=False, short_username_access=True, short_username_min_length=1))
+            s.add(UsernamePurchase(username='a', user_id=42, granted_at=self.now-timedelta(days=31),
+                                   expires_at=self.now-timedelta(seconds=1)))
+            await s.commit()
+        await reconcile_usernames(self.sessions, self.now, batch_size=1)
+        async with self.sessions() as s:
+            self.assertIsNone((await s.get(User,42)).app_username)
+            rows = (await s.scalars(select(UserUsername))).all()
+            self.assertEqual(len(rows),1)
+            self.assertIsNotNone(rows[0].hidden_until)
+        await reconcile_usernames(self.sessions, self.now+timedelta(days=4))
+        async with self.sessions() as s:
             self.assertEqual((await s.scalars(select(UserUsername))).all(),[])

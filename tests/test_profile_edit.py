@@ -6,6 +6,7 @@ import unittest
 from datetime import date
 from types import SimpleNamespace as Obj
 from unittest.mock import AsyncMock
+from app.models import UserUsername
 from test_chat_privacy import load_function, Query
 from test_roulette import HttpError, Session
 
@@ -18,7 +19,7 @@ class ProfileEditTests(unittest.IsolatedAsyncioTestCase):
         self.session.scalar = AsyncMock(return_value=None)
         self.session.scalars = AsyncMock(return_value=Obj(all=lambda: []))
         self.ns = dict(HTTPException=HttpError, re=re, sql=lambda s:s, select=lambda *args:Query(),
-                       SessionLocal=lambda:self.session, User=Obj(telegram_id=Query(),app_username=Query()), MiniAvatar=object,
+                       SessionLocal=lambda:self.session, User=Obj(telegram_id=Query(),app_username=Query()), UserUsername=UserUsername, MiniAvatar=object,
                        profile=AsyncMock(return_value={'name':'New','avatar':None}), base64=base64, io=io, Image=Image, ImageOps=ImageOps,
                        limits=lambda user:{'usernames':2,'username_min':1})
         self.edit = load_function('app/miniapp.py', 'edit_profile', self.ns)

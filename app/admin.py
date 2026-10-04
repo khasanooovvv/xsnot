@@ -26,6 +26,7 @@ _dispatcher = None
 _polling_task = None
 _archive_task = None
 _bonus_task = None
+_username_task = None
 
 def admin(credentials: HTTPBasicCredentials = Depends(security)):
     ok = secrets.compare_digest(credentials.username, cfg.admin_username) and secrets.compare_digest(credentials.password, cfg.admin_password)
@@ -45,9 +46,11 @@ class WarningNotice(BaseModel):
 @app.on_event("startup")
 async def startup():
     """Start the HTTP dashboard and Telegram polling in the same Railway service."""
-    global _bot, _dispatcher, _polling_task, _archive_task, _bonus_task
+    global _bot, _dispatcher, _polling_task, _archive_task, _bonus_task, _username_task
 
     await init_db()
+    from app.services.username_purchases import username_worker
+    _username_task = asyncio.create_task(username_worker(), name='username-expiry')
     from aiogram import Bot, Dispatcher
 
     _bot = Bot(cfg.bot_token)
@@ -74,6 +77,10 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     global _polling_task
+
+    if _username_task is not None:
+        _username_task.cancel()
+        await asyncio.gather(_username_task, return_exceptions=True)
 
     if _archive_task is not None:
         _archive_task.cancel()

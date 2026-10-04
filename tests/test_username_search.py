@@ -2,12 +2,25 @@ import unittest
 from datetime import datetime, UTC, timedelta
 from unittest.mock import patch
 from tests import test_direct as fixtures
-from app.models import User, UserUsername
+from app.models import User, UserUsername, UsernamePurchase
 from app import miniapp
 
 class SearchTests(unittest.IsolatedAsyncioTestCase):
     asyncSetUp = fixtures.DirectTests.asyncSetUp
     asyncTearDown = fixtures.DirectTests.asyncTearDown
+
+    async def test_expired_purchase_hidden_before_worker_runs(self):
+        now = datetime.now(UTC)
+        async with self.sessions() as s:
+            s.add(User(telegram_id=40, app_username='xy', display_name='Expired', is_registered=True))
+            s.add(UsernamePurchase(username='xy', user_id=40, granted_at=now-timedelta(days=31),
+                                   expires_at=now-timedelta(seconds=1)))
+            await s.commit()
+        response = await self.client.get('/api/users/search', params={'q':'xy'})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json(), [])
+        async with self.sessions() as s:
+            self.assertEqual((await s.get(User,40)).app_username, 'xy')
 
     async def test_visibility_matrix_and_no_mutations(self):
         now = datetime.now(UTC)
