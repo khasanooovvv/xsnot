@@ -22,6 +22,9 @@ buttons.forEach((b,i)=>assert.equal(b.onclick,handlers[i],'Original navigation h
  assert(theme.includes('button:not(.major-nav-control){position:relative;overflow:hidden;'), 'Legacy rounded rectangle style must exclude capsule controls');
  assert(!theme.includes('nav#nav button'), 'Old navigation selectors must not target the new capsule');
 assert.match(buttons[2].innerHTML,/>Chat</);assert.equal(nav.children[0].children.length,5);
+const navigationCss=fs.readFileSync('app/web/assets/navigation.css','utf8');
+assert.match(navigationCss,/nav#nav\.major-nav,nav#nav\.major-nav \*\{-webkit-tap-highlight-color:transparent\}/,'Mobile tap overlay must be disabled only within navigation');
+assert(navigationCss.includes('button:focus-visible{outline:2px solid #62b9ee'),'Keyboard focus must remain visible');
 context.me.avatar='data:image/png;base64,test';context.syncProfileIcon();
 const profile=buttons[4],image=profile.children[0];assert.equal(image.src,context.me.avatar);assert.equal(image.hidden,true);
 image.onload();assert.equal(image.hidden,false);assert.equal(profile.svg.attrs.hidden,'');
