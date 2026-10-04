@@ -31,7 +31,7 @@
   function setPeople(people){
     if(!started||!Array.isArray(people)||!people.length)return;
     [...track.children].forEach((node,i)=>{
-      if(node===landing)return; // Only the confirmed match may occupy the final card.
+      if(node===landing&&signature)return; // Never replace a confirmed match with a preview.
       const person=people[i%people.length];
       node.innerHTML=avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>';
     });
@@ -44,7 +44,7 @@
     const people=Array.isArray(window.roulettePeople)?window.roulettePeople:[];
     for(let i=0;i<28;i++){
       const node=document.createElement('div');node.className='roulette-card';
-      const person=i===24?null:people.length?people[i%people.length]:null;
+      const person=people.length?people[i%people.length]:null;
       node.innerHTML=person?
         avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>':
         '<div class="avatar roulette-placeholder" role="img" aria-label="Suhbatdosh qidirilmoqda"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></div><strong>'+ (i===24?'Qidirilmoqda…':'…')+'</strong>';
@@ -53,19 +53,25 @@
     const from=viewport.clientWidth/2-66,to=from-24*132;
     track.style.transform='translateX('+to+'px)';
     animation=track.animate([
-      {transform:'translateX('+from+'px)',offset:0,easing:'linear'},
-      {transform:'translateX('+(from-20*132)+'px)',offset:2/3,easing:'cubic-bezier(.16,1,.3,1)'},
+      {transform:'translateX('+from+'px)',offset:0},
       {transform:'translateX('+to+'px)',offset:1}
-    ],{duration:matchMedia('(prefers-reduced-motion: reduce)').matches?0:3000,fill:'forwards'});
-    timer=setTimeout(()=>{status.textContent=signature?'Suhbatdosh topildi':'Suhbatdosh kutilmoqda…'},3000);
+    ],{duration:3000,iterations:Infinity,easing:'linear',fill:'forwards'});
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches)animation.pause();
+    status.textContent='Suhbatdosh qidirilmoqda…';
   }
   window.chatRoulette={reset,start,setPeople,hold(person){
     if(!started)return false;
     const next=JSON.stringify(person);
     if(signature!==next&&landing){
       signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+badgeMarkup(person)+'</strong>';
-      // A late match still gets a visible landing, never a random preview user.
-      readyUntil=Math.max(started+3000,performance.now()+600);
+      const current=getComputedStyle(track).transform;
+      animation?.cancel();
+      const target='translateX('+(viewport.clientWidth/2-66-24*132)+'px)';
+      track.style.transform=target;
+      const duration=matchMedia('(prefers-reduced-motion: reduce)').matches?0:600;
+      animation=track.animate([{transform:current},{transform:target}],
+        {duration,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'});
+      readyUntil=performance.now()+duration;
       status.textContent='Suhbatdosh topildi';
     }
     return performance.now()<readyUntil;

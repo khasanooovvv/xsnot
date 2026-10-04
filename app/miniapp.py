@@ -363,14 +363,8 @@ async def search_users(q: str = Query(default='', max_length=64), uid=Depends(re
 @router.get('/api/roulette/people')
 async def roulette_people(uid=Depends(registered)):
     async with SessionLocal() as s:
-        busy = select(Match.user_one_id).where(Match.status == 'active').union(
-            select(Match.user_two_id).where(Match.status == 'active'))
         users = (await s.scalars(select(User).where(
-            User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid,
-            User.telegram_id.in_(select(MatchQueue.user_id).where(
-                MatchQueue.mode == 'mini_open',
-                MatchQueue.queued_at >= datetime.now(UTC) - timedelta(seconds=30))),
-            User.telegram_id.not_in(busy),
+            User.is_registered.is_(True), User.is_banned.is_(False), User.telegram_id != uid
         ).order_by(func.random()).limit(32))).all()
         result = []
         for user in users:
