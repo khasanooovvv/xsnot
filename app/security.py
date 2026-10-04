@@ -169,7 +169,7 @@ def policy(path, method):
         return 'match-search', [(20, 60)]
     if path.startswith('/api/direct/chats/with/'):
         return 'open-chat', [(20, 60)]
-    if path in ('/api/profile', '/api/profile/name', '/api/register'):
+    if path in ('/api/profile', '/api/profile/name', '/api/register', '/api/dating/me'):
         return 'profile', [(10, 60)]
     if path == '/api/verification/submit':
         return 'video', [(3, 300)]
@@ -181,7 +181,7 @@ def policy(path, method):
 def body_limit(path):
     return {'/api/photo/prepare': 21 * MB, '/api/message/image': 11 * MB,
             '/api/verification/submit': 16 * MB, '/api/profile': 3 * MB,
-            '/api/register': 3 * MB}.get(path, 64 * 1024)
+            '/api/register': 3 * MB, '/api/dating/me': 21 * MB}.get(path, 64 * 1024)
 
 
 class SecurityMiddleware:

@@ -489,6 +489,9 @@ async def delete_account(uid=Depends(identity)):
         # Other accounts may have used this account as their referrer.
         # Break that self-reference before deleting the parent row.
         await s.execute(update(User).where(User.referred_by_id == uid).values(referred_by_id=None))
+        from app.dating_models import DatingProfile, DatingVote
+        await s.execute(delete(DatingVote).where(or_(DatingVote.user_id == uid, DatingVote.target_id == uid)))
+        await s.execute(delete(DatingProfile).where(DatingProfile.user_id == uid))
         await s.delete(user)
         await s.commit()
     return {'ok': True, 'deleted': True}

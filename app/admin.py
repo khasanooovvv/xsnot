@@ -21,6 +21,8 @@ app.add_middleware(SecurityMiddleware, config=cfg)
 app.include_router(mini_router)
 from app.direct import router as direct_router
 app.include_router(direct_router)
+from app.dating import router as dating_router
+app.include_router(dating_router)
 _bot = None
 _dispatcher = None
 _polling_task = None

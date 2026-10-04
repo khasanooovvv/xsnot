@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.config import settings
 from app.models import Base
 from app import direct_models  # Register private-chat tables for create_all.
+from app import dating_models  # Register independent dating profiles and votes.
 from app.services import card_orders  # Register durable card orders and receipts.
 from app.services import stars_orders  # Register durable Stars payments.
 
