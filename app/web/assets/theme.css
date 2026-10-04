@@ -4,39 +4,39 @@ body.theme-dark{--page:#0e1621;--surface:#17212b;--surface-2:#202b36;--text:#f1f
 .theme-card,.card{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}
 .theme-muted{color:var(--muted)}
 .muted,small{color:var(--muted)!important}h1,h2,h3,p,label,header b{color:var(--text)}
-button,input,select{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}button{background:var(--accent)!important;background-image:none!important;color:#fff!important}button.secondary{background:var(--surface-2)!important;background-image:none!important;color:var(--text)!important}
-nav{background:var(--nav)!important;border-color:var(--border)!important}nav button{background:transparent!important;background-image:none!important;color:var(--muted)!important}nav button.selected{background:#d9effb!important;background-image:none!important;color:#126b98!important}.theme-dark nav button.selected{background:#3a4b57!important;background-image:none!important;color:#fff!important}
+button:not(.major-nav-control),input,select{background:var(--surface)!important;border-color:var(--border)!important;color:var(--text)!important}button:not(.major-nav-control){background:var(--accent)!important;background-image:none!important;color:#fff!important}button:not(.major-nav-control).secondary{background:var(--surface-2)!important;background-image:none!important;color:var(--text)!important}
+nav{background:var(--nav)!important;border-color:var(--border)!important}nav button:not(.major-nav-control){background:transparent!important;background-image:none!important;color:var(--muted)!important}nav button:not(.major-nav-control).selected{background:#d9effb!important;background-image:none!important;color:#126b98!important}.theme-dark nav button:not(.major-nav-control).selected{background:#3a4b57!important;background-image:none!important;color:#fff!important}
 .pill{background:#e1f3fc!important;border-color:#a9d9ef!important;color:#1675a3!important}.theme-dark .pill{background:#203a50!important;border-color:#2d6b8f!important;color:#8ed7fa!important}
-.theme-dark .card,.theme-dark .direct-box{background:#17212b!important}.theme-dark #profileInfo{background:transparent!important;border:0!important;box-shadow:none!important}.theme-dark button{background:#3a4b57!important}.theme-dark input,.theme-dark select{background:#101923!important}.theme-dark #notice{background:#452b37!important;color:#ffdbe1!important}
+.theme-dark .card,.theme-dark .direct-box{background:#17212b!important}.theme-dark #profileInfo{background:transparent!important;border:0!important;box-shadow:none!important}.theme-dark button:not(.major-nav-control){background:#3a4b57!important}.theme-dark input,.theme-dark select{background:#101923!important}.theme-dark #notice{background:#452b37!important;color:#ffdbe1!important}
 .theme-toggle{display:inline-flex;align-items:center;justify-content:flex-end;gap:9px;width:auto;min-width:132px;height:42px;margin:0;padding:5px 7px 5px 12px;border-radius:22px;background:var(--surface)!important;border:1px solid var(--border);color:var(--text)!important;font-size:13px;font-weight:650;line-height:1;box-shadow:none}
 .theme-toggle-label{white-space:nowrap}
 .theme-toggle-track{position:relative;display:block;width:44px;height:26px;flex:0 0 44px;border-radius:15px;background:#cbd5df;transition:background .2s}
 .theme-toggle-knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0005;transition:transform .2s}
 .nav-profile-icon{width:34px;height:34px;display:block;object-fit:contain;filter:drop-shadow(0 4px 3px #0008);transition:transform .18s}
 .nav-roulette-icon{width:34px;height:34px;display:block;object-fit:contain;filter:drop-shadow(0 4px 3px #0008);transition:transform .18s}
-.direct-gold-lock{margin:20px 0;padding:28px 20px;text-align:center;border:1px solid #ffffff30;border-radius:24px;background:rgba(42,56,70,.20);box-shadow:inset 0 1px #ffffff38,inset 0 -1px #0003,0 12px 30px #0005;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}.gold-lock-icon{display:block;width:64px;height:64px;object-fit:contain;margin:0 auto 14px}.gold-card-icon{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:7px}.direct-gold-lock h2{margin:12px 0 8px}.direct-gold-lock p{color:var(--muted);line-height:1.5}.direct-gold-lock button,#buyGold{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;background:rgba(70,88,105,.58)!important;border:1px solid #ffffff40!important;color:#fff!important;font-weight:700;box-shadow:inset 0 1px #ffffff38,0 5px 14px #0005!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-nav#nav button{position:relative;overflow:hidden;background:rgba(42,56,70,.20)!important;border:1px solid #ffffff30!important;box-shadow:inset 0 1px #ffffff38,inset 0 -1px #0003,0 5px 14px #0005!important;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}
-nav#nav button::before{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(120deg,#ffffff24,transparent 42%);pointer-events:none}
-nav#nav button.selected{background:rgba(70,88,105,.28)!important;border-color:#ffffff55!important;box-shadow:inset 0 1px #ffffff66,inset 0 -1px #0004,0 6px 18px #0007!important}
-nav#nav button>*{position:relative;z-index:1}
+.direct-gold-lock{margin:20px 0;padding:28px 20px;text-align:center;border:1px solid #ffffff30;border-radius:24px;background:rgba(42,56,70,.20);box-shadow:inset 0 1px #ffffff38,inset 0 -1px #0003,0 12px 30px #0005;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}.gold-lock-icon{display:block;width:64px;height:64px;object-fit:contain;margin:0 auto 14px}.gold-card-icon{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:7px}.direct-gold-lock h2{margin:12px 0 8px}.direct-gold-lock p{color:var(--muted);line-height:1.5}.direct-gold-lock button:not(.major-nav-control),#buyGold{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;background:rgba(70,88,105,.58)!important;border:1px solid #ffffff40!important;color:#fff!important;font-weight:700;box-shadow:inset 0 1px #ffffff38,0 5px 14px #0005!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+nav#nav:not(.major-nav) button:not(.major-nav-control){position:relative;overflow:hidden;background:rgba(42,56,70,.20)!important;border:1px solid #ffffff30!important;box-shadow:inset 0 1px #ffffff38,inset 0 -1px #0003,0 5px 14px #0005!important;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}
+nav#nav:not(.major-nav) button:not(.major-nav-control)::before{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(120deg,#ffffff24,transparent 42%);pointer-events:none}
+nav#nav:not(.major-nav) button:not(.major-nav-control).selected{background:rgba(70,88,105,.28)!important;border-color:#ffffff55!important;box-shadow:inset 0 1px #ffffff66,inset 0 -1px #0004,0 6px 18px #0007!important}
+nav#nav:not(.major-nav) button:not(.major-nav-control)>*{position:relative;z-index:1}
 .theme-dark .theme-toggle-track{background:#4d6d83}
 .theme-dark .theme-toggle-knob{transform:translateX(18px);background:#d8f0ff}
 .direct-search-field{justify-content:center;align-items:center;gap:7px;min-height:36px;border:1px solid #3e4d68;border-radius:18px;padding:0 5px;background:linear-gradient(145deg,#344158,#202b3e);box-shadow:inset 0 2px 2px #ffffff18,inset 0 -3px 5px #0a101b99,0 4px 8px #0007}.direct-search-field>span{display:flex;align-items:center;justify-content:center;flex:0 0 18px;width:18px;height:24px;color:#fff;font-size:18px;line-height:1}.direct-search-field input{flex:0 1 150px;width:150px;height:24px;padding:2px 0!important;color:#fff!important;font-size:16px!important;line-height:18px;text-align:left;text-shadow:0 1px 1px #0008}.direct-search-field input::placeholder{color:#fff;opacity:.9}.direct-result{position:relative;overflow:hidden;border-color:#3e4d68!important;background:linear-gradient(145deg,#243247,#172334)!important;box-shadow:inset 0 1px #ffffff18,0 5px 12px #0007!important;transition:transform .16s,box-shadow .16s}.direct-result:hover{transform:translateY(-2px);box-shadow:inset 0 1px #ffffff22,0 8px 16px #0009!important}.direct-result-copy strong{display:flex;align-items:center;gap:5px}.direct-result-copy .badge{font-size:12px}.direct-result-copy small{color:#2aabee!important}#instagram .direct-box{max-width:320px;margin:0 auto 14px!important;padding:2px!important}
-.direct-box{margin:0 0 18px!important;border-radius:18px!important;padding:16px!important}.direct-heading{display:flex;align-items:center;justify-content:space-between}.direct-heading h2{margin:3px 0 12px}.direct-search-icon{font-size:27px;color:var(--muted)}.direct-box input{margin:0 0 12px!important;border-radius:12px!important;background:var(--surface-2)!important}.direct-box h3{font-size:13px;color:var(--muted);margin:14px 0 7px}.direct-result,.direct-chat-row{display:block;text-align:left;background:var(--surface-2);color:var(--text);border:1px solid var(--border);margin:6px 0;padding:11px;border-radius:11px}.direct-box+small{margin-top:18px}.direct-search-field{display:flex;align-items:center;gap:8px;border-radius:28px;padding:4px 10px 4px 18px;background:#273142;color:#aeb8c9}.direct-search-field span{font-size:30px;line-height:1}.direct-search-field input{flex:1;margin:0!important;border:0!important;background:transparent!important;outline:0;font-size:20px}.direct-search-field button{width:44px;margin:0;padding:9px;border-radius:50%;font-size:22px;background:#394760}.direct-result{display:flex;align-items:center;gap:12px}.direct-result .avatar{width:48px;height:48px;min-width:48px;border-radius:50%;margin:0;font-size:20px}.direct-result-copy{min-width:0}.direct-result-copy strong,.direct-result-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.direct-result-copy strong{font-size:16px}.direct-result-copy small{margin-top:3px}
+.direct-box{margin:0 0 18px!important;border-radius:18px!important;padding:16px!important}.direct-heading{display:flex;align-items:center;justify-content:space-between}.direct-heading h2{margin:3px 0 12px}.direct-search-icon{font-size:27px;color:var(--muted)}.direct-box input{margin:0 0 12px!important;border-radius:12px!important;background:var(--surface-2)!important}.direct-box h3{font-size:13px;color:var(--muted);margin:14px 0 7px}.direct-result,.direct-chat-row{display:block;text-align:left;background:var(--surface-2);color:var(--text);border:1px solid var(--border);margin:6px 0;padding:11px;border-radius:11px}.direct-box+small{margin-top:18px}.direct-search-field{display:flex;align-items:center;gap:8px;border-radius:28px;padding:4px 10px 4px 18px;background:#273142;color:#aeb8c9}.direct-search-field span{font-size:30px;line-height:1}.direct-search-field input{flex:1;margin:0!important;border:0!important;background:transparent!important;outline:0;font-size:20px}.direct-search-field button:not(.major-nav-control){width:44px;margin:0;padding:9px;border-radius:50%;font-size:22px;background:#394760}.direct-result{display:flex;align-items:center;gap:12px}.direct-result .avatar{width:48px;height:48px;min-width:48px;border-radius:50%;margin:0;font-size:20px}.direct-result-copy{min-width:0}.direct-result-copy strong,.direct-result-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.direct-result-copy strong{font-size:16px}.direct-result-copy small{margin-top:3px}
 .profile-username,.partner-handle{color:#2aabee!important}
 .profile-usernames{margin:8px 0;text-align:left;overflow-wrap:anywhere}.profile-primary-username{display:block;color:#2aabee!important;font-size:16px;line-height:1.25}.profile-extra-usernames{margin-top:4px;color:#9aa8ba;font-size:13px;line-height:1.45}.profile-extra-usernames span{color:#2aabee!important}.profile-usernames-label{color:#9aa8ba!important}
-.premium-sheet-backdrop{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:#0009;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.premium-sheet{width:min(520px,100%);max-height:92vh;overflow:auto;padding:14px 22px 24px;border:1px solid #ffffff22;border-bottom:0;border-radius:28px 28px 0 0;background:rgba(24,26,34,.96);box-shadow:0 -16px 50px #0009;color:#fff;animation:premium-sheet-up .22s ease-out}.premium-handle{width:36px;height:4px;margin:4px auto 16px;border-radius:8px;background:#ffffff44}.premium-close{position:absolute;right:18px;top:12px;border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer}.premium-crown{text-align:center;color:#e7bc52;font-size:30px}.premium-sheet h2{text-align:center;margin:5px 0;color:#e7bc52}.premium-subtitle{text-align:center;margin:0 0 18px;color:var(--muted)}.premium-features{border:1px solid #ffffff18;border-radius:18px;padding:4px 14px}.premium-features>div{padding:10px 0;border-bottom:1px solid #ffffff12}.premium-features>div:last-child{border-bottom:0}.premium-features b,.premium-features small{display:block}.premium-features b{color:#f5f6fa}.premium-features small{margin-top:3px;color:#a8afbd;font-size:12px}.premium-toggle,.premium-plans,.premium-payments{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}.premium-plans{grid-template-columns:repeat(3,1fr)}.premium-sheet button{font:inherit}.premium-tier,.premium-plan,.premium-payments button{min-height:48px;border:1px solid #ffffff20;border-radius:14px;background:#20222c;color:#fff;cursor:pointer}.premium-tier.active,.premium-plan.active{border-color:#d8aa43;background:#30291d;box-shadow:inset 0 0 0 1px #d8aa43}.premium-plan b,.premium-plan span{display:block}.premium-plan span{font-size:12px;color:#e7bc52;margin-top:4px}.premium-payments button{background:#343744}.premium-payment-note{text-align:center;color:#9299a8;font-size:12px;margin:12px 0 0}@keyframes premium-sheet-up{from{transform:translateY(100%);opacity:.5}to{transform:translateY(0);opacity:1}}
+.premium-sheet-backdrop{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:#0009;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.premium-sheet{width:min(520px,100%);max-height:92vh;overflow:auto;padding:14px 22px 24px;border:1px solid #ffffff22;border-bottom:0;border-radius:28px 28px 0 0;background:rgba(24,26,34,.96);box-shadow:0 -16px 50px #0009;color:#fff;animation:premium-sheet-up .22s ease-out}.premium-handle{width:36px;height:4px;margin:4px auto 16px;border-radius:8px;background:#ffffff44}.premium-close{position:absolute;right:18px;top:12px;border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer}.premium-crown{text-align:center;color:#e7bc52;font-size:30px}.premium-sheet h2{text-align:center;margin:5px 0;color:#e7bc52}.premium-subtitle{text-align:center;margin:0 0 18px;color:var(--muted)}.premium-features{border:1px solid #ffffff18;border-radius:18px;padding:4px 14px}.premium-features>div{padding:10px 0;border-bottom:1px solid #ffffff12}.premium-features>div:last-child{border-bottom:0}.premium-features b,.premium-features small{display:block}.premium-features b{color:#f5f6fa}.premium-features small{margin-top:3px;color:#a8afbd;font-size:12px}.premium-toggle,.premium-plans,.premium-payments{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}.premium-plans{grid-template-columns:repeat(3,1fr)}.premium-sheet button:not(.major-nav-control){font:inherit}.premium-tier,.premium-plan,.premium-payments button:not(.major-nav-control){min-height:48px;border:1px solid #ffffff20;border-radius:14px;background:#20222c;color:#fff;cursor:pointer}.premium-tier.active,.premium-plan.active{border-color:#d8aa43;background:#30291d;box-shadow:inset 0 0 0 1px #d8aa43}.premium-plan b,.premium-plan span{display:block}.premium-plan span{font-size:12px;color:#e7bc52;margin-top:4px}.premium-payments button:not(.major-nav-control){background:#343744}.premium-payment-note{text-align:center;color:#9299a8;font-size:12px;margin:12px 0 0}@keyframes premium-sheet-up{from{transform:translateY(100%);opacity:.5}to{transform:translateY(0);opacity:1}}
 .premium-close{display:none!important}
 .premium-sheet-backdrop{z-index:250}
 .premium-crown img{display:block;width:48px;height:48px;object-fit:contain;margin:0 auto;filter:drop-shadow(0 7px 7px #0009) drop-shadow(0 0 8px #e7bc5266)}
 .premium-handle{cursor:grab;touch-action:none}.premium-handle:active{cursor:grabbing}
 .card-payment-methods{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}.card-payment .card-network-choice{display:flex;align-items:center;justify-content:center;gap:8px;min-height:64px;padding:8px;border:2px solid #dbe3ec!important;border-radius:16px!important;background:rgba(255,255,255,.62)!important;color:#244a89!important;box-shadow:inset 0 1px #fff,0 4px 10px #0002!important}.card-payment .card-network-choice img{width:48px;height:32px;object-fit:contain;border-radius:6px}.card-payment .card-network-choice:first-child img{object-fit:cover}.card-payment .card-network-choice.active{border-color:#d8aa43!important;box-shadow:inset 0 1px #fff,inset 0 0 0 1px #d8aa43,0 4px 12px #d8aa4355!important}.card-payment .card-network-choice:active{transform:translateY(2px)}
-/* Shared liquid-glass 3D button treatment. Keep selected Gold borders visible. */
-button{position:relative;overflow:hidden;border:1px solid #ffffff38!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(100,126,145,.72),rgba(38,55,70,.9))!important;box-shadow:inset 0 1px #ffffff42,inset 0 -3px #101b25,0 5px 0 #101923,0 9px 18px #0007!important;backdrop-filter:blur(12px) saturate(145%);-webkit-backdrop-filter:blur(12px) saturate(145%);transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
-button::before{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(120deg,#ffffff28,transparent 42%);pointer-events:none}
-button:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:inset 0 1px #ffffff55,inset 0 -3px #101b25,0 6px 0 #101923,0 12px 22px #0008!important}
-button:active{transform:translateY(4px);box-shadow:inset 0 2px 4px #0007,0 1px 0 #101923,0 3px 8px #0008!important;transition-duration:.06s}
-button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
+/* Shared liquid-glass 3D button:not(.major-nav-control) treatment. Keep selected Gold borders visible. */
+button:not(.major-nav-control){position:relative;overflow:hidden;border:1px solid #ffffff38!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(100,126,145,.72),rgba(38,55,70,.9))!important;box-shadow:inset 0 1px #ffffff42,inset 0 -3px #101b25,0 5px 0 #101923,0 9px 18px #0007!important;backdrop-filter:blur(12px) saturate(145%);-webkit-backdrop-filter:blur(12px) saturate(145%);transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
+button:not(.major-nav-control)::before{content:"";position:absolute;inset:1px;border-radius:inherit;background:linear-gradient(120deg,#ffffff28,transparent 42%);pointer-events:none}
+button:not(.major-nav-control):hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:inset 0 1px #ffffff55,inset 0 -3px #101b25,0 6px 0 #101923,0 12px 22px #0008!important}
+button:not(.major-nav-control):active{transform:translateY(4px);box-shadow:inset 0 2px 4px #0007,0 1px 0 #101923,0 3px 8px #0008!important;transition-duration:.06s}
+button:not(.major-nav-control):focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .premium-sheet .premium-tier.active,.premium-sheet .premium-plan.active{border-color:#d8aa43!important;box-shadow:inset 0 1px #fff5,inset 0 0 0 1px #d8aa43,inset 0 -3px #4e3a12,0 5px 0 #3a2b0d,0 10px 20px #0008!important}
 .premium-sheet .premium-tier.active:hover,.premium-sheet .premium-plan.active:hover{box-shadow:inset 0 1px #fff7,inset 0 0 0 1px #e9c45d,inset 0 -3px #4e3a12,0 6px 0 #3a2b0d,0 12px 24px #0009!important}
 .card-payment{background:rgba(11,18,32,.78)!important;color:#f3f6fb!important;border:1px solid #ffffff26!important;box-shadow:inset 0 1px #ffffff20,0 18px 60px #000b!important;backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%)}
@@ -69,12 +69,12 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment li:before{flex:0 0 22px;height:22px;border-radius:7px;background:rgba(100,126,145,.72)!important;color:#fff!important;border:1px solid rgba(255,255,255,.55)!important;box-shadow:inset 0 1px rgba(255,255,255,.28),0 2px 5px #0006}
 .card-payment .card-payment-note{margin:0 0 8px;font-size:12px;line-height:1.35}
 .card-payment footer{padding:9px 16px}
-.card-payment footer button{padding:10px;font-size:13px}
+.card-payment footer button:not(.major-nav-control){padding:10px;font-size:13px}
 .card-payment ol{margin:5px 0 9px;padding:0 10px}
 .card-payment .card-payment-note{margin:0 0 5px;font-size:11px}
-.card-payment .card-transfer button[data-copy],.card-payment .card-transfer button[data-copy]:hover,.card-payment .card-transfer button[data-copy]:active{background:#ffffff0a!important;border:1px solid #ffffff30!important;border-radius:9px!important;box-shadow:none!important;transform:none!important;filter:none!important;color:#fff;padding:8px 12px;font-size:12px;min-height:36px}
-.card-payment .card-transfer button[data-copy]::before{content:none!important}
-.card-payment .card-transfer button[data-copy]::after{content:' ⧉';font-size:16px}
+.card-payment .card-transfer button:not(.major-nav-control)[data-copy],.card-payment .card-transfer button:not(.major-nav-control)[data-copy]:hover,.card-payment .card-transfer button:not(.major-nav-control)[data-copy]:active{background:#ffffff0a!important;border:1px solid #ffffff30!important;border-radius:9px!important;box-shadow:none!important;transform:none!important;filter:none!important;color:#fff;padding:8px 12px;font-size:12px;min-height:36px}
+.card-payment .card-transfer button:not(.major-nav-control)[data-copy]::before{content:none!important}
+.card-payment .card-transfer button:not(.major-nav-control)[data-copy]::after{content:' ⧉';font-size:16px}
 .card-payment .card-support{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid #ffffff26;border-radius:12px;background:#ffffff09;color:#f3f6fb;font-size:13px;text-decoration:none}
 .card-payment .card-support small{display:block;font-size:11px;color:#c3d0df;margin-top:3px;font-weight:400}
 .card-payment .card-support-icon{width:26px;height:26px;flex:0 0 26px;color:#32d583}
@@ -88,39 +88,39 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 .card-payment .payment-card-face strong{position:absolute;top:57%;left:7%;margin:0;font-size:clamp(16px,5vw,22px);letter-spacing:1px;white-space:nowrap;text-shadow:0 2px 4px #000}
 .card-payment .payment-card-face span{position:absolute;top:76%;left:7%;max-width:61%;font-size:clamp(11px,3.2vw,13px);line-height:1.4;text-shadow:0 2px 4px #000}
 .card-payment .payment-card-face[data-network="UZCARD"]{background-image:url('/assets/payment-card-uzcard.png?v=top-logo-2');background-size:100% 100%}
-.card-payment .card-transfer-bank button[data-copy]{margin:8px 0 0;width:100%}
+.card-payment .card-transfer-bank button:not(.major-nav-control)[data-copy]{margin:8px 0 0;width:100%}
 .card-payment .payment-card-face [data-card-number],.card-payment .payment-card-face [data-card-owner]{font-family:'Courier New',Courier,monospace;font-weight:700;font-variant-numeric:tabular-nums;text-transform:uppercase;text-shadow:0 1px 0 #ffffff40,0 2px 3px #000}
 .card-payment .payment-card-face [data-card-number]{letter-spacing:1.1px}
 .card-payment .payment-card-face [data-card-owner]{letter-spacing:.7px}
 .card-payment .payment-card-face [data-card-owner]{top:calc(76% + 8px)!important}
 .card-payment .payment-card-face [data-card-owner]{top:59%!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{top:calc(82% + 10px)!important}
 
 /* Important layered declarations outrank older unlayered 3D overrides. */
 @layer flat-controls{
-  button,input[type="button"],input[type="submit"]{
+  button:not(.major-nav-control),input[type="button:not(.major-nav-control)"],input[type="submit"]{
     background:#343434!important;background-image:none!important;
     box-shadow:none!important;text-shadow:none!important;filter:none!important;
     backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
     transform:none!important;border-color:#494949!important;
     transition:background-color .16s ease,transform .12s ease!important;
   }
-  button::before,button::after{content:none!important;display:none!important}
-  button:hover{background:#414141!important;box-shadow:none!important;filter:none!important;transform:none!important}
-  button:active{background:#292929!important;transform:scale(.98)!important;box-shadow:none!important}
-  button:focus-visible{outline:2px solid #bbb!important;outline-offset:3px!important}
-  button:disabled{transform:none!important;filter:none!important}
-  nav#nav button{background:#222!important}
-  nav#nav button.selected{background:#3b3b3b!important;border-color:#777!important}
-  nav#nav button:hover{background:#333!important}
-  nav#nav button svg,nav#nav button img{filter:none!important;transform:none!important}
-  nav#nav .nav-depth{display:none!important}
-  nav#nav .nav-detail{filter:none!important}
+  button:not(.major-nav-control)::before,button:not(.major-nav-control)::after{content:none!important;display:none!important}
+  button:not(.major-nav-control):hover{background:#414141!important;box-shadow:none!important;filter:none!important;transform:none!important}
+  button:not(.major-nav-control):active{background:#292929!important;transform:scale(.98)!important;box-shadow:none!important}
+  button:not(.major-nav-control):focus-visible{outline:2px solid #bbb!important;outline-offset:3px!important}
+  button:not(.major-nav-control):disabled{transform:none!important;filter:none!important}
+  nav#nav:not(.major-nav) button:not(.major-nav-control){background:#222!important}
+  nav#nav:not(.major-nav) button:not(.major-nav-control).selected{background:#3b3b3b!important;border-color:#777!important}
+  nav#nav:not(.major-nav) button:not(.major-nav-control):hover{background:#333!important}
+  nav#nav:not(.major-nav) button:not(.major-nav-control) svg,nav#nav:not(.major-nav) button:not(.major-nav-control) img{filter:none!important;transform:none!important}
+  nav#nav:not(.major-nav) .nav-depth{display:none!important}
+  nav#nav:not(.major-nav) .nav-detail{filter:none!important}
   .premium-sheet .premium-tier.active,.premium-sheet .premium-plan.active,
   .card-payment .card-network-choice.active{background:#30291d!important;border-color:#d8aa43!important}
   .card-payment .card-payment-back,.chat-menu-toggle,#messageForm #attachImage,
-  #dmListTools button{background:transparent!important}
-  @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active{transform:none!important}}
+  #dmListTools button:not(.major-nav-control){background:transparent!important}
+  @media(prefers-reduced-motion:reduce){button:not(.major-nav-control){transition:none!important}button:not(.major-nav-control):active{transform:none!important}}
 }
 
 /* Neutral Mini App palette. Status badges and payment artwork keep their colors. */
@@ -128,12 +128,12 @@ button:focus-visible{outline:2px solid #e0b54d;outline-offset:3px}
 body.theme-dark{--page:#101010;--surface:#1a1a1a;--surface-2:#262626;--text:#f1f1f1;--muted:#aaa;--border:#393939;--accent:#444;--nav:#171717f2}
 body.theme-dark .card,body.theme-dark .direct-box{background:var(--surface)!important}
 body.theme-dark input,body.theme-dark select,body.theme-dark textarea{background:#171717!important;border-color:#393939!important;color:#f1f1f1}
-body.theme-dark button{background:linear-gradient(145deg,#484848,#2b2b2b)!important;box-shadow:inset 0 1px #ffffff30,inset 0 -3px #171717,0 5px 0 #171717,0 9px 18px #0007!important}
-body.theme-dark button:hover{box-shadow:inset 0 1px #ffffff40,inset 0 -3px #171717,0 6px 0 #171717,0 12px 22px #0008!important}
-body.theme-dark button:active{box-shadow:inset 0 2px 4px #0007,0 1px 0 #171717,0 3px 8px #0008!important}
-body.theme-dark nav#nav button{--icon-light:#eee;--icon-dark:#aaa;--icon-edge:#555;background:#222!important}
-body.theme-dark nav#nav button.selected{background:#3b3b3b!important;color:#fff!important}
-body.theme-dark nav#nav .nav-detail{stroke:#333}
+body.theme-dark button:not(.major-nav-control){background:linear-gradient(145deg,#484848,#2b2b2b)!important;box-shadow:inset 0 1px #ffffff30,inset 0 -3px #171717,0 5px 0 #171717,0 9px 18px #0007!important}
+body.theme-dark button:not(.major-nav-control):hover{box-shadow:inset 0 1px #ffffff40,inset 0 -3px #171717,0 6px 0 #171717,0 12px 22px #0008!important}
+body.theme-dark button:not(.major-nav-control):active{box-shadow:inset 0 2px 4px #0007,0 1px 0 #171717,0 3px 8px #0008!important}
+body.theme-dark nav#nav:not(.major-nav) button:not(.major-nav-control){--icon-light:#eee;--icon-dark:#aaa;--icon-edge:#555;background:#222!important}
+body.theme-dark nav#nav:not(.major-nav) button:not(.major-nav-control).selected{background:#3b3b3b!important;color:#fff!important}
+body.theme-dark nav#nav:not(.major-nav) .nav-detail{stroke:#333}
 body.theme-dark .pill{background:#262626!important;border-color:#494949!important;color:#ddd!important}
 body.theme-dark .avatar{background:linear-gradient(135deg,#555,#292929)}
 body.theme-dark a,body.theme-dark .stat,body.theme-dark .vs strong{color:#ccc!important}
@@ -152,21 +152,21 @@ body.theme-dark .roulette-window{background:#1a1a1a;border-color:#393939}
 body.theme-dark .roulette-marker{border-color:#aaa;box-shadow:0 0 24px #ffffff18}
 body.theme-dark .roulette-card,body.theme-dark .roulette-status{color:#bbb}
 body.theme-dark .card-payment,body.theme-dark .card-payment .card-payment-header,body.theme-dark .card-payment footer,body.theme-dark .card-payment .card-rules-dialog{background:#1a1a1a!important;border-color:#393939!important}
-/* Preserve the approved flat limit controls despite the global button treatment. */
-body.theme-dark #dmWindow .dm-limit-actions button,body.theme-dark #rouletteLimitDialog button{background:#3b3b3b!important;box-shadow:none!important;background-image:none!important;filter:none!important;transform:none!important}
-body.theme-dark #dmWindow .dm-limit-actions button:hover,body.theme-dark #rouletteLimitDialog button:hover{background:#484848!important}
-body.theme-dark #dmWindow .dm-limit-actions button:active,body.theme-dark #rouletteLimitDialog button:active{background:#303030!important;transform:scale(.98)!important}
+/* Preserve the approved flat limit controls despite the global button:not(.major-nav-control) treatment. */
+body.theme-dark #dmWindow .dm-limit-actions button:not(.major-nav-control),body.theme-dark #rouletteLimitDialog button:not(.major-nav-control){background:#3b3b3b!important;box-shadow:none!important;background-image:none!important;filter:none!important;transform:none!important}
+body.theme-dark #dmWindow .dm-limit-actions button:not(.major-nav-control):hover,body.theme-dark #rouletteLimitDialog button:not(.major-nav-control):hover{background:#484848!important}
+body.theme-dark #dmWindow .dm-limit-actions button:not(.major-nav-control):active,body.theme-dark #rouletteLimitDialog button:not(.major-nav-control):active{background:#303030!important;transform:scale(.98)!important}
 body.theme-dark #dmWindow .dm-limit-verify{background:#242424!important}
 body.theme-dark #dmNotice:not(.dm-limit-card),body.theme-dark #dmEditBar,body.theme-dark #dmActions.dm-confirm{background:#262626!important;color:#eee}
 body.theme-dark .dm-unread{background:#555}
 body.theme-dark .direct-result.dm-search-hit,body.theme-dark .direct-result.dm-search-hit:hover{background:#303030!important;border-color:#494949!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy]::before,.card-payment .card-transfer .card-transfer-amount button[data-copy]::after{content:none!important;display:none!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 5px)!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]::before,.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{top:calc(82% + 5px)!important}
 .card-payment .card-transfer-bank .payment-card-face{overflow:visible!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{transform:translate(-2px,-23px)!important}
 .card-payment .card-help-row{display:flex;align-items:stretch;gap:10px}
 .card-payment .card-help-row .card-support{flex:1;min-width:0}
 .card-payment .card-rules-button{flex:1;min-width:0;padding:11px 13px;border:1px solid #ffffff26!important;border-radius:12px!important;background:#ffffff09!important;color:#f3f6fb!important;font-size:14px}
@@ -176,82 +176,82 @@ body.theme-dark .direct-result.dm-search-hit,body.theme-dark .direct-result.dm-s
 .card-payment .card-rules-dialog ol{background:transparent!important;border:0!important;padding:0;margin:0 0 20px}
 .card-payment .card-rules-dialog li{font-size:15px;line-height:1.6;padding:14px 0}
 .card-payment .card-rules-dialog li::before{background:#2b3946!important;border:0!important;box-shadow:none!important}
-.card-payment .card-rules-dialog button{width:100%;margin-top:8px;padding:12px;border:1px solid #ffffff30;border-radius:10px}
-.card-payment .card-rules-button,.card-payment .card-rules-dialog button{box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none}
-.card-payment .card-rules-dialog button{background:#2b3946!important;font-size:15px}
-.card-payment .card-rules-button::before,.card-payment .card-rules-dialog button::before{content:none!important}
+.card-payment .card-rules-dialog button:not(.major-nav-control){width:100%;margin-top:8px;padding:12px;border:1px solid #ffffff30;border-radius:10px}
+.card-payment .card-rules-button,.card-payment .card-rules-dialog button:not(.major-nav-control){box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none}
+.card-payment .card-rules-dialog button:not(.major-nav-control){background:#2b3946!important;font-size:15px}
+.card-payment .card-rules-button::before,.card-payment .card-rules-dialog button:not(.major-nav-control)::before{content:none!important}
 .card-payment .card-rules-button{display:flex;align-items:center;justify-content:flex-start;gap:10px;font-weight:700}
 .card-payment .payment-card-face .card-number-row{position:absolute;top:51%;left:7%;right:5%;display:flex;align-items:center;gap:6px}
 .card-payment .payment-card-face .card-number-row{top:47%}
-.card-payment .card-transfer-bank button.card-number-copy[data-copy]{position:absolute;top:61%;left:7%;width:42%!important;height:24px!important;min-height:24px!important;margin:0!important;padding:3px 6px!important;border:1px solid #ffffff45!important;border-radius:6px!important;background:#ffffff12!important;color:#fff!important;font-size:9px!important;line-height:1!important}
+.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy]{position:absolute;top:61%;left:7%;width:42%!important;height:24px!important;min-height:24px!important;margin:0!important;padding:3px 6px!important;border:1px solid #ffffff45!important;border-radius:6px!important;background:#ffffff12!important;color:#fff!important;font-size:9px!important;line-height:1!important}
 .card-payment .card-transfer-bank{padding:0!important;margin-bottom:14px;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible}
 .card-payment .card-transfer-bank .payment-card-face{border-radius:16px!important}
 .card-payment .payment-card-face .card-number-row strong{position:static;flex:1;min-width:0;font-size:clamp(14px,4.5vw,20px);letter-spacing:.7px}
-.card-payment .card-transfer-bank button.card-number-copy[data-copy],.card-payment .card-transfer-bank button.card-number-copy[data-copy]:hover,.card-payment .card-transfer-bank button.card-number-copy[data-copy]:active,.card-payment .card-transfer-bank button.card-number-copy[data-copy]:focus{display:grid;place-items:center;flex:0 0 32px;width:32px;height:36px;min-height:36px;margin:0;padding:5px;border:0!important;background:transparent!important;border-radius:6px!important}
-.card-payment .card-transfer-bank button.card-number-copy[data-copy]{display:block;width:100%;height:34px;min-height:34px;margin:8px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px}
+.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy],.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy]:hover,.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy]:active,.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy]:focus{display:grid;place-items:center;flex:0 0 32px;width:32px;height:36px;min-height:36px;margin:0;padding:5px;border:0!important;background:transparent!important;border-radius:6px!important}
+.card-payment .card-transfer-bank button:not(.major-nav-control).card-number-copy[data-copy]{display:block;width:100%;height:34px;min-height:34px;margin:8px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px}
 .card-payment .card-transfer-bank .card-number-copy[data-copy]::after{content:none!important}
 .card-payment .card-number-copy svg{width:20px;height:20px}
 .card-payment .card-transfer .card-number-copy[data-copy],.card-payment .card-transfer .card-number-copy[data-copy]:hover,.card-payment .card-transfer .card-number-copy[data-copy]:active{animation:none!important;transition:none!important;transform:none!important;filter:none!important;box-shadow:none!important;background:transparent!important;border:0!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .card-payment .card-number-copy svg{animation:none!important;transition:none!important;transform:none!important}
-.card-payment .card-transfer button[data-copy]{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;-webkit-tap-highlight-color:transparent}
+.card-payment .card-transfer button:not(.major-nav-control)[data-copy]{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;-webkit-tap-highlight-color:transparent}
 .card-payment .card-transfer-amount{display:grid;grid-template-columns:minmax(0,1fr) 36px;column-gap:10px;row-gap:5px;align-items:center;padding:12px 14px;text-align:left;border-radius:14px}
 .card-payment .card-transfer-amount small{grid-column:1;font-size:11px;line-height:1.4}
 .card-payment .card-transfer-amount strong{grid-column:1;margin:0;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
-.card-payment .card-transfer .card-transfer-amount button[data-copy],.card-payment .card-transfer .card-transfer-amount button[data-copy]:hover,.card-payment .card-transfer .card-transfer-amount button[data-copy]:active{grid-column:2;grid-row:1 / 3;display:grid;place-items:center;width:36px;height:36px;margin:0;padding:7px;border:0!important;background:transparent!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy]::after{content:none!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy]{grid-column:1 / -1!important;grid-row:3!important;display:block!important;width:100%!important;height:32px!important;margin:3px 0 0!important;padding:6px 10px!important;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy] svg{display:none!important}
-.card-payment .card-transfer .card-transfer-amount button[data-copy]::before{content:'Summani nusxalash';font-size:12px}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{display:block!important;position:absolute!important;top:60%!important;left:7%!important;width:58%!important;height:30px!important;min-height:30px!important;margin:0!important;padding:6px 10px!important;font-size:10px!important;line-height:1!important;white-space:nowrap!important;overflow:visible!important;text-align:center!important;color:#fff!important;background:#ffffff12!important;border:1px solid #ffffff45!important;border-radius:9px!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::before{content:'Karta raqamini nusxalash'!important;font-size:9px!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::after{content:none!important;display:none!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::after{content:none!important;display:none!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]::before{content:none!important;display:none!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{width:58%!important;height:32px!important;min-height:32px!important;padding:6px 10px!important;border-radius:9px!important;font-size:12px!important;line-height:1!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{background:transparent!important;box-shadow:none!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy] svg{display:block!important;flex:0 0 auto!important;vertical-align:middle!important}
-.card-payment .card-transfer-amount button[data-copy]{display:none!important}
-.card-payment .card-transfer-amount button[data-copy]{display:block!important;grid-column:1 / -1;grid-row:3;width:100%;height:32px;margin:3px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
-.card-payment .card-transfer-amount button[data-copy]::before{content:'Summani nusxalash';font-size:12px}
-.card-payment .card-transfer-amount button svg{width:20px;height:20px}
-.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
-.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::before,.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
-.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
-.card-payment .card-transfer-amount button.amount-copy-icon[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy],.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]:hover,.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]:active{grid-column:2;grid-row:1 / 3;display:grid;place-items:center;width:36px;height:36px;margin:0;padding:7px;border:0!important;background:transparent!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]::after{content:none!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]{grid-column:1 / -1!important;grid-row:3!important;display:block!important;width:100%!important;height:32px!important;margin:3px 0 0!important;padding:6px 10px!important;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy] svg{display:none!important}
+.card-payment .card-transfer .card-transfer-amount button:not(.major-nav-control)[data-copy]::before{content:'Summani nusxalash';font-size:12px}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{display:block!important;position:absolute!important;top:60%!important;left:7%!important;width:58%!important;height:30px!important;min-height:30px!important;margin:0!important;padding:6px 10px!important;font-size:10px!important;line-height:1!important;white-space:nowrap!important;overflow:visible!important;text-align:center!important;color:#fff!important;background:#ffffff12!important;border:1px solid #ffffff45!important;border-radius:9px!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]::before{content:'Karta raqamini nusxalash'!important;font-size:9px!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]::before{content:none!important;display:none!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{width:58%!important;height:32px!important;min-height:32px!important;padding:6px 10px!important;border-radius:9px!important;font-size:12px!important;line-height:1!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{background:transparent!important;box-shadow:none!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy] svg{display:block!important;flex:0 0 auto!important;vertical-align:middle!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control)[data-copy]{display:none!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control)[data-copy]{display:block!important;grid-column:1 / -1;grid-row:3;width:100%;height:32px;margin:3px 0 0;padding:6px 10px;border:1px solid #ffffff30!important;border-radius:9px!important;background:#ffffff0a!important;color:#fff!important;font-size:12px!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control)[data-copy]::before{content:'Summani nusxalash';font-size:12px}
+.card-payment .card-transfer-amount button:not(.major-nav-control) svg{width:20px;height:20px}
+.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy]{display:grid!important;grid-column:2!important;grid-row:1 / 3!important;place-items:center!important;width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px!important;border:0!important;background:transparent!important;color:#fff!important;font-size:0!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy]::before,.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy]::after{content:none!important;display:none!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy] svg{display:block!important;width:20px!important;height:20px!important}
 .card-payment .card-transfer-amount{grid-template-columns:max-content 30px!important;column-gap:4px!important}
 .card-payment .card-transfer-amount small{grid-column:1 / -1!important}
 .card-payment .card-transfer-amount strong{grid-column:1!important;grid-row:2!important}
-.card-payment .card-transfer-amount button.amount-copy-icon[data-copy]{grid-column:2!important;grid-row:2!important;width:30px!important;height:30px!important;min-height:30px!important;padding:4px!important}
+.card-payment .card-transfer-amount button:not(.major-nav-control).amount-copy-icon[data-copy]{grid-column:2!important;grid-row:2!important;width:30px!important;height:30px!important;min-height:30px!important;padding:4px!important}
 .card-payment .card-payment-back svg{display:block!important;width:20px!important;height:20px!important}
 .card-payment .card-payment-back,.card-payment .card-payment-back:hover,.card-payment .card-payment-back:active,.card-payment .card-payment-back:focus{display:flex!important;align-items:center!important;justify-content:center!important;width:34px!important;height:34px!important;padding:0!important;background:transparent!important;border:1px solid #ffffff45!important;border-radius:8px!important;box-shadow:none!important;transform:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transition:none!important}
-.card-payment .card-transfer-bank .payment-card-face button.card-number-copy[data-copy]{top:calc(82% + 10px)!important}
+.card-payment .card-transfer-bank .payment-card-face button:not(.major-nav-control).card-number-copy[data-copy]{top:calc(82% + 10px)!important}
 
 /* Legacy WebViews without cascade layers: reserved IDs raise specificity over
-   the existing page/DM/payment overrides without changing button markup. */
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride){background:#343434!important;background-image:none!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;border-color:#494949!important;transition:background-color .16s ease,transform .12s ease!important}
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride)::before,
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride)::after{display:none!important;content:none!important}
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):hover{background:#414141!important}
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):active{background:#292929!important;transform:scale(.98)!important}
-html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride):disabled{transform:none!important}
-html body nav#nav button:not(#flatOverride):not(#flatOverride):not(#flatOverride).selected{background:#3b3b3b!important;border-color:#777!important}
-html body .premium-sheet button:not(#flatOverride):not(#flatOverride):not(#flatOverride).active,
-html body .card-payment button.card-network-choice:not(#flatOverride):not(#flatOverride):not(#flatOverride).active{background:#30291d!important;border-color:#d8aa43!important}
-html body nav#nav button img,html body nav#nav button svg{filter:none!important;transform:none!important}
-html body nav#nav .nav-depth{display:none!important}
-@media(prefers-reduced-motion:reduce){html body button:not(#flatOverride):not(#flatOverride):not(#flatOverride){transition:none!important;transform:none!important}}
+   the existing page/DM/payment overrides without changing button:not(.major-nav-control) markup. */
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride){background:#343434!important;background-image:none!important;box-shadow:none!important;text-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;border-color:#494949!important;transition:background-color .16s ease,transform .12s ease!important}
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride)::before,
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride)::after{display:none!important;content:none!important}
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride):hover{background:#414141!important}
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride):active{background:#292929!important;transform:scale(.98)!important}
+html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride):disabled{transform:none!important}
+html body nav#nav:not(.major-nav) button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride).selected{background:#3b3b3b!important;border-color:#777!important}
+html body .premium-sheet button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride).active,
+html body .card-payment button:not(.major-nav-control).card-network-choice:not(#flatOverride):not(#flatOverride):not(#flatOverride).active{background:#30291d!important;border-color:#d8aa43!important}
+html body nav#nav:not(.major-nav) button:not(.major-nav-control) img,html body nav#nav:not(.major-nav) button:not(.major-nav-control) svg{filter:none!important;transform:none!important}
+html body nav#nav:not(.major-nav) .nav-depth{display:none!important}
+@media(prefers-reduced-motion:reduce){html body button:not(.major-nav-control):not(#flatOverride):not(#flatOverride):not(#flatOverride){transition:none!important;transform:none!important}}
 .direct-locked>:not(.direct-gold-lock){display:none!important}
 #instagram:not(.direct-locked)>.direct-gold-lock{display:none!important}
 .direct-access-actions{display:flex;gap:10px}
-.direct-access-actions button{flex:1;min-width:0;white-space:normal}
+.direct-access-actions button:not(.major-nav-control){flex:1;min-width:0;white-space:normal}
 @media(max-width:380px){.direct-access-actions{flex-direction:column}}
 #channelBonus{padding:20px;border-radius:20px;text-align:left}
 #channelBonus h2{font-size:20px;margin:0 0 10px}
 #channelBonus p{font-size:14px;line-height:1.5}
 #channelBonus small{display:block;line-height:1.5}
 .channel-bonus-actions{display:flex;gap:10px;margin-top:14px}
-.channel-bonus-actions button{flex:1;min-width:0;white-space:normal;font-size:14px}
+.channel-bonus-actions button:not(.major-nav-control){flex:1;min-width:0;white-space:normal;font-size:14px}
 #channelBonusStatus:empty{display:none}
 #premiumSheet .premium-sheet{padding:10px 16px 16px;border-radius:22px 22px 0 0}
 #premiumSheet .premium-handle{margin:2px auto 8px}
@@ -263,7 +263,7 @@ html body nav#nav .nav-depth{display:none!important}
 #premiumSheet .premium-features b{font-size:14px}
 #premiumSheet .premium-features small{margin-top:2px;font-size:11px;line-height:1.3}
 #premiumSheet .premium-toggle,#premiumSheet .premium-plans,#premiumSheet .premium-payments{gap:6px;margin-top:9px}
-#premiumSheet .premium-tier,#premiumSheet .premium-payments button{min-height:40px;padding:8px 6px;margin:0;font-size:13px;border-radius:11px}
+#premiumSheet .premium-tier,#premiumSheet .premium-payments button:not(.major-nav-control){min-height:40px;padding:8px 6px;margin:0;font-size:13px;border-radius:11px}
 #premiumSheet .premium-plan{min-height:72px;padding:8px 4px;margin:0;border-radius:11px}
 #premiumSheet .premium-plan b{font-size:14px}
 #premiumSheet .premium-plan span{margin-top:3px;font-size:11px}
@@ -272,6 +272,6 @@ html body nav#nav .nav-depth{display:none!important}
 @media(max-width:380px){.channel-bonus-actions{flex-direction:column}}
 /* Keep all chat menu actions inside the same compact column. */
 #chatMenu.chat-menu{width:184px;min-width:0;max-width:calc(100vw - 24px);padding:6px;border-radius:12px;box-sizing:border-box}
-#chatMenu.chat-menu>button{display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%;height:36px;min-height:36px;margin:0!important;padding:8px 10px!important;border-radius:8px!important;font-size:13px;line-height:18px;text-align:left;white-space:nowrap;box-shadow:none!important;transform:none!important;backdrop-filter:none}
-#chatMenu.chat-menu>button+button{margin-top:3px!important}
-#chatMenu.chat-menu>button:hover,#chatMenu.chat-menu>button:active{transform:none!important;box-shadow:none!important}
+#chatMenu.chat-menu>button:not(.major-nav-control){display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%;height:36px;min-height:36px;margin:0!important;padding:8px 10px!important;border-radius:8px!important;font-size:13px;line-height:18px;text-align:left;white-space:nowrap;box-shadow:none!important;transform:none!important;backdrop-filter:none}
+#chatMenu.chat-menu>button:not(.major-nav-control)+button:not(.major-nav-control){margin-top:3px!important}
+#chatMenu.chat-menu>button:not(.major-nav-control):hover,#chatMenu.chat-menu>button:not(.major-nav-control):active{transform:none!important;box-shadow:none!important}
