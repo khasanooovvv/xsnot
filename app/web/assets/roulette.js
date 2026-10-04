@@ -19,13 +19,19 @@
   panel.innerHTML='<div class="roulette-window"><div class="roulette-track"></div><div class="roulette-marker"></div></div><p class="roulette-status" role="status"></p>';
   $('messages').before(panel);
   const track=panel.querySelector('.roulette-track'),viewport=panel.querySelector('.roulette-window'),status=panel.querySelector('.roulette-status');
+  const waiting=document.createElement('div');
+  waiting.className='roulette-waiting';
+  waiting.innerHTML='<span>Mos suhbatdosh qidirilmoqda…</span><div class="roulette-dots" aria-hidden="true"><i></i><i></i><i></i></div>';
+  viewport.append(waiting);
   const style=document.createElement('style');
   style.textContent='#roulette{padding:24px 0;text-align:center}body.chat-searching #messages{display:none}.roulette-window{position:relative;overflow:hidden;height:202px;border:1px solid #ffffff30;border-radius:24px;background:rgba(42,56,70,.20);box-shadow:inset 0 1px #ffffff38,0 10px 26px #0005;backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}.roulette-marker{position:absolute;left:50%;top:14px;bottom:14px;width:124px;transform:translateX(-50%);border:2px solid #8ea3b5;border-radius:20px;box-shadow:0 0 24px #71889755;pointer-events:none}.roulette-track{display:flex;align-items:center;height:100%;width:max-content;will-change:transform}.roulette-card{flex:0 0 132px;width:132px;padding:16px 8px;box-sizing:border-box;color:#c5d0d9}.roulette-card .avatar{width:88px;height:88px;border-radius:50%;margin:auto}.roulette-card strong{display:block;margin:12px auto 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.roulette-status{color:#aebbc5}body.chat-fullscreen #roulette{display:none}';
+  style.textContent+='.roulette-waiting{display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;background:#12182080;color:#edf2f6;font-size:14px}.roulette-is-waiting .roulette-waiting{display:flex}.roulette-is-waiting .roulette-track{filter:blur(5px);opacity:.28}.roulette-is-waiting .roulette-marker{visibility:hidden}.roulette-dots{display:flex;gap:7px}.roulette-dots i{width:7px;height:7px;border-radius:50%;background:#aebbc5;animation:roulette-dot 1.2s ease-in-out infinite}.roulette-dots i:nth-child(2){animation-delay:.15s}.roulette-dots i:nth-child(3){animation-delay:.3s}@keyframes roulette-dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}@media(prefers-reduced-motion:reduce){.roulette-dots i{animation:none}}';
   document.head.append(style);
   let started=0,animation=null,timer=null,landing=null,signature='',wake=null,readyUntil=0;
   function reset(){
     wake?.();wake=null;
     started=0;clearTimeout(timer);animation?.cancel();animation=null;
+    panel.classList.remove('roulette-is-waiting');
     panel.hidden=true;track.replaceChildren();landing=null;signature='';readyUntil=0;
   }
   function setPeople(people){
@@ -55,14 +61,20 @@
     animation=track.animate([
       {transform:'translateX('+from+'px)',offset:0},
       {transform:'translateX('+to+'px)',offset:1}
-    ],{duration:3000,iterations:Infinity,easing:'linear',fill:'forwards'});
+    ],{duration:3000,easing:'linear',fill:'forwards'});
     if(matchMedia('(prefers-reduced-motion: reduce)').matches)animation.pause();
     status.textContent='Suhbatdosh qidirilmoqda…';
+    timer=setTimeout(()=>{
+      if(!started||signature)return;
+      panel.classList.add('roulette-is-waiting');
+      status.textContent='Mos suhbatdosh qidirilmoqda…';
+    },3000);
   }
   window.chatRoulette={reset,start,setPeople,hold(person){
     if(!started)return false;
     const next=JSON.stringify(person);
     if(signature!==next&&landing){
+      clearTimeout(timer);panel.classList.remove('roulette-is-waiting');
       signature=next;landing.innerHTML=avatar(person)+'<strong>'+esc(person.anonymous?'Anonim':person.name)+badgeMarkup(person)+'</strong>';
       const current=getComputedStyle(track).transform;
       animation?.cancel();
