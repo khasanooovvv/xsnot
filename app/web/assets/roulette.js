@@ -44,9 +44,10 @@
     const people=Array.isArray(window.roulettePeople)?window.roulettePeople:[];
     for(let i=0;i<28;i++){
       const node=document.createElement('div');node.className='roulette-card';
-      const person=i===24?{name:'Qidirilmoqda…',anonymous:true}:
-        people.length?people[i%people.length]:{name:'?',anonymous:true};
-      node.innerHTML=avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>';
+      const person=i===24?null:people.length?people[i%people.length]:null;
+      node.innerHTML=person?
+        avatar(person)+'<strong>'+esc(person.name||'Suhbatdosh')+badgeMarkup(person)+'</strong>':
+        '<div class="avatar roulette-placeholder" role="img" aria-label="Suhbatdosh qidirilmoqda"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></div><strong>'+ (i===24?'Qidirilmoqda…':'…')+'</strong>';
       track.append(node);if(i===24)landing=node;
     }
     const from=viewport.clientWidth/2-66,to=from-24*132;
