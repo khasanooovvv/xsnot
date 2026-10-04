@@ -19,6 +19,7 @@ vm.createContext(context);vm.runInContext(fs.readFileSync('app/web/assets/naviga
 buttons.forEach((b,i)=>assert.equal(b.onclick,handlers[i],'Original navigation handler must remain'));
  buttons.forEach(b=>assert(b.classList.contains('major-nav-control'),'Navigation must be isolated from legacy button styles'));
  const theme=fs.readFileSync('app/web/assets/theme.css','utf8');
+ assert.match(theme,/html,html \*\{-webkit-tap-highlight-color:transparent\}/,'Touch highlights must be disabled throughout the Mini App, including labels and switches');
  assert(theme.includes('button:not(.major-nav-control){position:relative;overflow:hidden;'), 'Legacy rounded rectangle style must exclude capsule controls');
  assert(!theme.includes('nav#nav button'), 'Old navigation selectors must not target the new capsule');
 assert.match(buttons[2].innerHTML,/>Chat</);assert.equal(nav.children[0].children.length,5);

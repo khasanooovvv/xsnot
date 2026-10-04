@@ -275,3 +275,5 @@ html body nav#nav:not(.major-nav) .nav-depth{display:none!important}
 #chatMenu.chat-menu>button:not(.major-nav-control){display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%;height:36px;min-height:36px;margin:0!important;padding:8px 10px!important;border-radius:8px!important;font-size:13px;line-height:18px;text-align:left;white-space:nowrap;box-shadow:none!important;transform:none!important;backdrop-filter:none}
 #chatMenu.chat-menu>button:not(.major-nav-control)+button:not(.major-nav-control){margin-top:3px!important}
 #chatMenu.chat-menu>button:not(.major-nav-control):hover,#chatMenu.chat-menu>button:not(.major-nav-control):active{transform:none!important;box-shadow:none!important}
+/* Suppress native touch overlays without changing active states or keyboard focus. */
+html,html *{-webkit-tap-highlight-color:transparent}
