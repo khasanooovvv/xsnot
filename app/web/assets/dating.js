@@ -18,7 +18,7 @@
       if(!matches.length){content.textContent='Hozircha o‘zaro like yo‘q.';return;}
       for(const p of matches){const b=document.createElement('button');b.className='dating-match';b.innerHTML='<img alt="Anketa rasmi" src="'+esc(p.photos[0])+'"><span>'+esc(p.name)+'<small> · O‘zaro like</small></span>';b.onclick=()=>work(async()=>{const d=await api('direct/chats/with/'+p.id,{});if(window.openDatingDirect)await window.openDatingDirect(d.chat_id);else message('DM oynasini qayta oching.');});content.append(b);}return;
     }
-    if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Ism, yosh va shahar profilingizdan olinadi. Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
+    if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
     rows=await api('dating/cards');position=0;photo=0;renderCard();
   }
   function renderCard(){
@@ -29,7 +29,7 @@
     const card=content.querySelector('article');let start=null;card.onpointerdown=e=>{if(!e.target.closest('button'))start=e.clientX;};card.onpointerup=e=>{if(start===null)return;const dx=e.clientX-start;start=null;if(Math.abs(dx)>90)content.querySelectorAll('.dating-actions button')[dx>0?1:0].click();};card.onpointercancel=()=>start=null;
   }
   function editor(){
-    content.innerHTML='<strong>Anketa rasmlari · '+own.photos.length+'/6</strong><div class="dating-grid"></div><input type="file" accept="image/*" multiple hidden><label for="datingBio">Anketa uchun bio</label><textarea id="datingBio" maxlength="300" placeholder="O‘zingiz haqingizda qisqacha…"></textarea><p class="dating-note">6 tagacha rasm · Har biri 10 MB gacha · Bio 300 belgigacha. O‘zgarishlar Saqlash bosilganda bazaga yoziladi.</p><button class="dating-save">Saqlash</button>';
+    content.innerHTML='<strong>Anketa rasmlari · '+own.photos.length+'/6</strong><div class="dating-grid"></div><input type="file" accept="image/*" multiple hidden><label for="datingBio">Anketa uchun bio</label><textarea id="datingBio" maxlength="300" placeholder="O‘zingiz haqingizda qisqacha…"></textarea><p class="dating-note">6 tagacha rasm · Har biri 10 MB gacha</p><button class="dating-save">Saqlash</button>';
     const bio=content.querySelector('textarea');bio.value=own.bio;bio.oninput=()=>own.bio=bio.value;
     const input=content.querySelector('input'),grid=content.querySelector('.dating-grid');
     for(let i=0;i<6;i++){const tile=document.createElement('div');tile.className='dating-slot';if(own.photos[i]){tile.innerHTML='<img alt="Anketa rasmi '+(i+1)+'" src="'+esc(own.photos[i])+'"><button class="remove" aria-label="Rasmni o‘chirish">×</button><button class="cover">'+(i===0?'Asosiy rasm':'Asosiy qilish')+'</button>';tile.querySelector('.remove').onclick=()=>{if(busy)return;own.photos.splice(i,1);editor();};tile.querySelector('.cover').onclick=()=>{if(busy)return;own.photos.unshift(own.photos.splice(i,1)[0]);editor();};}else{tile.innerHTML='<button class="add" aria-label="Rasm qo‘shish">+</button>';tile.querySelector('button').onclick=()=>input.click();}grid.append(tile);}
