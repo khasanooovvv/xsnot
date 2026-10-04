@@ -31,6 +31,14 @@ from app.services.matching import active_match, find_or_queue, end_match, leave_
 
 router = APIRouter()
 
+@router.get('/assets/profile-shop.js')
+async def profile_shop_script():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-shop.js', media_type='application/javascript')
+
+@router.get('/assets/profile-shop.css')
+async def profile_shop_styles():
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'profile-shop.css', media_type='text/css')
+
 class StarsInvoiceBody(BaseModel):
     tier: Literal['gold', 'plus']
     days: Literal[7, 30, 90]
