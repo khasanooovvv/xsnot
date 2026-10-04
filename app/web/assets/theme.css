@@ -270,3 +270,8 @@ html body nav#nav .nav-depth{display:none!important}
 #premiumSheet .premium-plan .stars-price{margin-top:3px!important;font-size:12px!important}
 #premiumSheet .premium-payment-note:empty{display:none}
 @media(max-width:380px){.channel-bonus-actions{flex-direction:column}}
+/* Keep all chat menu actions inside the same compact column. */
+#chatMenu.chat-menu{width:184px;min-width:0;max-width:calc(100vw - 24px);padding:6px;border-radius:12px;box-sizing:border-box}
+#chatMenu.chat-menu>button{display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;width:100%!important;min-width:0!important;max-width:100%;height:36px;min-height:36px;margin:0!important;padding:8px 10px!important;border-radius:8px!important;font-size:13px;line-height:18px;text-align:left;white-space:nowrap;box-shadow:none!important;transform:none!important;backdrop-filter:none}
+#chatMenu.chat-menu>button+button{margin-top:3px!important}
+#chatMenu.chat-menu>button:hover,#chatMenu.chat-menu>button:active{transform:none!important;box-shadow:none!important}
