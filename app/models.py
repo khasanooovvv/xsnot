@@ -54,6 +54,13 @@ class UserUsername(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     hidden_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+class UsernamePurchase(Base):
+    __tablename__ = 'username_purchases'
+    username: Mapped[str] = mapped_column(String(24), primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.telegram_id', ondelete='CASCADE'), index=True)
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
 class MatchQueue(Base):
     __tablename__ = "match_queue"
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)

@@ -38,5 +38,8 @@ def limits(user):
     return {
         'roulette': 100 if tier == 'plus' else 20 if tier == 'gold' else 15 if user.silver_verified else 10,
         'usernames': 999 if verified else 5 if tier == 'plus' else 2 if tier == 'gold' or user.silver_verified else 1,
-        'username_min': 1 if verified else 5 if tier != 'free' else (user.short_username_min_length or (2 if user.silver_verified else 1)),
+        'username_min': 1 if verified else (
+            user.short_username_min_length
+            if getattr(user, 'short_username_access', False) and 1 <= (user.short_username_min_length or 0) <= 4
+            else 5 if tier != 'free' else 6),
     }

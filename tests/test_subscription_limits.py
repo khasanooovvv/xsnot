@@ -28,13 +28,24 @@ class SubscriptionTests(unittest.TestCase):
     def test_all_tiers(self):
         u = User(is_verified=False, silver_verified=False, short_username_min_length=0)
         self.assertEqual(limits(u)['roulette'], 10)
+        self.assertEqual(limits(u)['username_min'], 6)
         u.silver_verified = True
         self.assertEqual(limits(u)['roulette'], 15)
         self.assertEqual(limits(u)['usernames'], 2)
+        self.assertEqual(limits(u)['username_min'], 6)
         grant_subscription(u, 'gold', 7)
         self.assertEqual(limits(u), {'roulette':20, 'usernames':2, 'username_min':5})
         grant_subscription(u, 'plus', 7)
         self.assertEqual(limits(u), {'roulette':100, 'usernames':5, 'username_min':5})
+
+    def test_short_username_requires_admin_access(self):
+        u = User(is_verified=False, silver_verified=False, short_username_min_length=2,
+                 short_username_access=False)
+        self.assertEqual(limits(u)['username_min'], 6)
+        u.short_username_access = True
+        self.assertEqual(limits(u)['username_min'], 2)
+        grant_subscription(u, 'gold', 7)
+        self.assertEqual(limits(u)['username_min'], 2)
 
 
 class QuotaTests(unittest.IsolatedAsyncioTestCase):

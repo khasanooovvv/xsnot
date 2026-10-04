@@ -288,47 +288,18 @@ async def profile(s, u, include_avatar=True, include_referrals=True):
     now = datetime.now(UTC)
     extra_usernames = (await s.scalars(select(UserUsername.username).where(UserUsername.user_id == u.telegram_id, or_(UserUsername.hidden_until.is_(None), UserUsername.hidden_until <= now)).order_by(UserUsername.position, UserUsername.id))).all()
     usernames = list(dict.fromkeys(([u.app_username] if u.app_username else []) + list(extra_usernames)))
+    from app.services.username_purchases import active_purchases
+    purchases = await active_purchases(s, u.telegram_id, now)
     return dict(id=u.telegram_id, name=u.display_name, language=u.language, city=u.city, age=age_on(u.birth_date) if u.birth_date else None,
         archive_consent=bool(u.archive_consent_at), app_username=u.app_username, usernames=usernames, short_username_access=bool(u.short_username_access), short_username_min_length=u.short_username_min_length or 0, bio=u.bio or '',
+        purchased_usernames=[{'username': row.username, 'expires_at': row.expires_at} for row in purchases.values()],
         registered=u.is_registered, **badge_status(u),
         invite_limit=None if u.is_verified else (settings().silver_referral_daily_share_limit if u.silver_verified else settings().referral_daily_share_limit),
         referrals=await referral_count(s, u.telegram_id) if include_referrals else 0, avatar=avatar.data if avatar else None)
 
 async def normalize_gold_usernames(s, u):
-    """Hide exactly five-character usernames for three days after Gold expires."""
-    now = datetime.now(UTC)
-    gold_active = subscription(u, now)['tier'] != 'free'
-    # Users who never had Gold keep their normal usernames untouched.
-    if u.gold_until is None and not u.gold_hidden_username:
-        return
-    changed = False
-    if gold_active:
-        if u.gold_hidden_username and u.gold_hidden_username_until and u.gold_hidden_username_until > now:
-            u.app_username = u.gold_hidden_username
-            u.gold_hidden_username = None
-            u.gold_hidden_username_until = None
-            changed = True
-        for row in (await s.scalars(select(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until.is_not(None)))).all():
-            row.hidden_until = None
-            changed = True
-    else:
-        release = now + timedelta(days=3)
-        if u.app_username and len(u.app_username) == 5:
-            u.gold_hidden_username = u.app_username
-            u.gold_hidden_username_until = release
-            u.app_username = None
-            changed = True
-        for row in (await s.scalars(select(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until.is_(None)))).all():
-            if len(row.username) == 5:
-                row.hidden_until = release
-                changed = True
-        if u.gold_hidden_username_until and u.gold_hidden_username_until <= now:
-            u.gold_hidden_username = None
-            u.gold_hidden_username_until = None
-            changed = True
-        await s.execute(delete(UserUsername).where(UserUsername.user_id == u.telegram_id, UserUsername.hidden_until <= now))
-    if changed or not gold_active:
-        await s.flush()
+    from app.services.username_purchases import normalize
+    await normalize(s, u)
 
 @router.get('/api/users/search')
 async def search_users(q: str = Query(default='', max_length=64), uid=Depends(registered)):
@@ -580,20 +551,36 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             if taken:
                 raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         user = await s.get(User, uid, with_for_update=True)
+        if handles:
+            from app.models import UsernamePurchase, UserUsername
+            from app.services.subscriptions import aware
+            reservations = (await s.scalars(select(UsernamePurchase).where(
+                UsernamePurchase.username.in_(handles), UsernamePurchase.user_id != uid))).all()
+            if any(row.expires_at is None or aware(row.expires_at) + timedelta(days=3) > datetime.now(UTC) for row in reservations):
+                raise HTTPException(409, 'Bu username sotib olingan yoki saqlash muddati tugamagan.')
+            extra_owners = (await s.scalars(select(UserUsername).where(
+                UserUsername.username.in_(handles), UserUsername.user_id != uid))).all()
+            if extra_owners:
+                raise HTTPException(409, 'Bu username band. Boshqasini tanlang.')
         if usernames is not None:
+            from app.services.username_purchases import active_purchases
+            purchased = await active_purchases(s, uid)
+            ordinary_handles = [item for item in handles if item not in purchased]
             badges = badge_status(user)
             if not badges['gold'] and not badges['verified'] and any(len(item) == 5 for item in handles):
                 raise HTTPException(422, '5 belgili username faqat Gold bilan ishlaydi.')
             username_limit = limits(user)['usernames']
-            if len(handles) > username_limit:
+            if len(ordinary_handles) > username_limit:
                 raise HTTPException(422, 'Username limiti oshib ketdi.')
             for item in handles:
                 if not re.fullmatch(r'[a-z][a-z0-9_]{0,23}', item):
                     raise HTTPException(422, 'Username formati noto‘g‘ri.')
             handle = handles[0] if handles else None
         if usernames is not None or handle is not None:
+            from app.services.username_purchases import active_purchases
+            purchased = await active_purchases(s, uid)
             minimum = limits(user)['username_min']
-            if any(len(item) < minimum for item in handles):
+            if any(len(item) < minimum for item in handles if item not in purchased):
                 raise HTTPException(422, f'Username {minimum}–24 belgili bo‘lsin.')
         user.display_name = name
         if usernames is not None:
@@ -601,7 +588,8 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             # username set. This makes reordering deterministic even when the
             # new primary username was previously an additional username.
             user.app_username = None
-            await s.execute(delete(UserUsername).where(UserUsername.user_id == uid))
+            await s.execute(delete(UserUsername).where(UserUsername.user_id == uid,
+                or_(UserUsername.hidden_until.is_(None), UserUsername.username.in_(handles))))
             await s.flush()
             user.app_username = handle or None
             for position, item in enumerate(handles[1:], 1):

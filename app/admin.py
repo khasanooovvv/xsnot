@@ -130,6 +130,36 @@ async def user_detail(user_id: int):
         if not u: raise HTTPException(404, "User not found")
         return {"id":u.telegram_id,"name":u.display_name,"city":u.city,"registered":u.is_registered,"banned":u.is_banned,"muted_until":u.muted_until,"short_username_access":u.short_username_access,"short_username_min_length":u.short_username_min_length or 0,**badge_status(u),"premium_until":u.premium_until,"gold_until":u.gold_until,"referrals":await referral_count(s, user_id)}
 
+class UsernamePurchaseBody(BaseModel):
+    username: str = Field(min_length=1, max_length=4, pattern=r'^[a-z][a-z0-9_]{0,3}$')
+    duration: str = Field(pattern=r'^(month|permanent)$')
+
+@app.post('/users/{user_id}/username-purchase', dependencies=[Depends(admin)])
+async def grant_username_purchase(user_id: int, body: UsernamePurchaseBody):
+    from app.models import UsernamePurchase, UserUsername
+    async with SessionLocal() as s:
+        user = await s.get(User, user_id, with_for_update=True)
+        if not user:
+            raise HTTPException(404, 'Foydalanuvchi topilmadi.')
+        # Only an already assigned handle can be marked as purchased. Never take another owner's name.
+        extra = await s.scalar(select(UserUsername).where(UserUsername.user_id == user_id, UserUsername.username == body.username))
+        if user.app_username != body.username and not extra:
+            raise HTTPException(422, 'Avval admin ruxsati bilan ushbu username profilga qo‘yilsin.')
+        purchase = await s.get(UsernamePurchase, body.username, with_for_update=True)
+        now = datetime.now(UTC)
+        from app.services.subscriptions import aware
+        if purchase and purchase.user_id != user_id:
+            if purchase.expires_at is None or aware(purchase.expires_at) + timedelta(days=3) > now:
+                raise HTTPException(409, 'Username boshqa egaga tegishli.')
+            purchase.user_id = user_id
+            purchase.granted_at = now
+        if not purchase:
+            purchase = UsernamePurchase(username=body.username, user_id=user_id, granted_at=now)
+            s.add(purchase)
+        purchase.expires_at = now + timedelta(days=30) if body.duration == 'month' else None
+        await s.commit()
+        return {'username': purchase.username, 'expires_at': purchase.expires_at}
+
 class ShortUsernameAccess(BaseModel):
     min_length: int = Field(ge=0, le=4)
 

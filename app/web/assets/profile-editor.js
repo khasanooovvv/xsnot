@@ -204,10 +204,12 @@
     const data = {name:$('editName').value.trim(), app_username:usernames[0]||'', usernames, bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
-    const minimumUsernameLength = me?.verified ? 1 : Number(me?.gold) > 0 ? 5 : Number(me?.short_username_min_length) || (me?.silver ? 2 : 1);
+    const shortMinimum = Number(me?.short_username_min_length);
+    const minimumUsernameLength = me?.verified ? 1 : me?.short_username_access && shortMinimum >= 1 && shortMinimum <= 4 ? shortMinimum : Number(me?.gold) > 0 || me?.gold_plus ? 5 : 6;
     const usernameLimit = me?.verified ? 999 : me?.gold_plus ? 5 : Number(me?.gold) > 0 ? 2 : me?.silver ? 2 : 1;
-    if (usernames.length > usernameLimit) return error('Siz ko‘pi bilan '+usernameLimit+' ta username qo‘ya olasiz.');
-    if (usernames.some(x=>x.length < minimumUsernameLength || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
+    const purchased=new Set((me?.purchased_usernames||[]).filter(x=>!x.expires_at||new Date(x.expires_at)>new Date()).map(x=>x.username));
+    if (usernames.filter(x=>!purchased.has(x)).length > usernameLimit) return error('Tarif bo‘yicha '+usernameLimit+' ta username va sotib olingan username’lar qo‘ya olasiz.');
+    if (usernames.some(x=>(!purchased.has(x)&&x.length < minimumUsernameLength) || !/^[a-z][a-z0-9_]{0,23}$/.test(x))) return error('Username '+minimumUsernameLength+'–24 ta lotin harfi, raqam yoki _ dan iborat bo‘lsin.');
     if (!me?.gold && !me?.verified && usernames.some(x=>x.length===5)) return error('5 belgili username faqat Gold bilan ishlaydi.');
     saving = true;
     error('');
