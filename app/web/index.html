@@ -296,10 +296,10 @@ async function loadCachedAvatar(){
   const valid=()=>epoch===avatarCacheEpoch&&me?.id===id&&me?.registered;
   const cached=await avatarCacheStore('get',id);
   if(!valid())return;
-  if(cached){me.avatar=cached.avatar;if(!$('profile').hidden)renderProfile()}
+  if(cached){me.avatar=cached.avatar;syncProfileIcon();if(!$('profile').hidden)renderProfile()}
   try{const data=await api('me/avatar'+(cached?'?version='+encodeURIComponent(cached.version):''));
     if(!valid()||data.unchanged)return;
-    me.avatar=data.avatar;if(!$('profile').hidden)renderProfile();
+    me.avatar=data.avatar;syncProfileIcon();if(!$('profile').hidden)renderProfile();
     await avatarCacheStore('put',id,{avatar:data.avatar,version:data.version});
   }catch{/* Keep the cached image when offline. */}
 }
@@ -467,4 +467,4 @@ const chatBackStyle=document.createElement('style');chatBackStyle.textContent='#
 chatBack.onclick=()=>chatAction(async()=>{chatBack.disabled=true;try{await api('stop',{});clearChatView();show('home')}finally{chatBack.disabled=false}});
 const wordingObserver=()=>{if(!document.createTreeWalker||typeof NodeFilter==='undefined')return;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;const next=node.nodeValue.split('Sherik topish').join('Suhbatdosh topish').split('Sherik qidirilmoqda').join('Suhbatdosh qidirilmoqda');if(next!==node.nodeValue)node.nodeValue=next}};
 wordingObserver();if(typeof MutationObserver==='function')new MutationObserver(wordingObserver).observe(document.body,{subtree:true,childList:true,characterData:true});
-</script><link rel="stylesheet" href="/assets/card-payment.css?v=1"><link rel="stylesheet" href="/assets/card-transfer.css?v=1"><script src="/assets/card-payment.js?v=2"></script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js?v=tiers-1"></script><script src="/assets/roulette.js"></script><script src="/assets/profile-editor.js?v=tiers-1"></script><script src="/assets/partner-profile.js"></script><link rel="stylesheet" href="/assets/direct.css?v=dm-back-3"><script src="/assets/direct.js?v=tiers-1"></script><link rel="stylesheet" href="/assets/leaders.css"><script src="/assets/leaders.js"></script><script src="/assets/stars-payment.js?v=1"></script><link rel="stylesheet" href="/assets/profile-shop.css?v=1"><script src="/assets/profile-shop.js?v=1"></script><link rel="stylesheet" href="/assets/dating.css?v=1"><script src="/assets/dating.js?v=1"></script></body></html>
+</script><link rel="stylesheet" href="/assets/card-payment.css?v=1"><link rel="stylesheet" href="/assets/card-transfer.css?v=1"><script src="/assets/card-payment.js?v=2"></script><script src="/assets/photo-picker.js"></script><script src="/assets/gold-status.js?v=tiers-1"></script><script src="/assets/roulette.js"></script><script src="/assets/profile-editor.js?v=tiers-1"></script><script src="/assets/partner-profile.js"></script><link rel="stylesheet" href="/assets/direct.css?v=dm-back-3"><script src="/assets/direct.js?v=tiers-1"></script><link rel="stylesheet" href="/assets/leaders.css"><script src="/assets/leaders.js"></script><script src="/assets/stars-payment.js?v=1"></script><link rel="stylesheet" href="/assets/profile-shop.css?v=1"><script src="/assets/profile-shop.js?v=1"></script><link rel="stylesheet" href="/assets/dating.css?v=1"><script src="/assets/dating.js?v=1"></script><link rel="stylesheet" href="/assets/navigation.css?v=1"><script src="/assets/navigation.js?v=1"></script></body></html>

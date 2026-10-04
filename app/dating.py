@@ -17,6 +17,14 @@ from app.miniapp import registered
 
 router = APIRouter()
 
+@router.get('/assets/navigation.js')
+async def navigation_script():
+    return FileResponse(Path(__file__).parent / 'web/assets/navigation.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
+
+@router.get('/assets/navigation.css')
+async def navigation_style():
+    return FileResponse(Path(__file__).parent / 'web/assets/navigation.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
+
 @router.get('/assets/dating.js')
 async def script():
     return FileResponse(Path(__file__).parent / 'web/assets/dating.js', media_type='application/javascript')
