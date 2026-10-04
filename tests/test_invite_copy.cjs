@@ -1,6 +1,8 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const page=fs.readFileSync('app/web/index.html','utf8');
-const handler=page.slice(page.indexOf("$('copyInvite').onclick="),page.indexOf("\ndocument.querySelectorAll('nav button')"));
+// Extract only the clipboard handler, not unrelated search/navigation setup.
+const handler=page.split('\n').find(line=>line.startsWith("$('copyInvite').onclick="));
+assert.ok(handler, 'Clipboard handler must exist');
 let copied,notice;
 const nodes={copyInvite:{},inviteLink:{href:'https://t.me/testbot?start=ref_99'}};
 const context=vm.createContext({$:id=>nodes[id],navigator:{clipboard:{writeText:async text=>{copied=text}}},notice:text=>notice=text,t:text=>text});
