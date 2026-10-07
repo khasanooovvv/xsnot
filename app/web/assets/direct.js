@@ -6,7 +6,9 @@
   const dialog=document.createElement('dialog');dialog.id='dmActions';document.body.append(dialog);
   const list=document.createElement('div');list.id='dmList';
   const tools=document.createElement('div');tools.id='dmListTools';tools.innerHTML='<button type="button">Bloklanganlar</button>';
-  el('instagram').append(tools,list);
+  const matchesButton=document.createElement('button');matchesButton.type='button';matchesButton.textContent='Matchlar';matchesButton.className='dm-matches-toggle';
+  const matchesList=document.createElement('div');matchesList.id='dmMatchesList';matchesList.hidden=true;
+  tools.append(matchesButton);el('instagram').append(tools,matchesList,list);
   let current=null,epoch=0,revision=0,before=null,more=false,editing=null,busy=false,refreshBusy=false,listSignature='';
   const messages=new Map(), people=new Map(), readMarkers=new Map();
   let cachedList=null,cacheOwner=null,listPending=false,avatarSync=0,lastListSync=0;
@@ -20,6 +22,15 @@
   }
   const time=v=>v?new Date(v).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
   const error=e=>{el('dmNotice').textContent=e.message||String(e);el('dmNotice').hidden=false};
+  async function loadDatingMatches(){
+    const r=await fetch('/api/dating/matches',{cache:'no-store',headers:{'X-Telegram-Init-Data':tg?.initData||''}});
+    const data=await r.json();if(!r.ok)throw Error(data.detail||'Matchlarni yuklab bo‘lmadi.');
+    matchesList.replaceChildren();
+    if(!data.length){matchesList.textContent='Hozircha o‘zaro like yo‘q.';return;}
+    for(const p of data){const b=document.createElement('button');b.type='button';b.className='dm-row';b.innerHTML='<img class="dm-avatar" alt="Anketa rasmi" src="'+esc(p.photos?.[0]||'')+'"><div class="dm-row-copy"><strong>'+esc(p.name)+badgeMarkup(p)+'</strong><small>O‘zaro like</small></div>';b.onclick=async()=>{try{const d=await request('/chats/with/'+p.id,'POST');await open(d.chat_id)}catch(e){error(e)}};matchesList.append(b)}
+  }
+  matchesButton.onclick=async()=>{const openMatches=!matchesList.hidden;matchesList.hidden=openMatches;list.hidden=!openMatches;if(!openMatches){matchesButton.disabled=true;try{await loadDatingMatches()}catch(e){error(e)}finally{matchesButton.disabled=false}}};
+  window.openDatingMatches=async()=>{show('instagram');matchesList.hidden=false;list.hidden=true;await loadDatingMatches()};
   async function request(path,method='GET',body){const r=await fetch('/api/direct'+path,{method,cache:'no-store',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':tg?.initData||''},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw Error(r.ok?'Serverdan kutilmagan javob olindi.':'Server xatosi ('+r.status+'). Birozdan keyin qayta urinib ko‘ring.')}if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'So‘rov bajarilmadi.');return d}
   function actions(items){dialog.replaceChildren();for(const [label,fn] of [...items,['Bekor qilish',()=>{}]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dialog.close();Promise.resolve().then(fn).catch(error)};dialog.append(b)}dialog.showModal()}
   function hold(node,fn){let timer,start,held=false;node.addEventListener('pointerdown',e=>{held=false;start=[e.clientX,e.clientY];timer=setTimeout(()=>{held=true;fn()},550)});for(const name of ['pointerup','pointercancel','pointerleave'])node.addEventListener(name,()=>clearTimeout(timer));node.addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start[0],e.clientY-start[1])>10)clearTimeout(timer)});node.addEventListener('contextmenu',e=>{e.preventDefault();clearTimeout(timer);fn()});node.addEventListener('click',e=>{if(held){e.preventDefault();e.stopImmediatePropagation();held=false}},true)}

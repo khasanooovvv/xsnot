@@ -1,6 +1,6 @@
 (() => {
   const root=document.createElement('section');root.id='dating';root.hidden=true;
-  root.innerHTML='<div class="dating-tabs"><button data-tab="cards" class="selected">Anketam</button><button data-tab="matches">Matchlar</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
+  root.innerHTML='<div class="dating-tabs"><button data-tab="cards" class="selected">Anketam</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
   document.querySelector('main').append(root);
   const nav=document.querySelector('nav#nav'),button=document.createElement('button');button.dataset.page='dating';button.title='Tanishuv';button.setAttribute('aria-label','Tanishuv');button.textContent='♡';
   nav.prepend(button);nav.append(nav.querySelector('[data-page="home"]'),nav.querySelector('[data-page="instagram"]'),nav.querySelector('[data-page="leaders"]'),nav.querySelector('[data-page="profile"]'));
@@ -44,7 +44,7 @@
     const p=rows[position];if(!p){content.innerHTML='<p>Hozircha yangi anketalar yo‘q.</p><button class="dating-save">Yangilash</button>';content.querySelector('button').onclick=()=>work(display);return;}
     const bars=p.photos.map((_,i)=>'<i class="'+(i===photo?'current':'')+'"></i>').join('');
     content.innerHTML='<article class="dating-card"><img alt="Anketa rasmi" src="'+esc(p.photos[photo])+'"><div class="dating-photo-nav"><div class="dating-photo-bars" role="img" aria-label="'+(photo+1)+' / '+p.photos.length+' rasm">'+bars+'</div></div><div class="dating-copy"><div class="dating-identity"><h3><span class="dating-name">'+esc(p.name)+badgeMarkup(p)+'</span>'+(p.age?'<span class="dating-age">, '+esc(p.age)+'</span>':'')+'</h3><small class="dating-city">'+esc(p.city)+'</small></div><p>'+esc(p.bio)+'</p></div><div class="dating-actions"><button class="skip" aria-label="O‘tkazish">×</button><button class="like" aria-label="Yoqtirish">♥</button></div></article>';
-    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});position++;photo=0;if(r.matched){const matchesTab=root.querySelector('[data-tab="matches"]');tab='matches';root.querySelector('.dating-tabs').style.setProperty('--tab-index','1');root.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('selected',x===matchesTab);x.setAttribute('aria-pressed',String(x===matchesTab));});await display();message('O‘zaro like! Match saqlandi.');return;}message('');renderCard();}));
+    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});position++;photo=0;if(r.matched){message('O‘zaro like! Chatdagi Matchlar bo‘limi ochilmoqda.');if(window.openDatingMatches)await window.openDatingMatches();return;}message('');renderCard();}));
     const card=content.querySelector('article');let start=null;
     card.onpointerdown=e=>{if(e.isPrimary!==false&&!e.target.closest('button,.dating-copy'))start={x:e.clientX,y:e.clientY};};
     card.onpointerup=e=>{
