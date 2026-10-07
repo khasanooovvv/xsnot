@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const css=fs.readFileSync('app/web/assets/dating.css','utf8');
 const js=fs.readFileSync('app/web/assets/dating.js','utf8');
 const theme=fs.readFileSync('app/web/assets/theme.css','utf8');
-assert(theme.includes(':not(:where(#dating .dating-tabs button, #dating .dating-actions button, #dating .dating-photo-nav button))'));
+assert(theme.includes(':not(:where(#dating .dating-tabs button, #dating .dating-actions button, #dating .dating-photo-nav button,'));
 assert(!css.includes('flatOverride'),'Dating controls must not need specificity hacks');
 const html=fs.readFileSync('app/web/index.html','utf8');
 assert(html.includes('/assets/dating.css?v=photo-overlay-2'));

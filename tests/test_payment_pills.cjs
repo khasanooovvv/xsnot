@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const css=fs.readFileSync('app/web/assets/theme.css','utf8');
+const html=fs.readFileSync('app/web/index.html','utf8');
+const stars=fs.readFileSync('app/web/assets/stars-payment.js','utf8');
+assert(css.includes('#premiumSheet .premium-toggle:has([data-tier="plus"].active)::before'));
+for(const days of [30,90])assert(css.includes('#premiumSheet .premium-plans:has([data-days="'+days+'"].active)::before'));
+assert(css.includes('#premiumSheet .premium-payments button:hover'));
+assert(css.includes('#premiumSheet .premium-plan, #premiumSheet .premium-payments button))'));
+assert(html.includes('Uzcard / Humo')&&html.includes('Telegram Stars'));
+assert(stars.includes("api('stars/invoice',{tier,days})"));
+console.log('PASS: payment pill groups, both payment methods and Stars invoice preserved');
