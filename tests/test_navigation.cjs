@@ -35,4 +35,13 @@ image.onload();assert.equal(image.hidden,false);assert.equal(profile.svg.attrs.h
 image.onerror();assert.equal(profile.children.length,0);assert.equal(profile.svg.attrs.hidden,undefined);
 assert.equal(context.renderProfile(),42);
 buttons[2].events.click();assert(buttons[2].classList.contains('turn'));
+const impacts=[];
+context.Telegram={WebApp:{HapticFeedback:{impactOccurred:style=>impacts.push(style)}}};
+buttons.forEach(b=>b.events.click());
+assert.deepEqual(impacts,['light','light','light','light','light'],'Each of the five buttons must trigger exactly one light impact');
+context.Telegram.WebApp.HapticFeedback.impactOccurred=()=>{throw new Error('Unsupported client');};
+assert.doesNotThrow(()=>buttons[2].events.click(),'Haptic failure must not interrupt navigation');
+assert(buttons[2].classList.contains('turn'),'Animation must still run after haptic failure');
+delete context.Telegram;
+assert.doesNotThrow(()=>profile.events.click(),'Navigation must work outside Telegram');
 console.log('PASS: navigation handlers, labels, avatar loading/fallback and click animation');

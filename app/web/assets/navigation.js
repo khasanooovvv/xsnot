@@ -21,7 +21,14 @@
   if(index>=0)active.style.transform='translateX('+(index*100)+'%)';
   [...buttons,profile].forEach(b=>{if(b.classList.contains('selected'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
  }
- buttons.forEach(b=>b.addEventListener('click',()=>{buttons.forEach(x=>x.classList.remove('turn'));void b.offsetWidth;b.classList.add('turn');syncSelection();}));
+ function tapFeedback(){
+  try{globalThis.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');}catch(_){/* Unsupported clients must not interrupt navigation. */}
+ }
+ [...buttons,profile].forEach(b=>b.addEventListener('click',()=>{
+  tapFeedback();
+  if(b!==profile){buttons.forEach(x=>x.classList.remove('turn'));void b.offsetWidth;b.classList.add('turn');}
+  syncSelection();
+ }));
  const observer=new MutationObserver(syncSelection);[...buttons,profile].forEach(b=>observer.observe(b,{attributes:true,attributeFilter:['class']}));
  syncDirectIcon=()=>{};syncRouletteIcon=()=>{};syncLeaderboardIcon=()=>{};syncProfileIcon=syncPhoto;
  const originalRender=renderProfile;renderProfile=function(...args){const result=originalRender.apply(this,args);syncPhoto();return result;};
