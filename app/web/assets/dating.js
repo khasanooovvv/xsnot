@@ -21,6 +21,15 @@
     own=await api('dating/me');
     if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
     rows=await api('dating/cards');position=0;photo=0;renderCard();
+    if(!rows.length){
+      try{
+        const d=await api('dating/diagnostics'),c=d.counts;
+        message('Anketa diagnostikasi: jins='+String(d.gender||'belgilanmagan')+'; o‘z rasmlaringiz='+d.own_photo_count+
+          '; boshqa anketalar='+c.other_profiles+'; qarama-qarshi jins='+c.opposite_gender+
+          '; ro‘yxatdan o‘tgan/ban emas='+c.registered_not_banned+'; rasmli='+c.with_photos+
+          '; like/× dan keyin='+c.after_votes+'; bloklardan keyin='+c.after_blocks+'.');
+      }catch(_){message('Anketalar bo‘sh. Diagnostikani yuklab bo‘lmadi.');}
+    }else message('');
   }
   function renderCard(){
     const p=rows[position];if(!p){content.innerHTML='<p>Hozircha yangi anketalar yo‘q.</p><button class="dating-save">Yangilash</button>';content.querySelector('button').onclick=()=>work(display);return;}
