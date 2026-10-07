@@ -24,6 +24,9 @@ buttons.forEach((b,i)=>assert.equal(b.onclick,handlers[i],'Original navigation h
  assert(!theme.includes('nav#nav button'), 'Old navigation selectors must not target the new capsule');
 assert.match(buttons[2].innerHTML,/>Chat</);assert.equal(nav.children[0].children.length,5);
 const navigationCss=fs.readFileSync('app/web/assets/navigation.css','utf8');
+assert(!navigationCss.includes('dm-flight'),'Obsolete diagonal flight animation must be removed');
+assert.equal((navigationCss.match(/\.turn \.dm-plane\{animation:/g)||[]).length,1,'Plane must have a single animation rule');
+assert.match(navigationCss,/@keyframes dm-airflow\{0%,100%\{transform:translateX\(0\)\}30%\{transform:translateX\(-3px\)\}70%\{transform:translateX\(3px\)\}\}/,'Plane must move horizontally and return to center');
 assert.match(navigationCss,/nav#nav\.major-nav,nav#nav\.major-nav \*\{-webkit-tap-highlight-color:transparent\}/,'Mobile tap overlay must be disabled only within navigation');
 assert(navigationCss.includes('button:focus-visible{outline:2px solid #62b9ee'),'Keyboard focus must remain visible');
 context.me.avatar='data:image/png;base64,test';context.syncProfileIcon();
