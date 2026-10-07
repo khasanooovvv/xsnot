@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const css=fs.readFileSync('app/web/assets/dating.css','utf8');
+const js=fs.readFileSync('app/web/assets/dating.js','utf8');
+assert(!css.includes('nav#nav'),'Dating styles must not modify bottom navigation');
+assert(!css.includes('58dvh')&&!css.includes('100dvh - 320px'),'Old card height overrides must be removed');
+assert(css.includes('#dating .dating-copy{position:absolute;bottom:96px'));
+assert(css.includes('#dating .dating-actions{position:absolute;bottom:18px'));
+assert(js.includes('dating-photo-bars'));
+assert(js.includes('class="like" aria-label="Yoqtirish"'));
+assert(js.includes("api('dating/vote/'+p.id,{liked:!!i})"),'Voting behavior must remain unchanged');
+console.log('PASS: dating-only overlay layout and existing vote behavior');
