@@ -7,6 +7,11 @@
 @media(prefers-reduced-motion:reduce){#dating .dating-tabs::before{transition:none}}
 #dating .dating-note{font-size:12px;color:#aaa;line-height:1.5}
 #dating .dating-note:empty{display:none}
+#dating .dating-undo{position:relative;z-index:6;width:auto;padding:6px 10px;font-size:11px;border-radius:18px}
+#dating:has(.dating-card) .dating-undo{position:fixed;top:90px;right:12px;margin:0}
+.dating-undo-dialog{width:min(320px,90vw);max-height:70dvh;overflow:auto;background:#202020;color:#fff;border:1px solid #444;border-radius:20px;padding:16px}
+.dating-undo-dialog::backdrop{background:#0009}
+.dating-undo-dialog button{display:block;width:100%;margin:8px 0}
 #dating:has(.dating-card) .dating-tabs{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;margin:0}
 #dating:has(.dating-card) #datingStatus:not(:empty){position:fixed;top:88px;left:16px;right:16px;z-index:5;background:#000a;border-radius:12px;padding:8px;color:#fff}
 #dating .dating-card{position:fixed;inset:0;z-index:1;height:auto;border-radius:0;overflow:hidden;background:#222;isolation:isolate;touch-action:pan-y}

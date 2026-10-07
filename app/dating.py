@@ -150,3 +150,21 @@ async def matches(uid=Depends(registered)):
             except HTTPException:
                 continue
         return result
+
+@router.get('/api/dating/likes')
+async def likes(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        rows = (await s.execute(select(User.telegram_id, User.display_name).join(DatingVote, DatingVote.target_id == User.telegram_id).where(DatingVote.user_id == uid, DatingVote.liked.is_(True)).order_by(User.telegram_id))).all()
+        return [{'id': other, 'name': name or str(other)} for other, name in rows]
+
+@router.post('/api/dating/undo/{other}')
+async def undo_like(other: int, uid=Depends(registered)):
+    async with SessionLocal() as s:
+        for user_id in sorted({uid, other}):
+            await s.get(User, user_id, with_for_update=True)
+        row = await s.get(DatingVote, (uid, other))
+        if not row or not row.liked:
+            raise HTTPException(404, 'Bu anketaga like bosilmagan.')
+        await s.delete(row)
+        await s.commit()
+        return {'undone': True}

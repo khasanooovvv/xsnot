@@ -68,3 +68,20 @@ class DatingTests(unittest.IsolatedAsyncioTestCase):
         await self.save(1);await self.save(2);await self.save(2,[])
         self.uid=1
         self.assertEqual((await self.client.get('/api/dating/cards')).json(),[])
+
+    async def test_undo_like_is_scoped_to_owner(self):
+        for uid in (1,2,3):await self.save(uid)
+        self.uid=1
+        await self.client.post('/api/dating/vote/2',json={'liked':True})
+        self.uid=2
+        await self.client.post('/api/dating/vote/1',json={'liked':True})
+        self.uid=3
+        self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,404)
+        self.uid=1
+        self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/likes')).json()],[2])
+        self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,200)
+        self.assertEqual((await self.client.get('/api/dating/matches')).json(),[])
+        self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/cards')).json()],[2])
+        self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,404)
+        self.uid=2
+        self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/likes')).json()],[1])
