@@ -2,6 +2,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const css=fs.readFileSync('app/web/assets/theme.css','utf8');
 const html=fs.readFileSync('app/web/index.html','utf8');
 const stars=fs.readFileSync('app/web/assets/stars-payment.js','utf8');
+assert(!css.includes('.premium-tier.active,.premium-plan.active{border-color:#d8aa43'),'Old brown active-button style must be removed');
+assert(!css.includes('  .premium-sheet .premium-tier.active,.premium-sheet .premium-plan.active,'),'Layered legacy active-button style must be removed');
 assert(css.includes('#premiumSheet .premium-toggle:has([data-tier="plus"].active)::before'));
 for(const days of [30,90])assert(css.includes('#premiumSheet .premium-plans:has([data-days="'+days+'"].active)::before'));
 assert(css.includes('#premiumSheet .premium-payments button:hover'));
