@@ -21,20 +21,42 @@
   if(index>=0)active.style.transform='translateX('+(index*100)+'%)';
   [...buttons,profile].forEach(b=>{if(b.classList.contains('selected'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
  }
- function tapFeedback(){
+ // Temporary on-device diagnostics. Never include initData or user information.
+ const diagnostic=document.createElement('aside'),diagnosticText=document.createElement('pre'),closeDiagnostic=document.createElement('button');
+ diagnostic.id='haptic-diagnostic';diagnostic.setAttribute('aria-label','Vibratsiya diagnostikasi');
+ diagnostic.style.cssText='position:fixed;top:8px;left:8px;right:8px;z-index:10000;padding:10px;background:#111;color:#fff;border:1px solid #777;border-radius:12px;max-height:40vh;overflow:auto';
+ diagnosticText.style.cssText='margin:0;white-space:pre-wrap;font:12px/1.5 monospace';
+ closeDiagnostic.textContent='Yopish';closeDiagnostic.type='button';closeDiagnostic.addEventListener('click',()=>diagnostic.remove());
+ diagnostic.append(diagnosticText,closeDiagnostic);document.body.append(diagnostic);
+ let diagnosticTaps=0;
+ function showDiagnostic(button,result){
+  const app=globalThis.Telegram?.WebApp;
+  diagnosticText.textContent=['HAPTIC DIAG v1', 'Platform: '+(app?.platform||'unknown'),'SDK: '+(app?.version||'unknown'),
+   'Native bridge: '+(typeof globalThis.TelegramWebviewProxy?.postEvent==='function'),
+   'Haptic API: '+(typeof app?.HapticFeedback?.impactOccurred==='function'),
+   'Bosish: '+diagnosticTaps+' / '+button,'Holat: '+result,'Chaqiruv yuborilishi fizik vibratsiyani tasdiqlamaydi.'].join('\n');
+ }
+ showDiagnostic('-', 'Tugmani bosing');
+ function tapFeedback(event){
+  diagnosticTaps++;const button=event?.currentTarget?.getAttribute('aria-label')||'nav';let result='API mavjud emas';
   const app=globalThis.Telegram?.WebApp;
   try{
    // Android exposes the native bridge used by Telegram's own SDK.
    // This avoids the SDK silently skipping haptics when its version check fails.
    const bridge=globalThis.TelegramWebviewProxy;
    if(typeof bridge?.postEvent==='function'){
-    bridge.postEvent('web_app_trigger_haptic_feedback',JSON.stringify({type:'impact',impact_style:'light'}));return;
+    bridge.postEvent('web_app_trigger_haptic_feedback',JSON.stringify({type:'impact',impact_style:'light'}));showDiagnostic(button,'Native impact(light) yuborildi');return;
    }
    if(typeof app?.HapticFeedback?.impactOccurred==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1'))){
-    app.HapticFeedback.impactOccurred('light');return;
+    app.HapticFeedback.impactOccurred('light');showDiagnostic(button,'SDK impact(light) chaqirildi');return;
    }
-  }catch(error){globalThis.console?.warn?.('Navigation haptic feedback failed',error);}
-  try{globalThis.navigator?.vibrate?.(15);}catch(_){/* Vibration is optional; navigation must continue. */}
+   if(app?.isVersionAtLeast&&!app.isVersionAtLeast('6.1'))result='SDK versiyasi 6.1 dan past';
+  }catch(error){result='Haptic xato: '+String(error?.message||error);globalThis.console?.warn?.('Navigation haptic feedback failed',error);}
+  try{
+   if(typeof globalThis.navigator?.vibrate==='function')result+='; vibrate(15): '+String(globalThis.navigator.vibrate(15));
+   else result+='; vibrate API yoq';
+  }catch(error){result+='; vibrate xato: '+String(error?.message||error);}
+  showDiagnostic(button,result);
  }
  // Capture the tap before page handlers render or replace navigation content.
  [...buttons,profile].forEach(b=>b.addEventListener('click',tapFeedback,true));

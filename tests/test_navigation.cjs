@@ -6,6 +6,7 @@ class Element{
  append(...children){children.forEach(c=>{c.parentNode=this;this.children.push(c);});}
  prepend(c){this.children.unshift(c);}
  setAttribute(k,v){this.attrs[k]=v;}
+ getAttribute(k){return this.attrs[k];}
  removeAttribute(k){delete this.attrs[k];}
  addEventListener(k,v,capture=false){const key=capture?k+'Capture':k;this.events[key]=v;}
  querySelector(q){return q==='svg'?this.svg:null;}
@@ -14,7 +15,8 @@ class Element{
 const nav=new Element(),pages=['dating','home','instagram','leaders','profile'],buttons=pages.map(()=>new Element());
 const handlers=buttons.map((b,i)=>b.onclick=()=>i);buttons[1].classList.add('selected');
 nav.querySelector=q=>buttons[pages.findIndex(p=>q.includes('"'+p+'"'))];
-const context={document:{getElementById:()=>nav,createElement:()=>new Element()},me:{avatar:null},MutationObserver:class{observe(){}},renderProfile:()=>42,syncDirectIcon(){},syncRouletteIcon(){},syncLeaderboardIcon(){},syncProfileIcon(){}};
+const body=new Element();
+const context={document:{body,getElementById:()=>nav,createElement:()=>new Element()},me:{avatar:null},MutationObserver:class{observe(){}},renderProfile:()=>42,syncDirectIcon(){},syncRouletteIcon(){},syncLeaderboardIcon(){},syncProfileIcon(){}};
 vm.createContext(context);vm.runInContext(fs.readFileSync('app/web/assets/navigation.js','utf8'),context);
 buttons.forEach((b,i)=>assert.equal(b.onclick,handlers[i],'Original navigation handler must remain'));
  buttons.forEach(b=>assert(b.classList.contains('major-nav-control'),'Navigation must be isolated from legacy button styles'));
@@ -58,3 +60,9 @@ buttons[0].events.clickCapture();assert.deepEqual(vibrations,[15,15,15]);
 delete context.navigator;delete context.Telegram;
 assert.doesNotThrow(()=>buttons[0].events.clickCapture(),'Clients without either vibration API must remain usable');
 console.log('PASS: navigation handlers, labels, avatar loading/fallback and click animation');
+const diagnostic=body.children[0],diagnosticText=diagnostic.children[0];
+assert.match(diagnosticText.textContent,/HAPTIC DIAG v1/);
+assert.match(diagnosticText.textContent,/vibrate API yoq/);
+buttons[2].events.clickCapture({currentTarget:buttons[2]});
+assert.match(diagnosticText.textContent,/\/ Chat/,'Diagnostics must identify the tapped button');
+diagnostic.children[1].events.click();assert.equal(body.children.length,0,'Diagnostic panel must be dismissible');
