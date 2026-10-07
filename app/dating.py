@@ -158,8 +158,10 @@ async def matches(uid=Depends(registered)):
 @router.get('/api/dating/likes')
 async def likes(uid=Depends(registered)):
     async with SessionLocal() as s:
-        rows = (await s.execute(select(User.telegram_id, User.display_name).join(DatingVote, DatingVote.target_id == User.telegram_id).where(DatingVote.user_id == uid, DatingVote.liked.is_(True)).order_by(User.telegram_id))).all()
-        return [{'id': other, 'name': name or str(other)} for other, name in rows]
+        rows = (await s.execute(select(User, DatingProfile).join(DatingVote, DatingVote.user_id == User.telegram_id).join(DatingProfile, DatingProfile.user_id == User.telegram_id).where(
+            DatingVote.target_id == uid, DatingVote.liked.is_(True), User.is_registered.is_(True), User.is_banned.is_(False), DatingProfile.photos != '[]'
+        ).order_by(User.telegram_id))).all()
+        return [card(user, profile) for user, profile in rows]
 
 @router.post('/api/dating/undo/{other}')
 async def undo_like(other: int, uid=Depends(registered)):

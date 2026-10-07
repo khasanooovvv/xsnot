@@ -8,7 +8,10 @@
   const tools=document.createElement('div');tools.id='dmListTools';tools.innerHTML='<button type="button">Bloklanganlar</button>';
   const matchesButton=document.createElement('button');matchesButton.type='button';matchesButton.textContent='Matchlar';matchesButton.className='dm-matches-toggle';
   const matchesList=document.createElement('div');matchesList.id='dmMatchesList';matchesList.hidden=true;
-  tools.append(matchesButton);el('instagram').append(tools,matchesList,list);
+  const likesButton=document.createElement('button');likesButton.type='button';likesButton.textContent='Layklar';likesButton.className='dm-likes-toggle';
+  const likesList=document.createElement('div');likesList.id='dmLikesList';likesList.hidden=true;
+  const navChat=document.querySelector('[data-page="instagram"]'),navBadge=document.createElement('span');navBadge.className='nav-unread-badge';navBadge.hidden=true;navChat?.append(navBadge);
+  tools.append(matchesButton,likesButton);el('instagram').append(tools,matchesList,likesList,list);
   let current=null,epoch=0,revision=0,before=null,more=false,editing=null,busy=false,refreshBusy=false,listSignature='';
   const messages=new Map(), people=new Map(), readMarkers=new Map();
   let cachedList=null,cacheOwner=null,listPending=false,avatarSync=0,lastListSync=0;
@@ -29,7 +32,18 @@
     if(!data.length){matchesList.textContent='Hozircha o‘zaro like yo‘q.';return;}
     for(const p of data){const b=document.createElement('button');b.type='button';b.className='dm-row';b.innerHTML='<img class="dm-avatar" alt="Anketa rasmi" src="'+esc(p.photos?.[0]||'')+'"><div class="dm-row-copy"><strong>'+esc(p.name)+badgeMarkup(p)+'</strong><small>O‘zaro like</small></div>';b.onclick=async()=>{try{const d=await request('/chats/with/'+p.id,'POST');await open(d.chat_id)}catch(e){error(e)}};matchesList.append(b)}
   }
+  async function loadDatingLikes(){
+    const r=await fetch('/api/dating/likes',{cache:'no-store',headers:{'X-Telegram-Init-Data':tg?.initData||''}});
+    const data=await r.json();if(!r.ok)throw Error(data.detail||'Layklarni yuklab bo‘lmadi.');
+    likesList.replaceChildren();
+    if(!data.length){likesList.textContent='Hozircha sizga hech kim like bosmagan.';return 0;}
+    for(const p of data){const b=document.createElement('button');b.type='button';b.className='dm-row';b.innerHTML='<img class="dm-avatar" alt="Anketa rasmi" src="'+esc(p.photos?.[0]||'')+'"><div class="dm-row-copy"><strong>'+esc(p.name)+badgeMarkup(p)+'</strong><small>'+esc(p.age||'')+' yosh · Sizga like bosdi</small></div>';b.onclick=async()=>{try{const d=await request('/chats/with/'+p.id,'POST');await open(d.chat_id)}catch(e){error(e)}};likesList.append(b)}
+    return data.length;
+  }
+  async function updateNavBadge(likeCount=0,unreadCount=0){const total=Number(likeCount)+Number(unreadCount);navBadge.textContent=total>99?'99+':String(total);navBadge.hidden=total<1}
   matchesButton.onclick=async()=>{const openMatches=!matchesList.hidden;matchesList.hidden=openMatches;list.hidden=!openMatches;if(!openMatches){matchesButton.disabled=true;try{await loadDatingMatches()}catch(e){error(e)}finally{matchesButton.disabled=false}}};
+  likesButton.onclick=async()=>{const openLikes=!likesList.hidden;likesList.hidden=openLikes;list.hidden=!openLikes;if(!openLikes){likesButton.disabled=true;try{await loadDatingLikes()}catch(e){error(e)}finally{likesButton.disabled=false}}};
+  window.openDatingLikes=async()=>{show('instagram');likesList.hidden=false;matchesList.hidden=true;list.hidden=true;await loadDatingLikes()};
   window.openDatingMatches=async()=>{show('instagram');matchesList.hidden=false;list.hidden=true;await loadDatingMatches()};
   async function request(path,method='GET',body){const r=await fetch('/api/direct'+path,{method,cache:'no-store',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':tg?.initData||''},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw Error(r.ok?'Serverdan kutilmagan javob olindi.':'Server xatosi ('+r.status+'). Birozdan keyin qayta urinib ko‘ring.')}if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'So‘rov bajarilmadi.');return d}
   function actions(items){dialog.replaceChildren();for(const [label,fn] of [...items,['Bekor qilish',()=>{}]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dialog.close();Promise.resolve().then(fn).catch(error)};dialog.append(b)}dialog.showModal()}
@@ -92,6 +106,7 @@
       const full=Date.now()-avatarSync>60000;
       const d=await request('/chats?include_avatar='+full);
       d.chats.forEach(c=>{c.partner=mergePerson(c.partner)});
+      const unread=d.chats.reduce((sum,c)=>sum+Number(c.unread||0),0);void loadDatingLikes().then(count=>updateNavBadge(count,unread)).catch(()=>updateNavBadge(0,unread));
       if(full)avatarSync=Date.now();
       lastListSync=Date.now();cachedList=d;
       const changed=JSON.stringify(d)!==listSignature;renderList(d);
