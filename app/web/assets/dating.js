@@ -1,10 +1,11 @@
 (() => {
   const root=document.createElement('section');root.id='dating';root.hidden=true;
-  root.innerHTML='<div class="dating-tabs"><button data-tab="cards" class="selected">Anketam</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
+  root.innerHTML='<div class="dating-tabs"><button data-tab="cards" class="selected">Anketalar</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
   document.querySelector('main').append(root);
   const nav=document.querySelector('nav#nav'),button=document.createElement('button');button.dataset.page='dating';button.title='Tanishuv';button.setAttribute('aria-label','Tanishuv');button.textContent='♡';
   nav.prepend(button);nav.append(nav.querySelector('[data-page="home"]'),nav.querySelector('[data-page="instagram"]'),nav.querySelector('[data-page="leaders"]'),nav.querySelector('[data-page="profile"]'));
   let tab='cards',own={photos:[],bio:''},rows=[],position=0,photo=0,busy=false,loaded=false;
+  const cardsCacheTtl=10*24*60*60*1000;
   const content=root.querySelector('#datingContent'),status=root.querySelector('#datingStatus');
   function message(text){status.textContent=text;}
   const undoButton=document.createElement('button');undoButton.className='dating-undo';undoButton.textContent='↶ Anketani qaytarish';root.append(undoButton);
@@ -37,7 +38,15 @@
     }
     if(!own) own=await api('dating/me');
     if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
-    rows=await api('dating/cards');position=0;photo=0;renderCard();
+    const cacheKey='dating-cards:'+me.id;
+    if(!rows.length){
+      const cached=await avatarCacheStore('get',cacheKey);
+      if(cached&&Date.now()-Number(cached.savedAt||0)<cardsCacheTtl&&Array.isArray(cached.rows))rows=cached.rows;
+      else if(cached)await avatarCacheStore('delete',cacheKey);
+    }
+    if(rows.length){position=0;photo=0;renderCard();}
+    const fresh=await api('dating/cards');rows=fresh;position=0;photo=0;renderCard();
+    await avatarCacheStore('put',cacheKey,{savedAt:Date.now(),rows});
     message('');
   }
   function renderCard(){
@@ -64,6 +73,6 @@
     const input=content.querySelector('input'),grid=content.querySelector('.dating-grid');
     for(let i=0;i<6;i++){const tile=document.createElement('div');tile.className='dating-slot';if(own.photos[i]){tile.innerHTML='<img alt="Anketa rasmi '+(i+1)+'" src="'+esc(own.photos[i])+'"><button class="remove" aria-label="Rasmni o‘chirish">×</button><button class="cover">'+(i===0?'Asosiy rasm':'Asosiy qilish')+'</button>';tile.querySelector('.remove').onclick=()=>{if(busy)return;own.photos.splice(i,1);editor();};tile.querySelector('.cover').onclick=()=>{if(busy)return;own.photos.unshift(own.photos.splice(i,1)[0]);editor();};}else{tile.innerHTML='<button class="add" aria-label="Rasm qo‘shish">+</button>';tile.querySelector('button').onclick=()=>input.click();}grid.append(tile);}
     input.onchange=()=>work(async()=>{message('Rasmlar tayyorlanmoqda…');const files=Array.from(input.files);input.value='';for(const file of files){if(own.photos.length===6){message('Ko‘pi bilan 6 ta rasm.');break;}if(!file.type.startsWith('image/')||file.size>10*1024*1024){message('10 MB gacha rasm tanlang.');continue;}const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Rasm o‘qilmadi.'));reader.readAsDataURL(file);});const img=new Image();img.src=data;await img.decode();if(img.naturalWidth*img.naturalHeight>40000000)throw Error('Rasm o‘lchami juda katta.');const canvas=document.createElement('canvas'),scale=Math.min(1,1200/img.naturalWidth,1600/img.naturalHeight);canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);own.photos.push(canvas.toDataURL('image/jpeg',.85));}editor();message('Rasmlar tayyor. Anketani chiqarish uchun Saqlashni bosing.');});
-    content.querySelector('.dating-save').onclick=()=>work(async()=>{own=await api('dating/me',own);message('Anketa saqlandi.');editor();});
+    content.querySelector('.dating-save').onclick=()=>work(async()=>{own=await api('dating/me',own);rows=[];await avatarCacheStore('delete','dating-cards:'+me.id);message('Anketa saqlandi.');editor();});
   }
 })();
