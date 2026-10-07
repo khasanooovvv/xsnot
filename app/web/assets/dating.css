@@ -1,7 +1,10 @@
 /* Dating-only layout. Bottom navigation is owned by navigation.css. */
 #dating{background:#101010;color:#eee;padding:8px 6px 12px;border-radius:20px;margin-bottom:110px}
-#dating .dating-tabs{display:flex;justify-content:center;gap:4px;margin-bottom:10px}
-#dating .dating-tabs button{width:auto;margin:0;padding:8px 11px;font-size:14px;border-radius:22px;line-height:20px}
+#dating .dating-tabs{--tab-index:0;position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(3,1fr);width:min(100%,270px);height:38px;margin:0 auto 10px;padding:3px;box-sizing:border-box;border:1px solid #333;border-radius:24px;background:#050505}
+#dating .dating-tabs::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:20px;background:#252525;transform:translateX(calc(var(--tab-index)*100%));transition:transform .25s ease}
+#dating .dating-tabs button:not(#flatOverride):not(#flatOverride):not(#flatOverride):not(#flatOverride){display:grid;place-items:center;min-width:0;width:100%;height:30px;min-height:0;margin:0;padding:0 4px;font-size:12px;font-weight:600;border-radius:20px;line-height:18px;background:transparent!important;border:0!important;box-shadow:none!important;color:#999!important;transform:none!important}
+#dating .dating-tabs button.selected:not(#flatOverride):not(#flatOverride):not(#flatOverride):not(#flatOverride){color:#69bbee!important}
+@media(prefers-reduced-motion:reduce){#dating .dating-tabs::before{transition:none}}
 #dating .dating-note{font-size:12px;color:#aaa;line-height:1.5}
 #dating .dating-note:empty{display:none}
 #dating .dating-card{position:relative;height:clamp(320px,calc(100dvh - 180px),760px);border-radius:26px;overflow:hidden;background:#222;isolation:isolate;touch-action:pan-y}

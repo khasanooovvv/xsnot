@@ -10,7 +10,7 @@
   async function work(fn){if(busy)return;busy=true;root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=true);root.setAttribute('aria-busy','true');try{await fn();}catch(e){message(e.message);}finally{busy=false;root.removeAttribute('aria-busy');root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=false);}}
   async function load(){own=await api('dating/me');loaded=true;await display();}
   button.onclick=()=>{show('dating');work(load);};
-  root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(busy)return;tab=b.dataset.tab;root.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('selected',x===b));message('');work(async()=>{if(!loaded)own=await api('dating/me');await display();});});
+  root.querySelectorAll('[data-tab]').forEach((b,index)=>b.onclick=()=>{if(busy)return;tab=b.dataset.tab;root.querySelector('.dating-tabs').style.setProperty('--tab-index',index);root.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('selected',x===b);x.setAttribute('aria-pressed',String(x===b));});message('');work(async()=>{if(!loaded)own=await api('dating/me');await display();});});
   async function display(){
     if(tab==='edit'){editor();return;}
     if(tab==='matches'){
