@@ -35,7 +35,7 @@
       if(!matches.length){content.textContent='Hozircha o‘zaro like yo‘q.';return;}
       for(const p of matches){const b=document.createElement('button');b.className='dating-match';b.innerHTML='<img alt="Anketa rasmi" src="'+esc(p.photos[0])+'"><span>'+esc(p.name)+'<small> · O‘zaro like</small></span>';b.onclick=()=>work(async()=>{const d=await api('direct/chats/with/'+p.id,{});if(window.openDatingDirect)await window.openDatingDirect(d.chat_id);else message('DM oynasini qayta oching.');});content.append(b);}return;
     }
-    own=await api('dating/me');
+    if(!own) own=await api('dating/me');
     if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
     rows=await api('dating/cards');position=0;photo=0;renderCard();
     message('');
@@ -44,7 +44,7 @@
     const p=rows[position];if(!p){content.innerHTML='<p>Hozircha yangi anketalar yo‘q.</p><button class="dating-save">Yangilash</button>';content.querySelector('button').onclick=()=>work(display);return;}
     const bars=p.photos.map((_,i)=>'<i class="'+(i===photo?'current':'')+'"></i>').join('');
     content.innerHTML='<article class="dating-card"><img alt="Anketa rasmi" src="'+esc(p.photos[photo])+'"><div class="dating-photo-nav"><div class="dating-photo-bars" role="img" aria-label="'+(photo+1)+' / '+p.photos.length+' rasm">'+bars+'</div></div><div class="dating-copy"><div class="dating-identity"><h3><span class="dating-name">'+esc(p.name)+badgeMarkup(p)+'</span>'+(p.age?'<span class="dating-age">, '+esc(p.age)+'</span>':'')+'</h3><small class="dating-city">'+esc(p.city)+'</small></div><p>'+esc(p.bio)+'</p></div><div class="dating-actions"><button class="skip" aria-label="O‘tkazish">×</button><button class="like" aria-label="Yoqtirish">♥</button></div></article>';
-    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});message(r.matched?'O‘zaro like! Matchlar bo‘limida ko‘rishingiz mumkin.':'');position++;photo=0;renderCard();}));
+    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});position++;photo=0;if(r.matched){const matchesTab=root.querySelector('[data-tab="matches"]');tab='matches';root.querySelector('.dating-tabs').style.setProperty('--tab-index','1');root.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('selected',x===matchesTab);x.setAttribute('aria-pressed',String(x===matchesTab));});await display();message('O‘zaro like! Match saqlandi.');return;}message('');renderCard();}));
     const card=content.querySelector('article');let start=null;
     card.onpointerdown=e=>{if(e.isPrimary!==false&&!e.target.closest('button,.dating-copy'))start={x:e.clientX,y:e.clientY};};
     card.onpointerup=e=>{
