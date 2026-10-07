@@ -1,6 +1,6 @@
 (() => {
   const root=document.createElement('section');root.id='dating';root.hidden=true;
-  root.innerHTML='<h2>Tanishuv</h2><div class="dating-tabs"><button data-tab="cards" class="selected">Anketam</button><button data-tab="matches">Matchlar</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
+  root.innerHTML='<div class="dating-tabs"><button data-tab="cards" class="selected">Anketam</button><button data-tab="matches">Matchlar</button><button data-tab="edit">Tahrirlash</button></div><p class="dating-note" id="datingStatus" role="status"></p><div id="datingContent"></div>';
   document.querySelector('main').append(root);
   const nav=document.querySelector('nav#nav'),button=document.createElement('button');button.dataset.page='dating';button.title='Tanishuv';button.setAttribute('aria-label','Tanishuv');button.textContent='♡';
   nav.prepend(button);nav.append(nav.querySelector('[data-page="home"]'),nav.querySelector('[data-page="instagram"]'),nav.querySelector('[data-page="leaders"]'),nav.querySelector('[data-page="profile"]'));
