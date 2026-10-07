@@ -7,13 +7,13 @@
   let tab='cards',own={photos:[],bio:''},rows=[],position=0,photo=0,busy=false,loaded=false;
   const content=root.querySelector('#datingContent'),status=root.querySelector('#datingStatus');
   function message(text){status.textContent=text;}
-  const undoButton=document.createElement('button');undoButton.className='dating-undo';undoButton.textContent='↶ Like’ni qaytarish';root.append(undoButton);
+  const undoButton=document.createElement('button');undoButton.className='dating-undo';undoButton.textContent='↶ Anketani qaytarish';root.append(undoButton);
   undoButton.onclick=()=>work(async()=>{
-    const likes=await api('dating/likes');
+    const likes=await api('dating/history');
     const dialog=document.createElement('dialog');dialog.className='dating-undo-dialog';
-    const heading=document.createElement('h3');heading.textContent='Qaysi like qaytarilsin?';dialog.append(heading);
-    if(!likes.length){const p=document.createElement('p');p.textContent='Qaytarish uchun like yo‘q.';dialog.append(p);}
-    for(const p of likes){const b=document.createElement('button');b.textContent=p.name+' — qaytarish';b.onclick=()=>work(async()=>{await api('dating/undo/'+p.id,{});dialog.close();dialog.remove();message('Like bekor qilindi.');if(tab==='cards'||tab==='matches')await display();});dialog.append(b);}
+    const heading=document.createElement('h3');heading.textContent='Qaysi anketa qaytarilsin?';dialog.append(heading);
+    if(!likes.length){const p=document.createElement('p');p.textContent='Qaytarish uchun anketa yo‘q.';dialog.append(p);}
+    for(const p of likes){const b=document.createElement('button');b.textContent=p.name+(p.liked?' · ♥ Like':' · × O‘tkazilgan')+' — qaytarish';b.onclick=()=>work(async()=>{await api('dating/undo/'+p.id,{});dialog.close();dialog.remove();message('Amal bekor qilindi.');if(tab==='cards'||tab==='matches')await display();});dialog.append(b);}
     const close=document.createElement('button');close.textContent='Yopish';close.onclick=()=>dialog.close();dialog.append(close);dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
   });
   root.querySelector('.dating-tabs').addEventListener('click',e=>{

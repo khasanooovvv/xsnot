@@ -163,8 +163,14 @@ async def undo_like(other: int, uid=Depends(registered)):
         for user_id in sorted({uid, other}):
             await s.get(User, user_id, with_for_update=True)
         row = await s.get(DatingVote, (uid, other))
-        if not row or not row.liked:
-            raise HTTPException(404, 'Bu anketaga like bosilmagan.')
+        if not row:
+            raise HTTPException(404, 'Bu anketa uchun qaytariladigan amal yo‘q.')
         await s.delete(row)
         await s.commit()
         return {'undone': True}
+
+@router.get('/api/dating/history')
+async def vote_history(uid=Depends(registered)):
+    async with SessionLocal() as s:
+        rows = (await s.execute(select(User.telegram_id, User.display_name, DatingVote.liked).join(DatingVote, DatingVote.target_id == User.telegram_id).where(DatingVote.user_id == uid).order_by(User.telegram_id))).all()
+        return [{'id': other, 'name': name or str(other), 'liked': liked} for other, name, liked in rows]

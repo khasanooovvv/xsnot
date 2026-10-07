@@ -85,3 +85,17 @@ class DatingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,404)
         self.uid=2
         self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/likes')).json()],[1])
+
+    async def test_undo_skip_and_history(self):
+        for uid in (1,2,4):await self.save(uid)
+        self.uid=1
+        await self.client.post('/api/dating/vote/2',json={'liked':False})
+        await self.client.post('/api/dating/vote/4',json={'liked':True})
+        self.assertEqual([(p['id'],p['liked']) for p in (await self.client.get('/api/dating/history')).json()],[(2,False),(4,True)])
+        self.uid=4
+        self.assertEqual((await self.client.get('/api/dating/history')).json(),[])
+        self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,404)
+        self.uid=1
+        self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,200)
+        self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/cards')).json()],[2])
+        self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/history')).json()],[4])
