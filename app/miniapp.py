@@ -90,7 +90,7 @@ async def direct_script():
 
 @router.get('/assets/direct.css')
 async def direct_style():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.css', media_type='text/css')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'direct.css', media_type='text/css', headers={'Cache-Control': 'no-cache, no-store, must-revalidate'})
 
 @router.get('/assets/gold-status.js')
 async def gold_status_script():
@@ -134,7 +134,7 @@ async def theme_script():
 
 @router.get('/assets/chat-media.css')
 async def chat_media_styles():
-    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-media.css', media_type='text/css')
+    return FileResponse(Path(__file__).parent / 'web' / 'assets' / 'chat-media.css', media_type='text/css', headers={'Cache-Control': 'no-cache, no-store, must-revalidate'})
 
 @router.get('/assets/trophy.png')
 async def trophy_icon():
