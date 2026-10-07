@@ -13,8 +13,10 @@ for(const [file,type] of [['dating.js','application/javascript'],['dating.css','
 }
 assert(!css.includes('nav#nav'),'Dating styles must not modify bottom navigation');
 assert(!css.includes('58dvh')&&!css.includes('100dvh - 320px'),'Old card height overrides must be removed');
-assert(css.includes('#dating .dating-copy{position:absolute;bottom:96px'));
-assert(css.includes('#dating .dating-actions{position:absolute;bottom:18px'));
+assert(css.includes('#dating .dating-card{position:fixed;inset:0'));
+assert(css.includes('#dating:has(.dating-card) .dating-tabs{position:fixed'));
+assert(css.includes('bottom:calc(198px + env(safe-area-inset-bottom,0px))'));
+assert(css.includes('bottom:calc(116px + env(safe-area-inset-bottom,0px))'));
 assert(js.includes('dating-photo-bars'));
 assert(css.includes('width:min(100%,252px)'));
 assert(css.includes('top:-15px'));

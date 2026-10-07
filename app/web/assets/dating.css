@@ -7,19 +7,21 @@
 @media(prefers-reduced-motion:reduce){#dating .dating-tabs::before{transition:none}}
 #dating .dating-note{font-size:12px;color:#aaa;line-height:1.5}
 #dating .dating-note:empty{display:none}
-#dating .dating-card{position:relative;height:clamp(320px,calc(100dvh - 180px),760px);border-radius:26px;overflow:hidden;background:#222;isolation:isolate;touch-action:pan-y}
+#dating:has(.dating-card) .dating-tabs{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:5;margin:0}
+#dating:has(.dating-card) #datingStatus:not(:empty){position:fixed;top:88px;left:16px;right:16px;z-index:5;background:#000a;border-radius:12px;padding:8px;color:#fff}
+#dating .dating-card{position:fixed;inset:0;z-index:1;height:auto;border-radius:0;overflow:hidden;background:#222;isolation:isolate;touch-action:pan-y}
 #dating .dating-card>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
 #dating .dating-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0003,transparent 28%,#0001 45%,#0009 72%,#000d 100%);pointer-events:none;z-index:1}
-#dating .dating-photo-nav{position:absolute;top:12px;left:12px;right:12px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#dating .dating-photo-nav{position:absolute;top:54px;left:12px;right:12px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px}
 #dating .dating-photo-nav button{width:32px;height:32px;padding:0;margin:0;border-radius:50%!important;background:#0005!important;border:0!important;color:#fff!important;font-size:25px}
 #dating .dating-photo-bars{display:flex;flex:1;gap:4px}
 #dating .dating-photo-bars i{height:3px;flex:1;background:#ffffff60;border-radius:4px}
 #dating .dating-photo-bars i.current{background:#fff}
-#dating .dating-copy{position:absolute;bottom:96px;left:20px;right:20px;z-index:2;text-shadow:0 2px 8px #0006}
+#dating .dating-copy{position:absolute;bottom:calc(198px + env(safe-area-inset-bottom,0px));left:20px;right:20px;z-index:2;text-shadow:0 2px 8px #0006}
 #dating .dating-copy h3{font-size:clamp(24px,7vw,36px);line-height:1.1;margin:0 0 8px;overflow-wrap:anywhere}
 #dating .dating-city{display:block;font-size:14px;color:#eee}
 #dating .dating-copy p{font-size:14px;line-height:1.45;margin:10px 0 0;max-height:90px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
-#dating .dating-actions{position:absolute;bottom:18px;left:0;right:0;z-index:3;display:flex;justify-content:center;gap:32px}
+#dating .dating-actions{position:absolute;bottom:calc(116px + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:3;display:flex;justify-content:center;gap:32px}
 #dating .dating-actions button{display:grid;place-items:center;width:64px;height:64px;min-height:64px;padding:0;margin:0;border-radius:50%!important;border:1px solid #ffffff30!important;color:#fff!important;background:#242424cc!important;font-size:38px;line-height:1;box-shadow:none!important}
 #dating #datingContent .dating-actions button.like{background:#e66c98!important;border-color:#ffffff20!important;font-size:31px;box-shadow:0 6px 24px #e66c9838!important}
 #dating #datingContent .dating-actions button.like:hover{background:#ef80aa!important}
@@ -37,4 +39,4 @@
 #dating .dating-save,#dating .dating-upload{background:#333;width:100%;padding:12px;border-radius:12px}
 #dating .dating-match{display:flex;align-items:center;gap:12px;width:100%;background:#222;text-align:left;border-radius:14px;padding:12px}
 #dating .dating-match img{width:48px;height:48px;object-fit:cover;border-radius:50%}
-@media(max-height:520px){#dating .dating-card{height:360px}#dating .dating-copy p{max-height:60px}}
+@media(max-height:520px){#dating .dating-copy p{max-height:40px}#dating .dating-copy h3{font-size:24px}}
