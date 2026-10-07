@@ -7,6 +7,14 @@
   let tab='cards',own={photos:[],bio:''},rows=[],position=0,photo=0,busy=false,loaded=false;
   const content=root.querySelector('#datingContent'),status=root.querySelector('#datingStatus');
   function message(text){status.textContent=text;}
+  root.querySelector('.dating-tabs').addEventListener('click',e=>{
+    const target=e.target.closest('button[data-tab]');
+    if(!target||target.disabled||busy)return;
+    try{
+      const app=window.Telegram?.WebApp;
+      if(typeof app?.HapticFeedback?.selectionChanged==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1')))app.HapticFeedback.selectionChanged();
+    }catch{}
+  },true);
   async function work(fn){if(busy)return;busy=true;root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=true);root.setAttribute('aria-busy','true');try{await fn();}catch(e){message(e.message);}finally{busy=false;root.removeAttribute('aria-busy');root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=false);}}
   async function load(){own=await api('dating/me');loaded=true;await display();}
   button.onclick=()=>{show('dating');work(load);};
