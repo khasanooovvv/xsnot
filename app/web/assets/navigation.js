@@ -33,7 +33,15 @@
   test.setAttribute('aria-label','Test '+style);test.style.cssText='flex:1;min-width:0;margin:0;padding:8px;font-size:13px';
   test.addEventListener('click',event=>tapFeedback(event,style));testControls.append(test);
  });
- diagnostic.append(diagnosticText,closeDiagnostic,testControls);document.body.append(diagnostic);
+ const vibrationTest=document.createElement('button');vibrationTest.type='button';vibrationTest.textContent='Vibrate 100 ms';
+ vibrationTest.addEventListener('click',()=>{
+  diagnosticTaps++;
+  try{
+   const supported=typeof globalThis.navigator?.vibrate==='function';
+   showDiagnostic('Vibrate test',supported?'vibrate(100): '+String(globalThis.navigator.vibrate(100)):'vibrate API yoq');
+  }catch(error){showDiagnostic('Vibrate test','Xato: '+String(error?.message||error));}
+ });
+ diagnostic.append(diagnosticText,closeDiagnostic,testControls,vibrationTest);document.body.append(diagnostic);
  let diagnosticTaps=0;
  function showDiagnostic(button,result){
   const app=globalThis.Telegram?.WebApp;
@@ -46,6 +54,13 @@
  function tapFeedback(event,style='light'){
   diagnosticTaps++;const button=event?.currentTarget?.getAttribute('aria-label')||'nav';let result='API mavjud emas';
   const app=globalThis.Telegram?.WebApp;
+  if(app?.platform==='android'&&style==='light'){
+   try{
+    if(typeof globalThis.navigator?.vibrate==='function'&&globalThis.navigator.vibrate(20)===true){
+     showDiagnostic(button,'Android vibrate(20): true');return;
+    }
+   }catch(error){result='Android vibrate xato: '+String(error?.message||error);}
+  }
   try{
    // Android exposes the native bridge used by Telegram's own SDK.
    // This avoids the SDK silently skipping haptics when its version check fails.
