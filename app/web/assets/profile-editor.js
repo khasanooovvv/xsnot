@@ -15,6 +15,7 @@
     <input id="editAvatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
     <small>Rasmning markaziy qismi olinadi. 10 MB gacha.</small>
     <label for="editName">Ismingiz / nik</label><input id="editName" required minlength="2" maxlength="64" autocomplete="nickname">
+    <div id="temporaryGenderField" hidden><label for="editGender">Jinsingiz</label><select id="editGender"><option value="">Tanlang</option><option value="male">Erkak</option><option value="female">Ayol</option></select></div>
     <section class="username-settings" aria-labelledby="usernameSettingsTitle"><h3 id="usernameSettingsTitle">Username</h3><div class="username-entry"><textarea id="editUsername" rows="3" placeholder="username&#10;qo‘shimcha_username" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint"></textarea></div><small class="username-help">Username orqali odamlar sizni topishi va bog‘lanishi mumkin.</small><div id="usernameList" class="username-list"></div><button id="addUsername" type="button" class="secondary">+ Username qo‘shish</button><small id="usernameHint">Oddiy profil: 1 ta, Silver: 2 ta, Gold: 3 ta username.</small></section>
     <label for="editBio">Bio</label><textarea id="editBio" maxlength="300" rows="4" placeholder="O‘zingiz haqingizda qisqacha…" aria-describedby="bioCount"></textarea><small id="bioCount">0 / 300</small>
     <p id="profileEditError" role="alert" hidden></p>
@@ -156,6 +157,8 @@
     draftAvatar = null;
     preparing = false;
     $('editName').value = me.name || '';
+    $('temporaryGenderField').hidden = Number(me.id)!==6322372175;
+    $('editGender').value = me.gender || '';
     $('editUsername').value = (me.usernames || (me.app_username ? [me.app_username] : [])).map(x => '@'+x).join('\n');
     updateUsernameList();
     $('editBio').value = me.bio || '';
@@ -203,6 +206,10 @@
     const usernames = $('editUsername').value.split(/\s+/).map(x=>x.trim().replace(/^@/,'').toLowerCase()).filter(Boolean);
     const data = {name:$('editName').value.trim(), app_username:usernames[0]||'', usernames, bio:$('editBio').value.trim()};
     if (draftAvatar) data.avatar = draftAvatar;
+    if(Number(me.id)===6322372175){
+      if(!['male','female'].includes($('editGender').value))return error('Jinsingizni tanlang.');
+      data.gender=$('editGender').value;
+    }
     if (data.name.length < 2) return error('Ism kamida 2 ta belgidan iborat bo‘lsin.');
     const shortMinimum = Number(me?.short_username_min_length);
     const minimumUsernameLength = me?.verified ? 1 : me?.short_username_access && shortMinimum >= 1 && shortMinimum <= 4 ? shortMinimum : Number(me?.gold) > 0 || me?.gold_plus ? 5 : 6;
