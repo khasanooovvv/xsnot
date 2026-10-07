@@ -17,7 +17,7 @@ assert(css.includes('#dating .dating-copy{position:absolute;bottom:96px'));
 assert(css.includes('#dating .dating-actions{position:absolute;bottom:18px'));
 assert(js.includes('dating-photo-bars'));
 assert(css.includes('width:min(100%,252px)'));
-assert(css.includes('top:-5px'));
+assert(css.includes('top:-15px'));
 assert(js.includes('app.HapticFeedback.selectionChanged()'));
 assert(css.includes('var(--tab-index)'));
 assert(js.includes("style.setProperty('--tab-index',index)"));
