@@ -24,6 +24,12 @@
  function tapFeedback(){
   const app=globalThis.Telegram?.WebApp;
   try{
+   // Android exposes the native bridge used by Telegram's own SDK.
+   // This avoids the SDK silently skipping haptics when its version check fails.
+   const bridge=globalThis.TelegramWebviewProxy;
+   if(typeof bridge?.postEvent==='function'){
+    bridge.postEvent('web_app_trigger_haptic_feedback',JSON.stringify({type:'impact',impact_style:'light'}));return;
+   }
    if(typeof app?.HapticFeedback?.impactOccurred==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1'))){
     app.HapticFeedback.impactOccurred('light');return;
    }

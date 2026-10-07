@@ -36,6 +36,12 @@ image.onerror();assert.equal(profile.children.length,0);assert.equal(profile.svg
 assert.equal(context.renderProfile(),42);
 buttons[2].events.click();assert(buttons[2].classList.contains('turn'));
 const impacts=[];
+const nativeEvents=[];
+context.TelegramWebviewProxy={postEvent:(name,payload)=>nativeEvents.push([name,JSON.parse(payload)])};
+buttons.forEach(b=>b.events.clickCapture());
+assert.equal(nativeEvents.length,5,'Android native bridge must receive one event per button');
+nativeEvents.forEach(([name,payload])=>{assert.equal(name,'web_app_trigger_haptic_feedback');assert.deepEqual(payload,{type:'impact',impact_style:'light'});});
+delete context.TelegramWebviewProxy;
 context.Telegram={WebApp:{HapticFeedback:{impactOccurred:style=>impacts.push(style)}}};
 buttons.forEach(b=>{b.events.clickCapture();b.events.click();});
 assert.deepEqual(impacts,['light','light','light','light','light'],'Each of the five buttons must trigger exactly one light impact');
