@@ -99,3 +99,19 @@ class DatingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.post('/api/dating/undo/2')).status_code,200)
         self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/cards')).json()],[2])
         self.assertEqual([p['id'] for p in (await self.client.get('/api/dating/history')).json()],[4])
+
+    async def test_card_verification_badges(self):
+        from datetime import timedelta
+        await self.save(1);await self.save(2)
+        async with self.sessions() as s:
+            user=await s.get(User,2)
+            user.silver_verified=True;user.is_verified=True
+            user.gold_plus_until=datetime.now(UTC)+timedelta(days=1)
+            await s.commit()
+        self.uid=1
+        row=(await self.client.get('/api/dating/cards')).json()[0]
+        self.assertEqual((row['gold'],row['gold_plus'],row['silver'],row['verified']),(1,True,1,True))
+        async with self.sessions() as s:
+            user=await s.get(User,2);user.gold_plus_until=datetime.now(UTC)-timedelta(days=1);await s.commit()
+        row=(await self.client.get('/api/dating/cards')).json()[0]
+        self.assertEqual((row['gold'],row['gold_plus']),(0,False))

@@ -14,6 +14,7 @@ from app.models import User
 from app.dating_models import DatingProfile, DatingVote
 from app.direct_models import BlockedUser
 from app.miniapp import registered
+from app.services.subscriptions import subscription
 
 router = APIRouter()
 
@@ -64,7 +65,10 @@ def normalize_photos(photos):
 def card(user, profile):
     today = date.today()
     age = None if not user.birth_date else today.year-user.birth_date.year-((today.month,today.day)<(user.birth_date.month,user.birth_date.day))
+    tier = subscription(user)['tier']
     return {'id': user.telegram_id, 'name': user.display_name, 'age': age,
+            'gold': int(tier in ('gold', 'plus')), 'gold_plus': tier == 'plus',
+            'silver': int(bool(user.silver_verified)), 'verified': bool(user.is_verified),
             'city': user.city, 'bio': profile.bio, 'photos': json.loads(profile.photos)}
 
 async def eligible(s, uid, other):
