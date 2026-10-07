@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_
 from starlette.concurrency import run_in_threadpool
 from app.database import SessionLocal
 from app.models import User
@@ -114,35 +114,6 @@ async def cards(uid=Depends(registered)):
             User.telegram_id.not_in(votes), User.telegram_id.not_in(blocked), User.telegram_id.not_in(blocked_by)
         ).order_by(User.telegram_id).limit(12))).all()
         return [card(user, profile) for user, profile in rows]
-
-@router.get('/api/dating/diagnostics')
-async def diagnostics(uid=Depends(registered)):
-    """Read-only counts for the caller's feed; never expose other users' records."""
-    async with SessionLocal() as s:
-        mine = await s.get(User, uid)
-        own = await s.get(DatingProfile, uid)
-        gender = mine.gender if mine else None
-        opposite = 'female' if gender == 'male' else 'male' if gender == 'female' else None
-        conditions = [User.telegram_id != uid]
-        async def count():
-            return await s.scalar(select(func.count()).select_from(User).join(
-                DatingProfile, DatingProfile.user_id == User.telegram_id).where(*conditions))
-        counts = {'other_profiles': await count()}
-        conditions.append(User.gender == opposite)
-        counts['opposite_gender'] = await count()
-        conditions.extend([User.is_registered.is_(True), User.is_banned.is_(False)])
-        counts['registered_not_banned'] = await count()
-        conditions.append(DatingProfile.photos != '[]')
-        counts['with_photos'] = await count()
-        conditions.append(User.telegram_id.not_in(select(DatingVote.target_id).where(DatingVote.user_id == uid)))
-        counts['after_votes'] = await count()
-        conditions.extend([
-            User.telegram_id.not_in(select(BlockedUser.blocked_id).where(BlockedUser.blocker_id == uid)),
-            User.telegram_id.not_in(select(BlockedUser.blocker_id).where(BlockedUser.blocked_id == uid)),
-        ])
-        counts['after_blocks'] = await count()
-        return {'gender': gender, 'own_photo_count': len(json.loads(own.photos)) if own else 0,
-                'counts': counts}
 
 @router.post('/api/dating/vote/{other}')
 async def vote(other: int, body: VoteBody, uid=Depends(registered)):

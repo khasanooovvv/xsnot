@@ -68,21 +68,3 @@ class DatingTests(unittest.IsolatedAsyncioTestCase):
         await self.save(1);await self.save(2);await self.save(2,[])
         self.uid=1
         self.assertEqual((await self.client.get('/api/dating/cards')).json(),[])
-
-    async def test_readonly_diagnostic_filter_counts(self):
-        for uid in (1,2,3,4):
-            await self.save(uid)
-        self.uid=1
-        await self.client.post('/api/dating/vote/2',json={'liked':False})
-        async with self.sessions() as s:
-            s.add(BlockedUser(blocker_id=4,blocked_id=1,created_at=datetime.now(UTC)))
-            await s.commit()
-        response=await self.client.get('/api/dating/diagnostics')
-        self.assertEqual(response.status_code,200)
-        data=response.json()
-        self.assertEqual(data['gender'],'male')
-        self.assertEqual(data['own_photo_count'],1)
-        self.assertEqual(data['counts'],dict(other_profiles=3,opposite_gender=2,
-            registered_not_banned=2,with_photos=2,after_votes=1,after_blocks=0))
-        self.assertEqual((await self.client.get('/api/dating/cards')).json(),[])
-        self.assertEqual(len((await self.client.get('/api/dating/me')).json()['photos']),1)

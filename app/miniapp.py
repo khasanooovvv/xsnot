@@ -515,7 +515,6 @@ async def update_profile_name(body: ProfileName, uid=Depends(registered)):
     return {'name': name}
 
 class ProfileEdit(BaseModel):
-    gender: Literal['male', 'female'] | None = None
     name: str = Field(min_length=2, max_length=64)
     app_username: str | None = Field(default=None, max_length=25)
     usernames: list[str] | None = None
@@ -524,9 +523,6 @@ class ProfileEdit(BaseModel):
 
 @router.post('/api/profile')
 async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
-    # Temporary repair control, limited to the explicitly authorized account.
-    if body.gender is not None and uid != 6322372175:
-        raise HTTPException(403, 'Jinsni tahrirlash bu profil uchun ochilmagan.')
     name = body.name.strip()
     if len(name) < 2:
         raise HTTPException(422, 'Ism kamida 2 ta belgidan iborat bo‘lsin.')
@@ -595,8 +591,6 @@ async def edit_profile(body: ProfileEdit, uid=Depends(registered)):
             if any(len(item) < minimum for item in handles if item not in purchased):
                 raise HTTPException(422, f'Username {minimum}–24 belgili bo‘lsin.')
         user.display_name = name
-        if body.gender is not None:
-            user.gender = body.gender
         if usernames is not None:
             # Clear the unique primary value before replacing the ordered
             # username set. This makes reordering deterministic even when the
