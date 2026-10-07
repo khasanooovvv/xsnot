@@ -258,8 +258,8 @@ html body nav#nav:not(.major-nav) .nav-depth{display:none!important}
 #premiumSheet .premium-features>div{padding:6px 0}
 #premiumSheet .premium-features b{font-size:14px}
 #premiumSheet .premium-features small{margin-top:2px;font-size:11px;line-height:1.3}
-#premiumSheet .premium-toggle,#premiumSheet .premium-plans,#premiumSheet .premium-payments{position:relative;isolation:isolate;display:grid;gap:0;margin-top:9px;padding:3px;border:1px solid #333;border-radius:40px;background:#050505}
-#premiumSheet .premium-toggle::before,#premiumSheet .premium-plans::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/2);border-radius:36px;background:#292929;transition:transform .25s ease}
+#premiumSheet .premium-toggle,#premiumSheet .premium-plans,#premiumSheet .premium-payments{position:relative;isolation:isolate;display:grid;gap:0;margin-top:9px;padding:3px;border:1px solid #303030;border-radius:40px;background:#202020}
+#premiumSheet .premium-toggle::before,#premiumSheet .premium-plans::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/2);border-radius:36px;background:#383838;transition:transform .25s ease}
 #premiumSheet .premium-toggle:has([data-tier="plus"].active)::before{transform:translateX(100%)}
 #premiumSheet .premium-plans::before{width:calc((100% - 6px)/3)}
 #premiumSheet .premium-plans:has([data-days="30"].active)::before{transform:translateX(100%)}
@@ -267,7 +267,7 @@ html body nav#nav:not(.major-nav) .nav-depth{display:none!important}
 #premiumSheet .premium-toggle .premium-tier,#premiumSheet .premium-plans .premium-plan,#premiumSheet .premium-payments button{background:transparent!important;border:0!important;box-shadow:none!important;color:#999!important;border-radius:36px;transform:none!important;filter:none!important;backdrop-filter:none!important}
 #premiumSheet .premium-toggle .premium-tier.active,#premiumSheet .premium-plans .premium-plan.active{color:#69bbee!important}
 #premiumSheet .premium-payments button{color:#eee!important}
-#premiumSheet .premium-payments button:hover,#premiumSheet .premium-payments button:active{background:#252525!important}
+#premiumSheet .premium-payments button:hover,#premiumSheet .premium-payments button:active{background:#383838!important}
 @media(prefers-reduced-motion:reduce){#premiumSheet .premium-toggle::before,#premiumSheet .premium-plans::before{transition:none}}
 #premiumSheet .premium-tier,#premiumSheet .premium-payments button{min-height:36px;padding:7px 4px;margin:0;font-size:12px;border-radius:36px}
 #premiumSheet .premium-plan{min-height:68px;padding:8px 3px;margin:0;border-radius:36px}
