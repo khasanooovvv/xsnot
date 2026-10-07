@@ -19,8 +19,8 @@
 #dating .dating-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0003,transparent 28%,#0001 45%,#0009 72%,#000d 100%);pointer-events:none;z-index:1}
 #dating .dating-photo-nav{position:absolute;top:54px;left:12px;right:12px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px}
 #dating .dating-photo-nav button{width:32px;height:32px;padding:0;margin:0;border-radius:50%!important;background:#0005!important;border:0!important;color:#fff!important;font-size:25px}
-#dating .dating-photo-bars{display:flex;flex:1;gap:4px}
-#dating .dating-photo-bars i{height:3px;flex:1;background:#ffffff60;border-radius:4px}
+#dating .dating-photo-bars{display:flex;justify-content:center;gap:4px;max-width:140px}
+#dating .dating-photo-bars i{height:3px;width:20px;flex:0 1 20px;background:#ffffff60;border-radius:4px}
 #dating .dating-photo-bars i.current{background:#fff}
 #dating .dating-copy{position:absolute;bottom:calc(198px + env(safe-area-inset-bottom,0px));left:20px;right:20px;z-index:2;text-shadow:0 2px 8px #0006}
 #dating .dating-copy h3{font-size:clamp(24px,7vw,36px);line-height:1.1;margin:0 0 8px;overflow-wrap:anywhere}

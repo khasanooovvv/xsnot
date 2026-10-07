@@ -46,7 +46,18 @@
     content.innerHTML='<article class="dating-card"><img alt="Anketa rasmi" src="'+esc(p.photos[photo])+'"><div class="dating-photo-nav"><button aria-label="Oldingi rasm">‹</button><div class="dating-photo-bars" role="img" aria-label="'+(photo+1)+' / '+p.photos.length+' rasm">'+bars+'</div><button aria-label="Keyingi rasm">›</button></div><div class="dating-copy"><h3>'+esc(p.name)+(p.age?', '+p.age:'')+'</h3><small class="dating-city">'+esc(p.city)+'</small><p>'+esc(p.bio)+'</p></div><div class="dating-actions"><button class="skip" aria-label="O‘tkazish">×</button><button class="like" aria-label="Yoqtirish">♥</button></div></article>';
     content.querySelectorAll('.dating-photo-nav button').forEach((b,i)=>b.onclick=()=>{photo=(photo+(i?1:-1)+p.photos.length)%p.photos.length;renderCard();});
     content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});message(r.matched?'O‘zaro like! Matchlar bo‘limida ko‘rishingiz mumkin.':'');position++;photo=0;renderCard();}));
-    const card=content.querySelector('article');let start=null;card.onpointerdown=e=>{if(!e.target.closest('button'))start=e.clientX;};card.onpointerup=e=>{if(start===null)return;const dx=e.clientX-start;start=null;if(Math.abs(dx)>90)content.querySelectorAll('.dating-actions button')[dx>0?1:0].click();};card.onpointercancel=()=>start=null;
+    const card=content.querySelector('article');let start=null;
+    card.onpointerdown=e=>{if(e.isPrimary!==false&&!e.target.closest('button,.dating-copy'))start={x:e.clientX,y:e.clientY};};
+    card.onpointerup=e=>{
+      if(!start||busy)return;
+      const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;
+      if(Math.abs(dx)>90&&Math.abs(dx)>Math.abs(dy)){content.querySelectorAll('.dating-actions button')[dx>0?1:0].click();return;}
+      if(Math.abs(dx)>10||Math.abs(dy)>10||e.target.closest('button,.dating-copy'))return;
+      const bounds=card.getBoundingClientRect();
+      photo=Math.max(0,Math.min(p.photos.length-1,photo+(e.clientX-bounds.left>=bounds.width/2?1:-1)));
+      renderCard();
+    };
+    card.onpointercancel=()=>start=null;
   }
   function editor(){
     content.innerHTML='<strong>Anketa rasmlari · '+own.photos.length+'/6</strong><div class="dating-grid"></div><input type="file" accept="image/*" multiple hidden><label for="datingBio">Anketa uchun bio</label><textarea id="datingBio" maxlength="300" placeholder="O‘zingiz haqingizda qisqacha…"></textarea><p class="dating-note">6 tagacha rasm · Har biri 10 MB gacha</p><button class="dating-save">Saqlash</button>';
