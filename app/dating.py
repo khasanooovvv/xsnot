@@ -27,11 +27,11 @@ async def navigation_style():
 
 @router.get('/assets/dating.js')
 async def script():
-    return FileResponse(Path(__file__).parent / 'web/assets/dating.js', media_type='application/javascript')
+    return FileResponse(Path(__file__).parent / 'web/assets/dating.js', media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 @router.get('/assets/dating.css')
 async def style():
-    return FileResponse(Path(__file__).parent / 'web/assets/dating.css', media_type='text/css')
+    return FileResponse(Path(__file__).parent / 'web/assets/dating.css', media_type='text/css', headers={'Cache-Control': 'no-cache'})
 
 class ProfileBody(BaseModel):
     bio: str = Field(default='', max_length=300)
