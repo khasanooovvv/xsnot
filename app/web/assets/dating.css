@@ -1,5 +1,5 @@
 /* Dating-only layout. Bottom navigation is owned by navigation.css. */
-#dating{background:#101010;color:#eee;padding:8px 6px 12px;border-radius:20px;margin-bottom:110px}
+#dating{position:relative;z-index:0;isolation:isolate;background:#101010;color:#eee;padding:8px 6px 12px;border-radius:20px;margin-bottom:110px}
 #dating .dating-tabs{--tab-index:0;position:relative;top:-15px;isolation:isolate;display:grid;grid-template-columns:repeat(3,1fr);width:min(100%,252px);height:34px;margin:0 auto 5px;padding:3px;box-sizing:border-box;border:1px solid #333;border-radius:24px;background:#050505}
 #dating .dating-tabs::before{content:"";position:absolute;z-index:-1;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:20px;background:#252525;transform:translateX(calc(var(--tab-index)*100%));transition:transform .25s ease}
 #dating .dating-tabs button{display:grid;place-items:center;min-width:0;width:100%;height:26px;min-height:0;margin:0;padding:0 3px;font-size:11px;font-weight:600;border-radius:20px;line-height:16px;background:transparent!important;border:0!important;box-shadow:none!important;color:#999!important;transform:none!important}

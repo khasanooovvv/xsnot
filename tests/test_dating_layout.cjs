@@ -12,6 +12,7 @@ for(const [file,type] of [['dating.js','application/javascript'],['dating.css','
   assert(routes.includes("'web/assets/"+file+"', media_type='"+type+"', headers={'Cache-Control': 'no-cache'}"),'Dating assets must revalidate browser cache');
 }
 assert(!css.includes('nav#nav'),'Dating styles must not modify bottom navigation');
+assert(css.includes('#dating{position:relative;z-index:0;isolation:isolate;'),'Fullscreen card layers must stay inside the dating stacking context, below navigation');
 assert(!css.includes('58dvh')&&!css.includes('100dvh - 320px'),'Old card height overrides must be removed');
 assert(css.includes('#dating .dating-card{position:fixed;inset:0'));
 assert(css.includes('#dating:has(.dating-card) .dating-tabs{position:fixed'));
