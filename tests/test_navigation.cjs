@@ -7,7 +7,7 @@ class Element{
  prepend(c){this.children.unshift(c);}
  setAttribute(k,v){this.attrs[k]=v;}
  removeAttribute(k){delete this.attrs[k];}
- addEventListener(k,v){this.events[k]=v;}
+ addEventListener(k,v,capture=false){const key=capture?k+'Capture':k;this.events[key]=v;}
  querySelector(q){return q==='svg'?this.svg:null;}
  remove(){this.parentNode.children=this.parentNode.children.filter(x=>x!==this);}
 }
@@ -37,11 +37,18 @@ assert.equal(context.renderProfile(),42);
 buttons[2].events.click();assert(buttons[2].classList.contains('turn'));
 const impacts=[];
 context.Telegram={WebApp:{HapticFeedback:{impactOccurred:style=>impacts.push(style)}}};
-buttons.forEach(b=>b.events.click());
+buttons.forEach(b=>{b.events.clickCapture();b.events.click();});
 assert.deepEqual(impacts,['light','light','light','light','light'],'Each of the five buttons must trigger exactly one light impact');
+const vibrations=[];context.navigator={vibrate:duration=>vibrations.push(duration)};
 context.Telegram.WebApp.HapticFeedback.impactOccurred=()=>{throw new Error('Unsupported client');};
-assert.doesNotThrow(()=>buttons[2].events.click(),'Haptic failure must not interrupt navigation');
+assert.doesNotThrow(()=>{buttons[2].events.clickCapture();buttons[2].events.click();},'Haptic failure must not interrupt navigation');
+assert.deepEqual(vibrations,[15],'Failed Telegram haptics must use the vibration fallback');
 assert(buttons[2].classList.contains('turn'),'Animation must still run after haptic failure');
 delete context.Telegram;
-assert.doesNotThrow(()=>profile.events.click(),'Navigation must work outside Telegram');
+assert.doesNotThrow(()=>{profile.events.clickCapture();profile.events.click();},'Navigation must work outside Telegram');
+assert.deepEqual(vibrations,[15,15]);
+context.Telegram={WebApp:{isVersionAtLeast:()=>false,HapticFeedback:{impactOccurred:()=>assert.fail('Unsupported API must not be called')}}};
+buttons[0].events.clickCapture();assert.deepEqual(vibrations,[15,15,15]);
+delete context.navigator;delete context.Telegram;
+assert.doesNotThrow(()=>buttons[0].events.clickCapture(),'Clients without either vibration API must remain usable');
 console.log('PASS: navigation handlers, labels, avatar loading/fallback and click animation');

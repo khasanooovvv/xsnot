@@ -22,10 +22,17 @@
   [...buttons,profile].forEach(b=>{if(b.classList.contains('selected'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
  }
  function tapFeedback(){
-  try{globalThis.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');}catch(_){/* Unsupported clients must not interrupt navigation. */}
+  const app=globalThis.Telegram?.WebApp;
+  try{
+   if(typeof app?.HapticFeedback?.impactOccurred==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1'))){
+    app.HapticFeedback.impactOccurred('light');return;
+   }
+  }catch(error){globalThis.console?.warn?.('Navigation haptic feedback failed',error);}
+  try{globalThis.navigator?.vibrate?.(15);}catch(_){/* Vibration is optional; navigation must continue. */}
  }
+ // Capture the tap before page handlers render or replace navigation content.
+ [...buttons,profile].forEach(b=>b.addEventListener('click',tapFeedback,true));
  [...buttons,profile].forEach(b=>b.addEventListener('click',()=>{
-  tapFeedback();
   if(b!==profile){buttons.forEach(x=>x.classList.remove('turn'));void b.offsetWidth;b.classList.add('turn');}
   syncSelection();
  }));
