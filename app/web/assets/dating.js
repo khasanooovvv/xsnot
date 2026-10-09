@@ -5,6 +5,10 @@
   const nav=document.querySelector('nav#nav'),button=document.createElement('button');button.dataset.page='dating';button.title='Tanishuv';button.setAttribute('aria-label','Tanishuv');button.textContent='♡';
   nav.prepend(button);nav.append(nav.querySelector('[data-page="home"]'),nav.querySelector('[data-page="instagram"]'),nav.querySelector('[data-page="leaders"]'),nav.querySelector('[data-page="profile"]'));
   let tab='cards',own={photos:[],bio:''},rows=[],position=0,photo=0,busy=false,loaded=false;
+  const cacheKey='dating-cache-v1',cacheTtl=10*24*60*60*1000;
+  function readCache(){try{const value=JSON.parse(localStorage.getItem(cacheKey)||'null');return value&&Date.now()-value.savedAt<cacheTtl?value:null;}catch{return null;}}
+  function writeCache(){try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),own,rows}));}catch{}}
+  function refreshCards(){return api('dating/cards').then(fresh=>{rows=fresh;position=Math.min(position,Math.max(0,rows.length-1));writeCache();if(tab==='cards'&&!busy)renderCard();}).catch(()=>{});}
   const content=root.querySelector('#datingContent'),status=root.querySelector('#datingStatus');
   function message(text){status.textContent=text;}
   const undoButton=document.createElement('button');undoButton.className='dating-undo';undoButton.textContent='↶ Anketani qaytarish';root.append(undoButton);
@@ -25,7 +29,7 @@
     }catch{}
   },true);
   async function work(fn){if(busy)return;busy=true;root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=true);root.setAttribute('aria-busy','true');try{await fn();}catch(e){message(e.message);}finally{busy=false;root.removeAttribute('aria-busy');root.querySelectorAll('button,input,textarea').forEach(b=>b.disabled=false);}}
-  async function load(){own=await api('dating/me');loaded=true;await display();}
+  async function load(){const cached=readCache();if(cached){own=cached.own||own;rows=cached.rows||[];loaded=true;await display();refreshCards();return;}own=await api('dating/me');loaded=true;await display();}
   button.onclick=()=>{show('dating');work(load);};
   root.querySelectorAll('[data-tab]').forEach((b,index)=>b.onclick=()=>{if(busy)return;tab=b.dataset.tab;root.querySelector('.dating-tabs').style.setProperty('--tab-index',index);root.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('selected',x===b);x.setAttribute('aria-pressed',String(x===b));});message('');work(async()=>{if(!loaded)own=await api('dating/me');await display();});});
   async function display(){
@@ -35,16 +39,15 @@
       if(!matches.length){content.textContent='Hozircha o‘zaro like yo‘q.';return;}
       for(const p of matches){const b=document.createElement('button');b.className='dating-match';b.innerHTML='<img alt="Anketa rasmi" src="'+esc(p.photos[0])+'"><span>'+esc(p.name)+'<small> · O‘zaro like</small></span>';b.onclick=()=>work(async()=>{const d=await api('direct/chats/with/'+p.id,{});if(window.openDatingDirect)await window.openDatingDirect(d.chat_id);else message('DM oynasini qayta oching.');});content.append(b);}return;
     }
-    own=await api('dating/me');
     if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
-    rows=await api('dating/cards');position=0;photo=0;renderCard();
+    if(!rows.length){rows=await api('dating/cards');writeCache();}position=0;photo=0;renderCard();
     message('');
   }
   function renderCard(){
     const p=rows[position];if(!p){content.innerHTML='<p>Hozircha yangi anketalar yo‘q.</p><button class="dating-save">Yangilash</button>';content.querySelector('button').onclick=()=>work(display);return;}
     const bars=p.photos.map((_,i)=>'<i class="'+(i===photo?'current':'')+'"></i>').join('');
     content.innerHTML='<article class="dating-card"><img alt="Anketa rasmi" src="'+esc(p.photos[photo])+'"><div class="dating-photo-nav"><div class="dating-photo-bars" role="img" aria-label="'+(photo+1)+' / '+p.photos.length+' rasm">'+bars+'</div></div><div class="dating-copy"><div class="dating-identity"><h3><span class="dating-name">'+esc(p.name)+badgeMarkup(p)+'</span>'+(p.age?'<span class="dating-age">, '+esc(p.age)+'</span>':'')+'</h3><small class="dating-city">'+esc(p.city)+'</small></div><p>'+esc(p.bio)+'</p></div><div class="dating-actions"><button class="skip" aria-label="O‘tkazish">×</button><button class="like" aria-label="Yoqtirish">♥</button></div></article>';
-    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});message(r.matched?'O‘zaro like! Matchlar bo‘limida ko‘rishingiz mumkin.':'');position++;photo=0;renderCard();}));
+    content.querySelectorAll('.dating-actions button').forEach((b,i)=>b.onclick=()=>work(async()=>{content.querySelectorAll('button').forEach(x=>x.disabled=true);const r=await api('dating/vote/'+p.id,{liked:!!i});rows=rows.filter(x=>x.id!==p.id);writeCache();message(r.matched?'O‘zaro like! Matchlar bo‘limida ko‘rishingiz mumkin.':'');position=Math.min(position,rows.length);photo=0;renderCard();refreshCards();}));
     const card=content.querySelector('article');let start=null;
     card.onpointerdown=e=>{if(e.isPrimary!==false&&!e.target.closest('button,.dating-copy'))start={x:e.clientX,y:e.clientY};};
     card.onpointerup=e=>{
