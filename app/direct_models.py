@@ -1,6 +1,6 @@
 """Persistent private chats, independent of roulette matches and archives."""
 from datetime import datetime
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Text, UniqueConstraint, CheckConstraint, Index
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models import Base
 
@@ -14,6 +14,7 @@ class DirectChat(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     revision: Mapped[int] = mapped_column(BigInteger, default=0)
+    source: Mapped[str] = mapped_column(String(16), default='user', server_default='user', nullable=False)
 
 
 class DirectMessage(Base):

@@ -49,6 +49,7 @@ async def init_db() -> None:
             """))
             await connection.execute(text("ALTER TABLE direct_chats ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMPTZ"))
             await connection.execute(text("ALTER TABLE direct_chats ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0"))
+            await connection.execute(text("ALTER TABLE direct_chats ADD COLUMN IF NOT EXISTS source VARCHAR(16) NOT NULL DEFAULT 'user'"))
             await connection.execute(text("ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0"))
             await connection.execute(text("ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS is_edited BOOLEAN NOT NULL DEFAULT FALSE"))
             await connection.execute(text("ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE"))

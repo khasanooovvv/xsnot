@@ -10,8 +10,9 @@
   const userButton=document.createElement('button');userButton.type='button';userButton.textContent='User';userButton.className='dm-user-toggle selected';
   const likesButton=document.createElement('button');likesButton.type='button';likesButton.textContent='Layklar';likesButton.className='dm-likes-toggle';
   const likesList=document.createElement('div');likesList.id='dmLikesList';likesList.hidden=true;
+  const matchList=document.createElement('div');matchList.id='dmMatchChats';matchList.hidden=true;
   const navChat=document.querySelector('[data-page="instagram"]'),navBadge=document.createElement('span');navBadge.className='nav-unread-badge';navBadge.hidden=true;navChat?.append(navBadge);
-  const tools=document.createElement('div');tools.id='dmListTools';tools.append(userButton,likesButton);el('instagram').prepend(tools);el('instagram').append(likesList,list);
+  const tools=document.createElement('div');tools.id='dmListTools';tools.append(userButton,likesButton);el('instagram').prepend(tools);el('instagram').append(likesList,matchList,list);
   let current=null,epoch=0,revision=0,before=null,more=false,editing=null,busy=false,refreshBusy=false,listSignature='';
   const messages=new Map(), people=new Map(), readMarkers=new Map();
   let cachedList=null,cacheOwner=null,listPending=false,avatarSync=0,lastListSync=0;
@@ -21,7 +22,7 @@
     cacheOwner=me.id;const owner=cacheOwner;
     const cached=await avatarCacheStore('get','dm-list:'+owner);
     if(me?.id!==owner||cachedList)return;
-    if(cached){cachedList=cached;cached.chats.forEach(c=>mergePerson(c.partner));renderList(cached)}
+    if(cached){cachedList=cached;cached.chats.forEach(c=>mergePerson(c.partner));renderList(cached);renderMatchChats(cached)}
   }
   const time=v=>v?new Date(v).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
   const error=e=>{el('dmNotice').textContent=e.message||String(e);el('dmNotice').hidden=false};
@@ -30,11 +31,11 @@
     const data=await r.json();if(!r.ok)throw Error(data.detail||'Layklarni yuklab bo‘lmadi.');
     likesList.replaceChildren();
     if(!data.length){likesList.textContent='Hozircha sizga hech kim like bosmagan.';return 0;}
-    for(const p of data){const b=document.createElement('article');b.className='dm-like-card';b.innerHTML='<img class="dm-like-photo" alt="Anketa rasmi" src="'+esc(p.photos?.[0]||'')+'"><div class="dm-like-info"><strong>'+esc(p.name)+badgeMarkup(p)+'</strong><small>'+esc(p.age||'')+' yosh · Sizga like bosdi</small></div><div class="dm-like-actions"><button type="button" class="dm-like-nope" aria-label="O‘tkazib yuborish">×</button><button type="button" class="dm-like-heart" aria-label="Like bilan javob berish">♥</button></div>';const openChat=async()=>{try{const d=await request('/chats/with/'+p.id,'POST');await open(d.chat_id)}catch(e){error(e)}};b.querySelector('.dm-like-heart').onclick=openChat;b.querySelector('.dm-like-nope').onclick=()=>b.remove();likesList.append(b)}
+    for(const p of data){const b=document.createElement('article');b.className='dm-like-card';b.innerHTML='<img class="dm-like-photo" alt="Anketa rasmi" src="'+esc(p.photos?.[0]||'')+'"><div class="dm-like-info"><strong>'+esc(p.name)+badgeMarkup(p)+'</strong><small>'+esc(p.age||'')+' yosh · Sizga like bosdi</small></div><div class="dm-like-actions"><button type="button" class="dm-like-nope" aria-label="O‘tkazib yuborish">×</button><button type="button" class="dm-like-heart" aria-label="Like bilan javob berish">♥</button></div>';const openChat=async()=>{try{await api('dating/vote/'+p.id,{liked:true});const d=await request('/chats/with/'+p.id+'?source=match','POST');await open(d.chat_id);await refreshList()}catch(e){error(e)}};b.querySelector('.dm-like-heart').onclick=()=>{tabHaptic();void openChat()};b.querySelector('.dm-like-nope').onclick=()=>b.remove();likesList.append(b)}
     return data.length;
   }
   async function updateNavBadge(likeCount=0,unreadCount=0){const total=Number(likeCount)+Number(unreadCount);navBadge.textContent=total>99?'99+':String(total);navBadge.hidden=total<1}
-  function setDirectTab(tab){const likes=tab==='likes';likesList.hidden=!likes;list.hidden=likes;el('userSearchForm').hidden=likes;el('userSearchResults').hidden=likes;el('instagram').classList.toggle('likes-mode',likes);userButton.classList.toggle('selected',!likes);likesButton.classList.toggle('selected',likes)}
+  function setDirectTab(tab){const likes=tab==='likes';likesList.hidden=!likes;matchList.hidden=!likes;list.hidden=likes;el('userSearchForm').hidden=likes;el('userSearchResults').hidden=likes;el('instagram').classList.toggle('likes-mode',likes);userButton.classList.toggle('selected',!likes);likesButton.classList.toggle('selected',likes)}
   function tabHaptic(){try{const app=window.Telegram?.WebApp;if(typeof app?.HapticFeedback?.selectionChanged==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1')))app.HapticFeedback.selectionChanged();}catch{}}
   userButton.onclick=()=>{tabHaptic();setDirectTab('user')};
   likesButton.onclick=()=>{tabHaptic();setDirectTab('likes');void loadDatingLikes().catch(error)};
@@ -80,7 +81,7 @@
     const signature=JSON.stringify(d);if(signature===listSignature)return;listSignature=signature;
     const existing=new Map([...list.querySelectorAll('.dm-row')].map(n=>[Number(n.dataset.chatId),n]));
     list.querySelector('.dm-more')?.remove();
-    for(const c of d.chats){
+    for(const c of d.chats.filter(c=>(c.source||'user')!=='match')){
       let b=existing.get(c.id);existing.delete(c.id);
       if(!b){b=document.createElement('button');b.type='button';b.className='dm-row';b.dataset.chatId=c.id;hold(b,()=>actions([['O‘chirish',()=>hide(c.id)]]));b.onclick=()=>open(c.id)}
       const rowSignature=JSON.stringify({...c,partner:{...c.partner,online:undefined}});
@@ -93,6 +94,13 @@
     existing.forEach(n=>n.remove());
     if(d.more){const b=document.createElement('button');b.className='dm-more';b.textContent='Ko‘proq chatlar';b.onclick=()=>loadMore(d.chats.length,b);list.append(b)}
   }
+  function renderMatchChats(d){
+    matchList.replaceChildren();
+    const chats=d.chats.filter(c=>(c.source||'user')==='match');
+    if(!chats.length)return;
+    const title=document.createElement('div');title.className='dm-match-title';title.textContent='Match chatlari';matchList.append(title);
+    for(const c of chats){const b=document.createElement('button');b.type='button';b.className='dm-row';b.dataset.chatId=c.id;b.innerHTML=avatar(c.partner)+'<div class="dm-row-copy"><strong>'+esc(c.partner.name)+badgeMarkup(c.partner)+'</strong><small>'+esc(c.last_message?(c.last_message.is_deleted?'Xabar o‘chirildi':c.last_message.text.slice(0,90)):'Hali xabar yo‘q')+'</small></div><div class="dm-row-meta">'+esc(time(c.last_message_at))+(c.unread?'<span class="dm-unread">'+c.unread+'</span>':'')+'</div>';hold(b,()=>actions([['O‘chirish',()=>hide(c.id)]]));b.onclick=()=>open(c.id);matchList.append(b)}
+  }
   async function refreshList(){
     if(document.hidden||el('instagram').hidden||!me?.registered||listPending)return;
     listPending=true;
@@ -103,13 +111,13 @@
       const unread=d.chats.reduce((sum,c)=>sum+Number(c.unread||0),0);void loadDatingLikes().then(count=>updateNavBadge(count,unread)).catch(()=>updateNavBadge(0,unread));
       if(full)avatarSync=Date.now();
       lastListSync=Date.now();cachedList=d;
-      const changed=JSON.stringify(d)!==listSignature;renderList(d);
+      const changed=JSON.stringify(d)!==listSignature;renderList(d);renderMatchChats(d);
       if(changed)void avatarCacheStore('put','dm-list:'+me.id,d);
     }finally{listPending=false}
   }
   document.querySelector('[data-page="instagram"]')?.addEventListener('click',()=>{void restoreList();void refreshList().catch(e=>notice(e.message))});
   async function loadMore(offset,b){try{const d=await request('/chats?offset='+offset);for(const c of d.chats){const n=document.createElement('button');n.className='dm-row';n.dataset.chatId=c.id;c.partner=mergePerson(c.partner);n.innerHTML=avatar(c.partner)+'<div class="dm-row-copy"><strong>'+esc(c.partner.name)+badgeMarkup(c.partner)+'</strong><small>'+esc(c.last_message?.text||'')+'</small></div><div class="dm-row-meta">'+esc(time(c.last_message_at))+(c.unread?'<span class="dm-unread">'+c.unread+'</span>':'')+'</div>';hold(n,()=>actions([['O‘chirish',()=>hide(c.id)]]));n.onclick=()=>open(c.id);b.before(n)}if(d.more)b.onclick=()=>loadMore(offset+d.chats.length,b);else b.remove()}catch(e){notice(e.message)}}
-  const originalRender=renderUserSearchResults;renderUserSearchResults=rows=>{originalRender(rows);list.hidden=true;el('userSearchResults').hidden=false;el('userSearchResults').querySelectorAll('.direct-result').forEach((n,i)=>{n.classList.add('dm-search-hit');n.tabIndex=0;n.setAttribute('role','button');const action=async()=>{try{const d=await request('/chats/with/'+rows[i].id,'POST');await open(d.chat_id)}catch(e){notice(e.message)}};n.onclick=action;n.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}}})};
+  const originalRender=renderUserSearchResults;renderUserSearchResults=rows=>{originalRender(rows);list.hidden=true;el('userSearchResults').hidden=false;el('userSearchResults').querySelectorAll('.direct-result').forEach((n,i)=>{n.classList.add('dm-search-hit');n.tabIndex=0;n.setAttribute('role','button');const action=async()=>{try{const d=await request('/chats/with/'+rows[i].id+'?source=user','POST');await open(d.chat_id)}catch(e){notice(e.message)}};n.onclick=action;n.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}}})};
   el('userSearchInput').addEventListener('input',()=>{if(!likesList.hidden)return;const searching=el('userSearchInput').value.trim().length>0;list.hidden=searching;if(!searching)el('userSearchResults').hidden=false});
   el('userSearchInput').addEventListener('focus',()=>{const nav=document.getElementById('nav');if(nav){document.documentElement.style.setProperty('--keyboard-nav-top',(nav.getBoundingClientRect().top+window.scrollY)+'px')}document.body.classList.add('keyboard-open')});
   el('userSearchInput').addEventListener('blur',()=>setTimeout(()=>document.body.classList.remove('keyboard-open'),150));

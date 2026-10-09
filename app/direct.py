@@ -100,7 +100,7 @@ async def presence(body: PresenceBody, uid=Depends(registered)):
     return {'ok': True, 'heartbeat_seconds': 10, 'offline_after_seconds': 30}
 
 @router.post('/chats/with/{other}')
-async def open_chat(other: int, uid=Depends(registered)):
+async def open_chat(other: int, source: str = Query('user', pattern='^(user|match)$'), uid=Depends(registered)):
     if other == uid: raise HTTPException(422, 'O‘zingiz bilan chat ochib bo‘lmaydi.')
     async with SessionLocal() as s:
         await pair_lock(s, uid, other)
@@ -109,9 +109,11 @@ async def open_chat(other: int, uid=Depends(registered)):
         a, b = sorted((uid, other))
         chat = await s.scalar(select(DirectChat).where(DirectChat.user_one == a, DirectChat.user_two == b))
         if not chat:
-            chat = DirectChat(user_one=a, user_two=b, created_at=now(), revision=0)
+            chat = DirectChat(user_one=a, user_two=b, created_at=now(), revision=0, source=source)
             s.add(chat)
             await s.flush()
+        elif source == 'match' and chat.source != 'match':
+            chat.source = 'match'
         await s.execute(delete(ChatDeletion).where(ChatDeletion.chat_id == chat.id, ChatDeletion.user_id == uid))
         await s.commit()
         # Profile/presence is loaded by the messages endpoint.  Do not make
@@ -144,7 +146,7 @@ async def chats(offset: int = Query(0, ge=0), include_avatar: bool = True, uid=D
             other = c.user_two if c.user_one == uid else c.user_one
             last = lasts.get(c.id)
             result.append({'id': c.id, 'partner': await run_in_threadpool(person_data, users[other], avatars.get(other), presences.get(other), include_avatar), 'last_message': message_data(last, uid) if last else None,
-                           'last_message_at': c.last_message_at, 'unread': unread_counts.get(c.id, 0)})
+                           'last_message_at': c.last_message_at, 'unread': unread_counts.get(c.id, 0), 'source': c.source or 'user'})
         return {'chats': result, 'more': len(rows)>50}
 
 @router.get('/chats/{chat_id}/messages')

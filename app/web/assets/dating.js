@@ -34,7 +34,7 @@
     if(tab==='matches'){
       const matches=await api('dating/matches');content.replaceChildren();
       if(!matches.length){content.textContent='Hozircha o‘zaro like yo‘q.';return;}
-      for(const p of matches){const b=document.createElement('button');b.className='dating-match';b.innerHTML='<img alt="Anketa rasmi" src="'+esc(p.photos[0])+'"><span>'+esc(p.name)+'<small> · O‘zaro like</small></span>';b.onclick=()=>work(async()=>{const d=await api('direct/chats/with/'+p.id,{});if(window.openDatingDirect)await window.openDatingDirect(d.chat_id);else message('DM oynasini qayta oching.');});content.append(b);}return;
+      for(const p of matches){const b=document.createElement('button');b.className='dating-match';b.innerHTML='<img alt="Anketa rasmi" src="'+esc(p.photos[0])+'"><span>'+esc(p.name)+'<small> · O‘zaro like</small></span>';b.onclick=()=>work(async()=>{const d=await api('direct/chats/with/'+p.id+'?source=match',{});if(window.openDatingDirect)await window.openDatingDirect(d.chat_id);else message('DM oynasini qayta oching.');});content.append(b);}return;
     }
     if(!own) own=await api('dating/me');
     if(!own.photos.length){content.innerHTML='<h3>Rasmingizdan boshlaymiz</h3><p class="dating-note">Anketa uchun rasm yuklang.</p><button class="dating-upload">Rasm yuklash</button>';content.querySelector('button').onclick=()=>{tab='edit';root.querySelector('[data-tab="edit"]').click();};return;}
