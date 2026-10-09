@@ -35,8 +35,9 @@
   }
   async function updateNavBadge(likeCount=0,unreadCount=0){const total=Number(likeCount)+Number(unreadCount);navBadge.textContent=total>99?'99+':String(total);navBadge.hidden=total<1}
   function setDirectTab(tab){const likes=tab==='likes';likesList.hidden=!likes;list.hidden=likes;el('userSearchForm').hidden=likes;el('userSearchResults').hidden=likes;el('instagram').classList.toggle('likes-mode',likes);userButton.classList.toggle('selected',!likes);likesButton.classList.toggle('selected',likes)}
-  userButton.onclick=()=>setDirectTab('user');
-  likesButton.onclick=()=>{setDirectTab('likes');void loadDatingLikes().catch(error)};
+  function tabHaptic(){try{const app=window.Telegram?.WebApp;if(typeof app?.HapticFeedback?.selectionChanged==='function'&&(!app.isVersionAtLeast||app.isVersionAtLeast('6.1')))app.HapticFeedback.selectionChanged();}catch{}}
+  userButton.onclick=()=>{tabHaptic();setDirectTab('user')};
+  likesButton.onclick=()=>{tabHaptic();setDirectTab('likes');void loadDatingLikes().catch(error)};
   window.openDatingLikes=async()=>{show('instagram');setDirectTab('likes');await loadDatingLikes()};
   async function request(path,method='GET',body){const r=await fetch('/api/direct'+path,{method,cache:'no-store',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':tg?.initData||''},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw Error(r.ok?'Serverdan kutilmagan javob olindi.':'Server xatosi ('+r.status+'). Birozdan keyin qayta urinib ko‘ring.')}if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'So‘rov bajarilmadi.');return d}
   function actions(items){dialog.replaceChildren();for(const [label,fn] of [...items,['Bekor qilish',()=>{}]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dialog.close();Promise.resolve().then(fn).catch(error)};dialog.append(b)}dialog.showModal()}
