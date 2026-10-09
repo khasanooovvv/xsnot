@@ -10,7 +10,7 @@
   const likesButton=document.createElement('button');likesButton.type='button';likesButton.textContent='Layklar';likesButton.className='dm-likes-toggle';
   const likesList=document.createElement('div');likesList.id='dmLikesList';likesList.hidden=true;
   const navChat=document.querySelector('[data-page="instagram"]'),navBadge=document.createElement('span');navBadge.className='nav-unread-badge';navBadge.hidden=true;navChat?.append(navBadge);
-  const tools=document.createElement('div');tools.id='dmListTools';tools.append(userButton,likesButton);el('instagram').append(tools,likesList,list);
+  const tools=document.createElement('div');tools.id='dmListTools';tools.append(userButton,likesButton);el('instagram').prepend(tools);el('instagram').append(likesList,list);
   let current=null,epoch=0,revision=0,before=null,more=false,editing=null,busy=false,refreshBusy=false,listSignature='';
   const messages=new Map(), people=new Map(), readMarkers=new Map();
   let cachedList=null,cacheOwner=null,listPending=false,avatarSync=0,lastListSync=0;
@@ -33,7 +33,7 @@
     return data.length;
   }
   async function updateNavBadge(likeCount=0,unreadCount=0){const total=Number(likeCount)+Number(unreadCount);navBadge.textContent=total>99?'99+':String(total);navBadge.hidden=total<1}
-  function setDirectTab(tab){const likes=tab==='likes';likesList.hidden=!likes;list.hidden=likes;el('userSearchForm').hidden=likes;el('userSearchResults').hidden=likes;userButton.classList.toggle('selected',!likes);likesButton.classList.toggle('selected',likes)}
+  function setDirectTab(tab){const likes=tab==='likes';likesList.hidden=!likes;list.hidden=likes;el('userSearchForm').hidden=likes;el('userSearchResults').hidden=likes;el('instagram').classList.toggle('likes-mode',likes);userButton.classList.toggle('selected',!likes);likesButton.classList.toggle('selected',likes)}
   userButton.onclick=()=>setDirectTab('user');
   likesButton.onclick=async()=>{setDirectTab('likes');likesButton.disabled=true;try{await loadDatingLikes()}catch(e){error(e)}finally{likesButton.disabled=false}};
   window.openDatingLikes=async()=>{show('instagram');setDirectTab('likes');await loadDatingLikes()};
