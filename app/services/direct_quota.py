@@ -7,6 +7,9 @@ from app.services.subscriptions import subscription, aware
 
 
 async def direct_permission(session, user, other, consume=False, now=None):
+    # DM is available to every registered user; subscription limits apply to
+    # other features, not to opening a direct conversation.
+    return {'allowed': True, 'reason': None, 'resets_at': None}
     now = now or datetime.now(UTC)
     if consume:
         # The caller already loads the user in the same transaction. Reusing
