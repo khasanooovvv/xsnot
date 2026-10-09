@@ -47,4 +47,4 @@ body.dm-open #dmForm{background:#171717;border-top-color:#333;box-shadow:none}
 #userSearchForm .direct-search-field{height:38px;border:1px solid #333!important;border-radius:20px;background:#050505!important;box-shadow:none!important;padding:3px 12px!important}
 #userSearchForm .direct-search-field input{height:30px;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;font-size:16px!important}
 html,body{touch-action:manipulation}
-body.keyboard-open nav#nav{display:flex!important;position:absolute!important;top:calc(100vh - 100px)!important;bottom:auto!important}
+body.keyboard-open nav#nav{display:flex!important;position:fixed!important;top:var(--keyboard-nav-top)!important;bottom:auto!important}
